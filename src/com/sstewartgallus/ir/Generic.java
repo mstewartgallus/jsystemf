@@ -30,7 +30,10 @@ public interface Generic<A, B> {
     // for Category we use Void the class that has only one inhabitant
     // fixme... I believe what we want for Generic is the T such that Class<T> has only one inhabitant... null!
     static <B> Value<B> compile(MethodHandles.Lookup lookup, Generic<Void, F<Void, B>> generic) {
-        var handle = generic.compile(lookup, Type.VOID);
+        var chunk = generic.compile(lookup, Type.VOID);
+
+        var handle = chunk.intro();
+
         Object obj;
         try {
             obj = handle.invoke((Object) null);
@@ -42,7 +45,7 @@ public interface Generic<A, B> {
         return Value.class.cast(obj);
     }
 
-    default MethodHandle compile(MethodHandles.Lookup lookup, Type<A> klass) {
+    default Chunk<B> compile(MethodHandles.Lookup lookup, Type<A> klass) {
         throw new UnsupportedOperationException(getClass().toString());
     }
 
@@ -57,9 +60,9 @@ public interface Generic<A, B> {
     }
 
     record Identity<V, A>(Signature<V, F<A, A>>signature, Signature<V, A>value) implements Generic<V, F<A, A>> {
-        public MethodHandle compile(MethodHandles.Lookup lookup, Type<V> klass) {
+        public Chunk<F<A, A>> compile(MethodHandles.Lookup lookup, Type<V> klass) {
             var type = value.apply(klass).erase();
-            return MethodHandles.identity(type);
+            return new Chunk<>(MethodHandles.identity(type));
         }
 
         public String toString() {
@@ -70,8 +73,11 @@ public interface Generic<A, B> {
     record Compose<V, A, B, C>(Signature<V, F<A, C>>signature,
                                Generic<V, F<B, C>>f,
                                Generic<V, F<A, B>>g) implements Generic<V, F<A, C>> {
-        public MethodHandle compile(MethodHandles.Lookup lookup, Type<V> klass) {
-            return MethodHandles.filterReturnValue(g.compile(lookup, klass), f.compile(lookup, klass));
+        public Chunk<F<A, C>> compile(MethodHandles.Lookup lookup, Type<V> klass) {
+            var gC = g.compile(lookup, klass);
+            var fC = f.compile(lookup, klass);
+            var intro = MethodHandles.filterReturnValue(gC.intro(), fC.intro());
+            return new Chunk<>(intro);
         }
 
         public String toString() {
@@ -89,10 +95,11 @@ public interface Generic<A, B> {
 
     record First<V, A, B>(Signature<V, F<T<A, B>, A>>signature,
                           Signature<V, A>firstValue) implements Generic<V, F<T<A, B>, A>> {
-        public MethodHandle compile(MethodHandles.Lookup lookup, Type<V> klass) {
+        public Chunk<F<T<A, B>, A>> compile(MethodHandles.Lookup lookup, Type<V> klass) {
             var first = firstValue.apply(klass).erase();
             var cs = ValueLinker.link(lookup, StandardOperation.GET.withNamespace(StandardNamespace.PROPERTY).named("first"), methodType(first, Pair.class));
-            return cs.dynamicInvoker();
+            var intro = cs.dynamicInvoker();
+            return new Chunk<>(intro);
         }
 
         public String toString() {
@@ -102,10 +109,11 @@ public interface Generic<A, B> {
 
     record Second<V, A, B>(Signature<V, F<T<A, B>, B>>signature,
                            Signature<V, B>secondValue) implements Generic<V, F<T<A, B>, B>> {
-        public MethodHandle compile(MethodHandles.Lookup lookup, Type<V> klass) {
+        public Chunk<F<T<A, B>, B>> compile(MethodHandles.Lookup lookup, Type<V> klass) {
             var second = secondValue.apply(klass).erase();
             var cs = ValueLinker.link(lookup, StandardOperation.GET.withNamespace(StandardNamespace.PROPERTY).named("second"), methodType(second, Pair.class));
-            return cs.dynamicInvoker();
+            var intro = cs.dynamicInvoker();
+            return new Chunk<>(intro);
         }
 
         public String toString() {
@@ -114,12 +122,12 @@ public interface Generic<A, B> {
     }
 
     record CurryType<Z, X, A, B, C>(Signature<Z, F<X, V<A, B>>>signature,
-                                           Generic<E<Z, A>, F<X, B>>f) implements Generic<Z, F<X, V<A, B>>> {
+                                    Generic<E<Z, A>, F<X, B>>f) implements Generic<Z, F<X, V<A, B>>> {
         public String toString() {
             return "(curry-type " + f + ")";
         }
 
-        public MethodHandle compile(MethodHandles.Lookup lookup, Type<Z> klass) {
+        public Chunk<F<X, V<A, B>>> compile(MethodHandles.Lookup lookup, Type<Z> klass) {
             // fixme... need to accept a klass argument at runtime I think...
             // fixme... createa  E<Z,A> from Z ?
             throw new UnsupportedOperationException("unimplemented");
@@ -128,24 +136,25 @@ public interface Generic<A, B> {
     }
 
     record Curry<V, A, B, C>(Signature<V, F<A, F<B, C>>>signature,
-                                    Signature<V, A>left,
-                                    Signature<V, B>right,
-                                    Generic<V, F<T<A, B>, C>>f) implements Generic<V, F<A, F<B, C>>> {
+                             Signature<V, A>left,
+                             Signature<V, B>right,
+                             Generic<V, F<T<A, B>, C>>f) implements Generic<V, F<A, F<B, C>>> {
         public String toString() {
             return "(curry " + f + ")";
         }
 
-        public MethodHandle compile(MethodHandles.Lookup lookup, Type<V> klass) {
+        public Chunk<F<A, F<B, C>>> compile(MethodHandles.Lookup lookup, Type<V> klass) {
             // fixme... obviously wrong...
             var domain = left.apply(klass).erase();
             var second = right.apply(klass).erase();
 
-            var fEmit = f.compile(lookup, klass);
+            var fEmit = f.compile(lookup, klass).intro();
             fEmit = filterReturnValue(PAIR_MH.asType(methodType(Pair.class, domain, second)), fEmit);
             // fixme... probably no need to spin a class for each methodhandle....
             // fixme... maybe only specialize for int...
             // fixme.. otoh we might want to inline large environments in the future ....
-            return Closure.spinFactory(domain, second, fEmit);
+            var intro = Closure.spinFactory(domain, second, fEmit);
+            return new Chunk<>(intro);
         }
 
         static final MethodHandle PAIR_MH;

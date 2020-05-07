@@ -13,6 +13,7 @@ import java.lang.invoke.MethodHandle;
 import java.lang.invoke.MethodHandles;
 import java.lang.invoke.MethodType;
 
+import static java.lang.invoke.MethodHandles.filterArguments;
 import static java.lang.invoke.MethodHandles.filterReturnValue;
 import static java.lang.invoke.MethodType.methodType;
 
@@ -32,8 +33,23 @@ public interface Generic<A, B> {
     static <B> Value<B> compile(MethodHandles.Lookup lookup, Generic<Void, F<Void, B>> generic) {
         var chunk = generic.compile(lookup, Type.VOID);
 
-        var handle = chunk.intro();
+        var intro = chunk.intro();
+        var eliminators = chunk.eliminators();
+        var numEliminators = eliminators.size();
 
+        if (numEliminators == 0) {
+            throw new UnsupportedOperationException("void results aren't implemented yet");
+        }
+
+        MethodHandle handle;
+        if (numEliminators == 1) {
+            handle = intro;
+        } else {
+            var mkArray = MethodHandles.identity(Object[].class).asCollector(Object[].class, numEliminators);
+            var mkTuple = filterArguments(mkArray, 0, eliminators.toArray(MethodHandle[]::new));
+
+            handle = filterReturnValue(intro, mkTuple);
+        }
         Object obj;
         try {
             obj = handle.invoke((Object) null);

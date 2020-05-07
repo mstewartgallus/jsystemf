@@ -63,24 +63,7 @@ public interface Term<L> {
     // fixme... should be for internal use only... somehow (maybe Stack wakling?)
     <A> Term<L> substitute(Var<A> argument, Term<A> replacement);
 
-    record Intrinsic<A, B>(Category<A, B>f) implements Term<F<A, B>> {
-        public <V> Category<V, F<A, B>> ccc(Var<V> argument, VarGen vars) {
-            Category<T<V, A>, A> snd = Category.second(argument.type(), f.domain());
-            return Category.curry(f.compose(snd));
-        }
-
-        public <V> Term<F<A, B>> substitute(Var<V> argument, Term<V> replacement) {
-            return this;
-        }
-
-        @Override
-        public Type<F<A, B>> type() {
-            return f.domain().to(f.range());
-        }
-    }
-
     record Var<A>(Type<A>type, int number) implements Term<A>, Comparable<Var<?>> {
-
         public <V> Category<V, A> ccc(Var<V> argument, VarGen vars) {
             if (argument == this) {
                 return (Category<V, A>) new Category.Identity<>(type);
@@ -139,11 +122,9 @@ public interface Term<L> {
         public String toString() {
             return "{" + f + " " + x + "}";
         }
-
     }
+
     record IfCond<A>(Type<A>t, Term<Boolean>cond, Term<A>onCond, Term<A>elseCond) implements Term<A> {
-
-
         @Override
         public <A1> Category<A1, A> ccc(Var<A1> argument, VarGen vars) {
             throw new UnsupportedOperationException("unimplemented");

@@ -31,24 +31,12 @@ public interface Category<A, B> {
     }
 
     static <V, A, B> Category<V, B> call(Category<V, F<A, B>> f, Category<V, A> x) {
-        // fixme...  which?
-        // consider also just new Call<>(f, x);
-        //    return new Eval<>(domain, range).compose(f.product(x));
-        //    return new Uncurry<>(new Identity<>(domain.to(range))).compose(f.product(x));
-        return uncurry(f).compose(new Identity<>(x.domain()).product(x));
-    }
-
-    // fixme... consider specializing to apply ?
-    default <C> Category<A, T<B, C>> product(Category<A, C> x) {
-        return new Product<>(this, x);
+        // fixme... there are a number of choices here...
+        return new Call<>(f, x);
     }
 
     static <A, B, C> Category<A, F<B, C>> curry(Category<T<A, B>, C> f) {
         return new Curry<>(f);
-    }
-
-    static <A, B, C> Category<T<A, B>, C> uncurry(Category<A, F<B, C>> f) {
-        return new Uncurry<>(f);
     }
 
     static <B, A> Category<B, A> constant(Type<B> domain, Type<A> range, ConstantDesc value) {
@@ -75,7 +63,7 @@ public interface Category<A, B> {
 
         public <V> Generic<V, F<Void, A>> generic(Type.Var<V> argument, TVarGen vars) {
             var sig = new Type.FunType<>(Type.VOID, range).ccc(argument, vars);
-            return new Generic.Unit<>(sig, value);
+            return new Generic.Unit<>(sig, range.ccc(argument, vars), value);
         }
 
         public <V> Category<Void, A> substitute(Type.Var<V> argument, Type<V> replacement) {
@@ -122,7 +110,7 @@ public interface Category<A, B> {
         }
 
         public String toString() {
-            return f + " ⚬ " + g;
+            return "(" + f + " ⚬ " + g + ")";
         }
 
         @Override
@@ -136,34 +124,10 @@ public interface Category<A, B> {
         }
     }
 
-    record Product<A, B, C>(Category<A, B>f, Category<A, C>g) implements Category<A, T<B, C>> {
-        public String toString() {
-            return f + " Δ " + g;
-        }
-
-        public <V> Generic<V, F<A, T<B, C>>> generic(Type.Var<V> argument, TVarGen vars) {
-            return new Generic.Product<>(domain().to(range()).ccc(argument, vars), f.generic(argument, vars), g.generic(argument, vars));
-        }
-
-        public <V> Category<A, T<B, C>> substitute(Type.Var<V> argument, Type<V> replacement) {
-            return new Product<>(f.substitute(argument, replacement), g.substitute(argument, replacement));
-        }
-
-        @Override
-        public Type<A> domain() {
-            return f.domain();
-        }
-
-        @Override
-        public Type<T<B, C>> range() {
-            return f.range().and(g.range());
-        }
-    }
-
     // fixme... get type of the pair we are using..
     record First<A, B>(Type<A>first, Type<B>second) implements Category<T<A, B>, A> {
         public <V> Generic<V, F<T<A, B>, A>> generic(Type.Var<V> argument, TVarGen vars) {
-            return new Generic.First<>(domain().to(range()).ccc(argument, vars), first.ccc(argument, vars));
+            return new Generic.First<>(domain().to(range()).ccc(argument, vars), first.ccc(argument, vars), second.ccc(argument, vars));
         }
 
         public <V> Category<T<A, B>, A> substitute(Type.Var<V> argument, Type<V> replacement) {
@@ -188,7 +152,7 @@ public interface Category<A, B> {
 
     record Second<A, B>(Type<A>first, Type<B>second) implements Category<T<A, B>, B> {
         public <V> Generic<V, F<T<A, B>, B>> generic(Type.Var<V> argument, TVarGen vars) {
-            return new Generic.Second<>(domain().to(range()).ccc(argument, vars), second.ccc(argument, vars));
+            return new Generic.Second<>(domain().to(range()).ccc(argument, vars), first.ccc(argument, vars), second.ccc(argument, vars));
         }
 
         public <V> Category<T<A, B>, B> substitute(Type.Var<V> argument, Type<V> replacement) {
@@ -239,36 +203,6 @@ public interface Category<A, B> {
 
         public String toString() {
             return "(curry " + f + ")";
-        }
-    }
-
-    // fixme... needed for intrinsics...
-    // basically eval, could you define it in terms of eval?
-    record Uncurry<A, B, C>(Category<A, F<B, C>>f) implements Category<T<A, B>, C> {
-        public <V> Generic<V, F<T<A, B>, C>> generic(Type.Var<V> argument, TVarGen vars) {
-            return new Generic.Uncurry<>(f.generic(argument, vars));
-        }
-
-        public <V> Category<T<A, B>, C> substitute(Type.Var<V> argument, Type<V> replacement) {
-            return new Uncurry<>(f.substitute(argument, replacement));
-        }
-
-        @Override
-        public Type<T<A, B>> domain() {
-            return f.domain().and(second());
-        }
-
-        @Override
-        public Type<C> range() {
-            return ((Type.FunType<B, C>) (f.range())).range();
-        }
-
-        public Type<B> second() {
-            return ((Type.FunType<B, C>) (f.range())).domain();
-        }
-
-        public String toString() {
-            return "(uncurry " + f + ")";
         }
     }
 
@@ -335,6 +269,33 @@ public interface Category<A, B> {
         @Override
         public Type<V<A, B>> range() {
             return new Type.Forall<>(arg -> f.apply(arg).range());
+        }
+    }
+
+    record Call<Z, A, B>(Category<Z, F<A, B>>f, Category<Z, A>x) implements Category<Z, B> {
+        @Override
+        public <V> Generic<V, F<Z, B>> generic(Type.Var<V> argument, TVarGen vars) {
+            var sig = domain().to(range()).ccc(argument, vars);
+            return new Generic.Call<>(sig, f.generic(argument, vars), x.generic(argument, vars));
+        }
+
+        @Override
+        public <V> Category<Z, B> substitute(Type.Var<V> argument, Type<V> replacement) {
+            return new Call<>(f.substitute(argument, replacement), x.substitute(argument, replacement));
+        }
+
+        @Override
+        public Type<Z> domain() {
+            return f.domain();
+        }
+
+        @Override
+        public Type<B> range() {
+            return ((Type.FunType<A, B>) f.range()).range();
+        }
+
+        public String toString() {
+            return "(call " + f + " " + x + ")";
         }
     }
 }

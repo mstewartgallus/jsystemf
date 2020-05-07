@@ -69,7 +69,7 @@ public final class Main {
         output("System F", term);
 
         // hack to work around Java's lack of proper generics
-        var expr = Type.INT.l(x -> Type.INT.l(y -> x));
+        var expr = Term.apply(Type.INT.l(x -> Type.INT.l(y -> x)), Prims.of(4));
 
         output("System F", expr + ": " + expr.type());
         var ccc = expr.ccc();
@@ -80,8 +80,7 @@ public final class Main {
         var main = Generic.compile(lookup(), generic);
         output("Main", main);
 
-        var foo = AP.apply(main, 3);
-        var bar = API.apply(foo, 4);
+        var bar = API.apply(main, 3);
         output("Result", bar);
 
         // fixme... pass lookup?

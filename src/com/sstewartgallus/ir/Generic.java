@@ -13,8 +13,7 @@ import java.lang.invoke.MethodHandle;
 import java.lang.invoke.MethodHandles;
 import java.lang.invoke.MethodType;
 
-import static java.lang.invoke.MethodHandles.filterArguments;
-import static java.lang.invoke.MethodHandles.filterReturnValue;
+import static java.lang.invoke.MethodHandles.*;
 import static java.lang.invoke.MethodType.methodType;
 
 /**
@@ -69,9 +68,25 @@ public interface Generic<A, B> {
         throw new UnsupportedOperationException(getClass().toString());
     }
 
-    record Unit<V, A>(Signature<V, F<Void, A>>signature, ConstantDesc value) implements Generic<V, F<Void, A>> {
+    record Unit<V, A>(Signature<V, F<Void, A>>signature, Signature<V, A>range,
+                      ConstantDesc value) implements Generic<V, F<Void, A>> {
         public String toString() {
             return value.toString();
+        }
+
+        public Chunk<F<Void, A>> compile(Lookup lookup, Type<V> klass) {
+            var t = range.apply(klass).erase();
+
+            // fixme... do this lazily..
+            Object k;
+            try {
+                k = value.resolveConstantDesc(lookup);
+            } catch (ReflectiveOperationException e) {
+                throw new RuntimeException(e);
+            }
+            var handle = constant(t, k);
+            handle = dropArguments(handle, 0, Void.class);
+            return new Chunk<>(handle);
         }
     }
 
@@ -101,18 +116,13 @@ public interface Generic<A, B> {
         }
     }
 
-    record Product<V, A, B, C>(Signature<V, F<A, T<B, C>>>signature,
-                               Generic<V, F<A, B>>f,
-                               Generic<V, F<A, C>>g) implements Generic<V, F<A, T<B, C>>> {
-        public String toString() {
-            return f + " Δ " + g;
-        }
-    }
-
+    // fixme... implement in terms of curry.
     record First<V, A, B>(Signature<V, F<T<A, B>, A>>signature,
-                          Signature<V, A>firstValue) implements Generic<V, F<T<A, B>, A>> {
+                          Signature<V, A>firstValue,
+                          Signature<V, B>secondValue) implements Generic<V, F<T<A, B>, A>> {
         public Chunk<F<T<A, B>, A>> compile(MethodHandles.Lookup lookup, Type<V> klass) {
             var first = firstValue.apply(klass).erase();
+
             var cs = ValueLinker.link(lookup, StandardOperation.GET.withNamespace(StandardNamespace.PROPERTY).named("first"), methodType(first, Pair.class));
             var intro = cs.dynamicInvoker();
             return new Chunk<>(intro);
@@ -124,9 +134,11 @@ public interface Generic<A, B> {
     }
 
     record Second<V, A, B>(Signature<V, F<T<A, B>, B>>signature,
+                           Signature<V, A>firstValue,
                            Signature<V, B>secondValue) implements Generic<V, F<T<A, B>, B>> {
         public Chunk<F<T<A, B>, B>> compile(MethodHandles.Lookup lookup, Type<V> klass) {
             var second = secondValue.apply(klass).erase();
+
             var cs = ValueLinker.link(lookup, StandardOperation.GET.withNamespace(StandardNamespace.PROPERTY).named("second"), methodType(second, Pair.class));
             var intro = cs.dynamicInvoker();
             return new Chunk<>(intro);
@@ -184,15 +196,43 @@ public interface Generic<A, B> {
         }
     }
 
-    record Uncurry<V, A, B, C>(Generic<V, F<A, F<B, C>>>f) implements Generic<V, F<T<A, B>, C>> {
+    record Initial<V, A>(Signature<V, A>f) implements Generic<V, F<A, Void>> {
         public String toString() {
-            return "(uncurry " + f + ")";
+            return "it";
+        }
+
+        public Chunk<F<A, Void>> compile(Lookup lookup, Type<V> klass) {
+            var t = f.apply(klass).erase();
+            var handle = constant(Void.class, null);
+            handle = dropArguments(handle, 0, t);
+            return new Chunk<>(handle);
         }
     }
 
-    record Initial<V, A, B, C>(Signature<V, A>f) implements Generic<V, F<A, Void>> {
+    record Call<V, Z, A, B>(Signature<V, F<Z, B>>signature, Generic<V, F<Z, F<A, B>>>f,
+                            Generic<V, F<Z, A>>x) implements Generic<V, F<Z, B>> {
+
+        public Chunk<F<Z, B>> compile(MethodHandles.Lookup lookup, Type<V> klass) {
+            var fEmit = f.compile(lookup, klass).intro();
+            var xEmit = x.compile(lookup, klass).intro();
+
+            var cs = ValueLinker.link(lookup, StandardOperation.CALL, methodType(Object.class, fEmit.type().returnType(), Void.class, xEmit.type().returnType()));
+            var mh = cs.dynamicInvoker();
+            mh = insertArguments(mh, 1, (Object) null);
+            mh = filterArguments(mh, 0, fEmit, xEmit);
+            var reorder = new int[mh.type().parameterCount()];
+            for (var ii = 0; ii < reorder.length; ++ii) {
+                reorder[ii] = ii;
+            }
+            reorder[1] = 0;
+
+            mh = permuteArguments(mh, mh.type().dropParameterTypes(1, 2), reorder);
+
+            return new Chunk<>(mh);
+        }
+
         public String toString() {
-            return "it";
+            return "(call " + f + " " + x + ")";
         }
     }
 }

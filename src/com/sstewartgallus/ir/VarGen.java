@@ -1,4 +1,4 @@
-package com.sstewartgallus.pass2;
+package com.sstewartgallus.ir;
 
 import com.sstewartgallus.term.Term;
 import com.sstewartgallus.type.Type;

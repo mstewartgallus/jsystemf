@@ -1,6 +1,5 @@
-package com.sstewartgallus;
+package com.sstewartgallus.ir;
 
-import com.sstewartgallus.pass2.VarGen;
 import com.sstewartgallus.type.*;
 
 import java.lang.constant.ConstantDesc;

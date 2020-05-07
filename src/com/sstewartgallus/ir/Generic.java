@@ -1,4 +1,4 @@
-package com.sstewartgallus;
+package com.sstewartgallus.ir;
 
 import com.sstewartgallus.runtime.Closure;
 import com.sstewartgallus.runtime.Pair;

@@ -1,7 +1,7 @@
 package com.sstewartgallus.type;
 
-import com.sstewartgallus.Signature;
-import com.sstewartgallus.pass2.VarGen;
+import com.sstewartgallus.ir.Signature;
+import com.sstewartgallus.ir.VarGen;
 import com.sstewartgallus.runtime.Closure;
 import com.sstewartgallus.runtime.Pair;
 import com.sstewartgallus.term.Term;

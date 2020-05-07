@@ -2,6 +2,8 @@ package com.sstewartgallus;
 
 
 import com.sstewartgallus.ast.Node;
+import com.sstewartgallus.ir.Category;
+import com.sstewartgallus.ir.Generic;
 import com.sstewartgallus.runtime.Value;
 import com.sstewartgallus.runtime.ValueInvoker;
 import com.sstewartgallus.term.Prims;

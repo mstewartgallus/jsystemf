@@ -1,4 +1,4 @@
-package com.sstewartgallus;
+package com.sstewartgallus.ir;
 
 import com.sstewartgallus.type.E;
 import com.sstewartgallus.type.F;

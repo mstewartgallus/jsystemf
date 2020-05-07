@@ -1,7 +1,5 @@
 package com.sstewartgallus.term;
 
-import com.sstewartgallus.Category;
-import com.sstewartgallus.type.F;
 import com.sstewartgallus.type.Type;
 
 public final class Prims {

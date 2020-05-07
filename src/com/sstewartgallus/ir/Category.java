@@ -13,12 +13,12 @@ import java.util.function.Function;
 public interface Category<A, B> {
 
     static <A> Generic<Void, F<Void, A>> generic(Category<Void, A> category) {
-        var vars = new VarGen();
+        var vars = new TVarGen();
         return category.generic(vars.createTypeVar(), vars);
     }
 
     // fixme.. use separate TypeVarGen type
-    <V> Generic<V, F<A, B>> generic(Type.Var<V> argument, VarGen vars);
+    <V> Generic<V, F<A, B>> generic(Type.Var<V> argument, TVarGen vars);
 
     <V> Category<A, B> substitute(Type.Var<V> argument, Type<V> replacement);
 
@@ -73,7 +73,7 @@ public interface Category<A, B> {
             return Type.VOID;
         }
 
-        public <V> Generic<V, F<Void, A>> generic(Type.Var<V> argument, VarGen vars) {
+        public <V> Generic<V, F<Void, A>> generic(Type.Var<V> argument, TVarGen vars) {
             var sig = new Type.FunType<>(Type.VOID, range).ccc(argument, vars);
             return new Generic.Unit<>(sig, value);
         }
@@ -86,7 +86,7 @@ public interface Category<A, B> {
 
     record Identity<A>(Type<A>type) implements Category<A, A> {
 
-        public <V> Generic<V, F<A, A>> generic(Type.Var<V> argument, VarGen vars) {
+        public <V> Generic<V, F<A, A>> generic(Type.Var<V> argument, TVarGen vars) {
             var sig = new Type.FunType<>(domain(), range()).ccc(argument, vars);
             return new Generic.Identity<>(sig, type.ccc(argument, vars));
         }
@@ -112,7 +112,7 @@ public interface Category<A, B> {
     }
 
     record Compose<A, B, C>(Category<B, C>f, Category<A, B>g) implements Category<A, C> {
-        public <V> Generic<V, F<A, C>> generic(Type.Var<V> argument, VarGen vars) {
+        public <V> Generic<V, F<A, C>> generic(Type.Var<V> argument, TVarGen vars) {
             var sig = new Type.FunType<>(domain(), range()).ccc(argument, vars);
             return new Generic.Compose<>(sig, f.generic(argument, vars), g.generic(argument, vars));
         }
@@ -141,7 +141,7 @@ public interface Category<A, B> {
             return f + " Δ " + g;
         }
 
-        public <V> Generic<V, F<A, T<B, C>>> generic(Type.Var<V> argument, VarGen vars) {
+        public <V> Generic<V, F<A, T<B, C>>> generic(Type.Var<V> argument, TVarGen vars) {
             return new Generic.Product<>(domain().to(range()).ccc(argument, vars), f.generic(argument, vars), g.generic(argument, vars));
         }
 
@@ -162,7 +162,7 @@ public interface Category<A, B> {
 
     // fixme... get type of the pair we are using..
     record First<A, B>(Type<A>first, Type<B>second) implements Category<T<A, B>, A> {
-        public <V> Generic<V, F<T<A, B>, A>> generic(Type.Var<V> argument, VarGen vars) {
+        public <V> Generic<V, F<T<A, B>, A>> generic(Type.Var<V> argument, TVarGen vars) {
             return new Generic.First<>(domain().to(range()).ccc(argument, vars), first.ccc(argument, vars));
         }
 
@@ -187,7 +187,7 @@ public interface Category<A, B> {
     }
 
     record Second<A, B>(Type<A>first, Type<B>second) implements Category<T<A, B>, B> {
-        public <V> Generic<V, F<T<A, B>, B>> generic(Type.Var<V> argument, VarGen vars) {
+        public <V> Generic<V, F<T<A, B>, B>> generic(Type.Var<V> argument, TVarGen vars) {
             return new Generic.Second<>(domain().to(range()).ccc(argument, vars), second.ccc(argument, vars));
         }
 
@@ -211,7 +211,7 @@ public interface Category<A, B> {
     }
 
     record Curry<A, B, C>(Category<T<A, B>, C>f) implements Category<A, F<B, C>> {
-        public <V> Generic<V, F<A, F<B, C>>> generic(Type.Var<V> argument, VarGen vars) {
+        public <V> Generic<V, F<A, F<B, C>>> generic(Type.Var<V> argument, TVarGen vars) {
             var prod = ((Type.ProductType<A, B>) (f.domain()));
             return new Generic.Curry<>(domain().to(range()).ccc(argument, vars),
                     prod.left().ccc(argument, vars),
@@ -245,7 +245,7 @@ public interface Category<A, B> {
     // fixme... needed for intrinsics...
     // basically eval, could you define it in terms of eval?
     record Uncurry<A, B, C>(Category<A, F<B, C>>f) implements Category<T<A, B>, C> {
-        public <V> Generic<V, F<T<A, B>, C>> generic(Type.Var<V> argument, VarGen vars) {
+        public <V> Generic<V, F<T<A, B>, C>> generic(Type.Var<V> argument, TVarGen vars) {
             return new Generic.Uncurry<>(f.generic(argument, vars));
         }
 
@@ -273,7 +273,7 @@ public interface Category<A, B> {
     }
 
     record Initial<A>(Type<A>domain) implements Category<A, Void> {
-        public <V> Generic<V, F<A, Void>> generic(Type.Var<V> argument, VarGen vars) {
+        public <V> Generic<V, F<A, Void>> generic(Type.Var<V> argument, TVarGen vars) {
             var sig = domain.ccc(argument, vars);
             return new Generic.Initial<>(sig);
         }
@@ -295,7 +295,7 @@ public interface Category<A, B> {
     record Exists<X, A, B>(Type<A>x, Category<X, B>y) implements Category<X, E<A, B>> {
 
         @Override
-        public <Z> Generic<Z, F<X, E<A, B>>> generic(Type.Var<Z> argument, VarGen vars) {
+        public <Z> Generic<Z, F<X, E<A, B>>> generic(Type.Var<Z> argument, TVarGen vars) {
             throw new UnsupportedOperationException("unimplemented");
         }
 
@@ -316,7 +316,7 @@ public interface Category<A, B> {
     }
 
     record Forall<X, A, B>(Type<X>domain, Function<Type<A>, Category<X, B>>f) implements Category<X, V<A, B>> {
-        public <Z> Generic<Z, F<X, V<A, B>>> generic(Type.Var<Z> argument, VarGen vars) {
+        public <Z> Generic<Z, F<X, V<A, B>>> generic(Type.Var<Z> argument, TVarGen vars) {
             Type.Var<E<Z, A>> arg = vars.createTypeVar();
 
             Signature<Z, F<X, V<A, B>>> signature = domain().to(range()).ccc(argument, vars);

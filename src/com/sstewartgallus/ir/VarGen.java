@@ -9,8 +9,4 @@ public final class VarGen {
     }
 
     private int argNumber = 0;
-
-    public <A> Type.Var<A> createTypeVar() {
-        return new Type.Var<>(argNumber++);
-    }
 }

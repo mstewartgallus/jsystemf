@@ -1,6 +1,7 @@
 package com.sstewartgallus.type;
 
 import com.sstewartgallus.ir.Signature;
+import com.sstewartgallus.ir.TVarGen;
 import com.sstewartgallus.ir.VarGen;
 import com.sstewartgallus.runtime.Closure;
 import com.sstewartgallus.runtime.Pair;
@@ -48,11 +49,11 @@ public interface Type<X> {
     }
 
     default <A> Signature<A, X> ccc() {
-        var vars = new VarGen();
+        var vars = new TVarGen();
         return ccc(vars.createTypeVar(), vars);
     }
 
-    default <A> Signature<A, X> ccc(Var<A> v, VarGen vars) {
+    default <A> Signature<A, X> ccc(Var<A> v, TVarGen vars) {
         throw new UnsupportedOperationException(getClass().toString());
     }
 
@@ -61,7 +62,7 @@ public interface Type<X> {
     }
 
     record FunType<A, B>(Type<A>domain, Type<B>range) implements Type<F<A, B>> {
-        public <X> Signature<X, F<A, B>> ccc(Var<X> v, VarGen vars) {
+        public <X> Signature<X, F<A, B>> ccc(Var<X> v, TVarGen vars) {
             return new Signature.Function<>(domain.ccc(v, vars), range.ccc(v, vars));
         }
 
@@ -80,7 +81,7 @@ public interface Type<X> {
     }
 
     record ProductType<A, B>(Type<A>left, Type<B>right) implements Type<T<A, B>> {
-        public <L> Signature<L, T<A, B>> ccc(Var<L> argument, VarGen vars) {
+        public <L> Signature<L, T<A, B>> ccc(Var<L> argument, TVarGen vars) {
             return new Signature.Product<>(left.ccc(argument, vars), right.ccc(argument, vars));
         }
 
@@ -106,7 +107,7 @@ public interface Type<X> {
     }
 
     record PureType<A>(Class<A>clazz) implements Type<A> {
-        public <T> Signature<T, A> ccc(Var<T> argument, VarGen vars) {
+        public <T> Signature<T, A> ccc(Var<T> argument, TVarGen vars) {
             return new Signature.Pure<>(clazz);
         }
 
@@ -125,7 +126,7 @@ public interface Type<X> {
     }
 
     record First<A, B>(Type<E<A, B>>value) implements Type<A> {
-        public <L> Signature<L, A> ccc(Var<L> argument, VarGen vars) {
+        public <L> Signature<L, A> ccc(Var<L> argument, TVarGen vars) {
 
             return new Signature.First<>(value.ccc(argument, vars));
         }
@@ -136,7 +137,7 @@ public interface Type<X> {
     }
 
     record Second<A, B>(Type<E<A, B>>value) implements Type<B> {
-        public <L> Signature<L, B> ccc(Var<L> argument, VarGen vars) {
+        public <L> Signature<L, B> ccc(Var<L> argument, TVarGen vars) {
             return new Signature.Second<>(value.ccc(argument, vars));
         }
 
@@ -146,7 +147,7 @@ public interface Type<X> {
     }
 
     record Forall<A, B>(Function<Type<A>, Type<B>>f) implements Type<com.sstewartgallus.type.V<A, B>> {
-        public <T> Signature<T, V<A, B>> ccc(Var<T> argument, VarGen vars) {
+        public <T> Signature<T, V<A, B>> ccc(Var<T> argument, TVarGen vars) {
             Type.Var<E<A, T>> newVar = vars.createTypeVar();
             System.err.println(argument + " " + newVar);
 
@@ -188,7 +189,7 @@ public interface Type<X> {
             return "t" + depth;
         }
 
-        public <V> Signature<V, T> ccc(Var<V> argument, VarGen vars) {
+        public <V> Signature<V, T> ccc(Var<V> argument, TVarGen vars) {
             if (argument == this) {
                 return (Signature<V, T>)new Signature.Identity<T>();
             }

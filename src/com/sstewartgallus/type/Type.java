@@ -2,16 +2,14 @@ package com.sstewartgallus.type;
 
 import com.sstewartgallus.ir.Signature;
 import com.sstewartgallus.ir.TVarGen;
-import com.sstewartgallus.ir.VarGen;
 import com.sstewartgallus.runtime.Closure;
-import com.sstewartgallus.runtime.Pair;
+import com.sstewartgallus.runtime.ConsValue;
 import com.sstewartgallus.term.Term;
 
 import java.lang.constant.ClassDesc;
 import java.lang.constant.ConstantDesc;
 import java.lang.constant.DirectMethodHandleDesc;
 import java.lang.constant.DynamicConstantDesc;
-import java.util.ArrayList;
 import java.util.List;
 import java.util.function.Function;
 
@@ -19,6 +17,7 @@ public interface Type<X> {
     Type<Integer> INT = new PureType<>(int.class);
     Type<Boolean> BOOLEAN = new PureType<>(boolean.class);
     Type<Void> VOID = new PureType<>(Void.class);
+    Type<Nil> NIL = new PureType<>(Nil.class);
 
     static <A, B> Type<E<A, B>> e(Type<A> x, Type<B> y) {
         return new Exists<>(x, y);
@@ -36,8 +35,12 @@ public interface Type<X> {
         return new FunType<>(this, range);
     }
 
-    default <B> Type<T<X, B>> and(Type<B> right) {
-        return new ProductType<>(this, right);
+    static Type<Nil> nil() {
+        return new NilType();
+    }
+
+    static <H, T extends HList> Type<Cons<H, T>> cons(Type<H> head, Type<T> tail) {
+        return new ConsType<>(head, tail);
     }
 
     default List<Class<?>> flatten() {
@@ -77,32 +80,6 @@ public interface Type<X> {
 
         public String toString() {
             return "{" + domain + " -> " + range + "}";
-        }
-    }
-
-    record ProductType<A, B>(Type<A>left, Type<B>right) implements Type<T<A, B>> {
-        public <L> Signature<L, T<A, B>> ccc(Var<L> argument, TVarGen vars) {
-            return new Signature.Product<>(left.ccc(argument, vars), right.ccc(argument, vars));
-        }
-
-        public <Z> Type<T<A, B>> substitute(Var<Z> v, Type<Z> replacement) {
-            return new ProductType<>(left.substitute(v, replacement), right.substitute(v, replacement));
-        }
-
-        // we use a generic protocol for our tuples?
-        public Class<?> erase() {
-            // fixme... desugar to thunk type instead ?
-            return Pair.class;
-        }
-
-        public List<Class<?>> flatten() {
-            var l = new ArrayList<>(left.flatten());
-            l.addAll(right.flatten());
-            return l;
-        }
-
-        public String toString() {
-            return "{" + left + ", " + right + "}";
         }
     }
 
@@ -191,7 +168,7 @@ public interface Type<X> {
 
         public <V> Signature<V, T> ccc(Var<V> argument, TVarGen vars) {
             if (argument == this) {
-                return (Signature<V, T>)new Signature.Identity<T>();
+                return (Signature<V, T>) new Signature.Identity<T>();
             }
             throw new IllegalStateException("wrong variable " + argument + " " + this);
         }
@@ -208,6 +185,28 @@ public interface Type<X> {
     final class TypeDesc<A> extends DynamicConstantDesc<Type<A>> {
         private TypeDesc(DirectMethodHandleDesc bootstrapMethod, String constantName, ClassDesc constantType, ConstantDesc... bootstrapArgs) {
             super(bootstrapMethod, constantName, constantType, bootstrapArgs);
+        }
+    }
+
+    record NilType() implements Type<Nil> {
+        public <X> Signature<X, Nil> ccc(Var<X> v, TVarGen vars) {
+            return new Signature.NilType<>();
+        }
+
+        public Class<?> erase() {
+            // fixme... should be possible to flatten
+            return ConsValue.class;
+        }
+    }
+
+    record ConsType<H, T extends HList>(Type<H>head, Type<T>tail) implements Type<Cons<H, T>> {
+        public Class<?> erase() {
+            // fixme... should be possible to flatten
+            return ConsValue.class;
+        }
+
+        public <X> Signature<X, Cons<H, T>> ccc(Var<X> v, TVarGen vars) {
+            return new Signature.ConsType<>(head.ccc(v, vars), tail.ccc(v, vars));
         }
     }
 }

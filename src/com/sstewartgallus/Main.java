@@ -4,6 +4,7 @@ package com.sstewartgallus;
 import com.sstewartgallus.ast.Node;
 import com.sstewartgallus.ir.Category;
 import com.sstewartgallus.ir.Generic;
+import com.sstewartgallus.ir.VarGen;
 import com.sstewartgallus.runtime.Value;
 import com.sstewartgallus.runtime.ValueInvoker;
 import com.sstewartgallus.term.Prims;
@@ -72,8 +73,13 @@ public final class Main {
         var expr = Term.apply(Type.INT.l(x -> Type.INT.l(y -> x)), Prims.of(4));
 
         output("System F", expr + ": " + expr.type());
+
+        var captures = expr.captures(new VarGen()).value();
+        output("Captures", captures);
+
         var ccc = expr.ccc();
         output("Ccc", ccc + ": " + ccc.domain() + " -> " + ccc.range());
+
         var generic = Category.generic(ccc);
         output("Generic", generic + ": " + generic.signature());
 

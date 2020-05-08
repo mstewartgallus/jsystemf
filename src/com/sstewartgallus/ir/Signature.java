@@ -1,10 +1,6 @@
 package com.sstewartgallus.ir;
 
-import com.sstewartgallus.type.E;
-import com.sstewartgallus.type.F;
-import com.sstewartgallus.type.T;
-import com.sstewartgallus.type.V;
-import com.sstewartgallus.type.Type;
+import com.sstewartgallus.type.*;
 
 public interface Signature<A, B> {
     // fixme... probably going to need my own runtime of type values... my current type is more like ClassDesc than class
@@ -27,16 +23,6 @@ public interface Signature<A, B> {
 
         public String toString() {
             return clazz.getName();
-        }
-    }
-
-    record Product<L, A, B>(Signature<L, A>left, Signature<L, B>right) implements Signature<L, T<A, B>> {
-        public Type<T<A, B>> apply(Type<L> input) {
-            return left.apply(input).and(right.apply(input));
-        }
-
-        public String toString() {
-            return "{" + left + ", " + right + "}";
         }
     }
 
@@ -87,6 +73,25 @@ public interface Signature<A, B> {
 
         public String toString() {
             return "(curry " + body + ")";
+        }
+    }
+
+    public record NilType<X>() implements Signature<X, Nil> {
+        public Type<Nil> apply(Type<X> input) {
+            return Type.nil();
+        }
+        public String toString() {
+            return "[]";
+        }
+
+    }
+
+    public record ConsType<X, H, T extends HList>(Signature<X, H>head, Signature<X, T>tail) implements Signature<X, Cons<H, T>> {
+        public Type<Cons<H, T>> apply(Type<X> input) {
+            return Type.cons(head.apply(input), tail.apply(input));
+        }
+        public String toString() {
+            return "(" + head + " : " + tail + ")";
         }
     }
 }

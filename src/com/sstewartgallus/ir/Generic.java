@@ -1,7 +1,7 @@
 package com.sstewartgallus.ir;
 
 import com.sstewartgallus.runtime.Closure;
-import com.sstewartgallus.runtime.Pair;
+import com.sstewartgallus.runtime.ConsValue;
 import com.sstewartgallus.runtime.Value;
 import com.sstewartgallus.runtime.ValueLinker;
 import com.sstewartgallus.type.*;
@@ -29,7 +29,7 @@ public interface Generic<A, B> {
 
     // for Category we use Void the class that has only one inhabitant
     // fixme... I believe what we want for Generic is the T such that Class<T> has only one inhabitant... null!
-    static <B> Value<B> compile(MethodHandles.Lookup lookup, Generic<Void, F<Void, B>> generic) {
+    static <B> Value<B> compile(MethodHandles.Lookup lookup, Generic<Void, F<Nil, B>> generic) {
         var chunk = generic.compile(lookup, Type.VOID);
 
         var intro = chunk.intro();
@@ -57,7 +57,7 @@ public interface Generic<A, B> {
         } catch (Throwable throwable) {
             throw new RuntimeException(throwable);
         }
-        return Value.class.cast(obj);
+        return (Value) obj;
     }
 
     default Chunk<B> compile(MethodHandles.Lookup lookup, Type<A> klass) {
@@ -108,6 +108,7 @@ public interface Generic<A, B> {
             var gC = g.compile(lookup, klass);
             var fC = f.compile(lookup, klass);
             var intro = MethodHandles.filterReturnValue(gC.intro(), fC.intro());
+
             return new Chunk<>(intro);
         }
 
@@ -116,36 +117,37 @@ public interface Generic<A, B> {
         }
     }
 
-    // fixme... implement in terms of curry.
-    record First<V, A, B>(Signature<V, F<T<A, B>, A>>signature,
-                          Signature<V, A>firstValue,
-                          Signature<V, B>secondValue) implements Generic<V, F<T<A, B>, A>> {
-        public Chunk<F<T<A, B>, A>> compile(MethodHandles.Lookup lookup, Type<V> klass) {
-            var first = firstValue.apply(klass).erase();
+    record Head<V, A, B extends HList>(Signature<V, F<Cons<A, B>, A>>signature,
+                                       Signature<V, A>head,
+                                       Signature<V, B>tail) implements Generic<V, F<Cons<A, B>, A>> {
+        public Chunk<F<Cons<A, B>, A>> compile(Lookup lookup, Type<V> klass) {
+            var first = head.apply(klass).erase();
 
-            var cs = ValueLinker.link(lookup, StandardOperation.GET.withNamespace(StandardNamespace.PROPERTY).named("first"), methodType(first, Pair.class));
+            var cs = ValueLinker.link(lookup, StandardOperation.GET.withNamespace(StandardNamespace.PROPERTY).named("head"), methodType(first, ConsValue.class));
             var intro = cs.dynamicInvoker();
+
             return new Chunk<>(intro);
         }
 
         public String toString() {
-            return "exl";
+            return "head";
         }
     }
 
-    record Second<V, A, B>(Signature<V, F<T<A, B>, B>>signature,
-                           Signature<V, A>firstValue,
-                           Signature<V, B>secondValue) implements Generic<V, F<T<A, B>, B>> {
-        public Chunk<F<T<A, B>, B>> compile(MethodHandles.Lookup lookup, Type<V> klass) {
-            var second = secondValue.apply(klass).erase();
+    record Tail<V, A, B extends HList>(Signature<V, F<Cons<A, B>, B>>signature,
+                                       Signature<V, A>head,
+                                       Signature<V, B>tail) implements Generic<V, F<Cons<A, B>, B>> {
+        public Chunk<F<Cons<A, B>, B>> compile(Lookup lookup, Type<V> klass) {
+            var second = tail.apply(klass).erase();
 
-            var cs = ValueLinker.link(lookup, StandardOperation.GET.withNamespace(StandardNamespace.PROPERTY).named("second"), methodType(second, Pair.class));
+            var cs = ValueLinker.link(lookup, StandardOperation.GET.withNamespace(StandardNamespace.PROPERTY).named("tail"), methodType(second, ConsValue.class));
             var intro = cs.dynamicInvoker();
+
             return new Chunk<>(intro);
         }
 
         public String toString() {
-            return "exr";
+            return "tail";
         }
     }
 
@@ -163,25 +165,32 @@ public interface Generic<A, B> {
         }
     }
 
-    record Curry<V, A, B, C>(Signature<V, F<A, F<B, C>>>signature,
-                             Signature<V, A>left,
-                             Signature<V, B>right,
-                             Generic<V, F<T<A, B>, C>>f) implements Generic<V, F<A, F<B, C>>> {
+    record Curry<V, A, B extends HList, C>(Signature<V, F<B, F<A, C>>>signature,
+                                           Signature<V, A>head,
+                                           Signature<V, B>tail,
+                                           Generic<V, F<Cons<A, B>, C>>f) implements Generic<V, F<B, F<A, C>>> {
+
         public String toString() {
             return "(curry " + f + ")";
         }
 
-        public Chunk<F<A, F<B, C>>> compile(MethodHandles.Lookup lookup, Type<V> klass) {
-            // fixme... obviously wrong...
-            var domain = left.apply(klass).erase();
-            var second = right.apply(klass).erase();
+        public Chunk<F<B, F<A, C>>> compile(Lookup lookup, Type<V> klass) {
+            var head = this.head.apply(klass).erase();
+            var tail = this.tail.apply(klass).erase();
 
             var fEmit = f.compile(lookup, klass).intro();
-            fEmit = filterReturnValue(PAIR_MH.asType(methodType(Pair.class, domain, second)), fEmit);
+
+            var pair = PAIR_MH.asType(methodType(ConsValue.class, head, tail));
+            pair = permuteArguments(pair, methodType(ConsValue.class, tail, head), 1, 0);
+            fEmit = filterReturnValue(pair, fEmit);
+
+            // fixme... consider making closures implement... ConsValue?
             // fixme... probably no need to spin a class for each methodhandle....
             // fixme... maybe only specialize for int...
             // fixme.. otoh we might want to inline large environments in the future ....
-            var intro = Closure.spinFactory(domain, second, fEmit);
+            // fixme... I could link to the closure above to get it's argument, or... explicitly track state.
+            var intro = Closure.spinFactory(tail, head, fEmit);
+
             return new Chunk<>(intro);
         }
 
@@ -189,7 +198,7 @@ public interface Generic<A, B> {
 
         static {
             try {
-                PAIR_MH = MethodHandles.lookup().findStatic(Pair.class, "of", MethodType.methodType(Pair.class, Object.class, Object.class));
+                PAIR_MH = MethodHandles.lookup().findStatic(ConsValue.class, "of", MethodType.methodType(ConsValue.class, Object.class, ConsValue.class));
             } catch (NoSuchMethodException | IllegalAccessException e) {
                 throw new RuntimeException(e);
             }

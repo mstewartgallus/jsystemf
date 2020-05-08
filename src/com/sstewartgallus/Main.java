@@ -83,18 +83,7 @@ public final class Main {
         var bar = API.apply(main, 3);
         output("Result", bar);
 
-        // fixme... pass lookup?
-        // var main = Category.compile(lookup(), ccc);
-
-        // fixme... should probably return an actual object...
-        // fixme... doesn't seem second...
-        // fixme... the lookup should be passed to the spinner...
-
-        // fixme... create a better invoker...
-        // output("Output", go.apply(main, 4));
-        //TO_EXEC = () -> go.apply(main, 4);
-
-        TO_EXEC = null;
+        TO_EXEC = () -> API.apply(main, 3);
     }
 
     // fixme... pass in type as well?

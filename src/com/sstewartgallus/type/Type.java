@@ -36,7 +36,7 @@ public interface Type<X> {
     }
 
     static Type<Nil> nil() {
-        return new NilType();
+        return NilType.NIL;
     }
 
     static <H, T extends HList> Type<Cons<H, T>> cons(Type<H> head, Type<T> tail) {
@@ -188,7 +188,9 @@ public interface Type<X> {
         }
     }
 
-    record NilType() implements Type<Nil> {
+    enum NilType implements Type<Nil> {
+        NIL;
+
         public <X> Signature<X, Nil> ccc(Var<X> v, TVarGen vars) {
             return new Signature.NilType<>();
         }

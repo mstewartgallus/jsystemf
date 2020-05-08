@@ -12,30 +12,29 @@ import java.util.function.Function;
  */
 public interface Category<A, B> {
 
-    static <A> Generic<Void, F<Void, A>> generic(Category<Void, A> category) {
+    static <A> Generic<Void, F<Nil, A>> generic(Category<Nil, A> category) {
         var vars = new TVarGen();
         return category.generic(vars.createTypeVar(), vars);
     }
 
     // fixme.. use separate TypeVarGen type
-    <V> Generic<V, F<A, B>> generic(Type.Var<V> argument, TVarGen vars);
+    <Z> Generic<Z, F<A, B>> generic(Type.Var<Z> argument, TVarGen vars);
 
-    <V> Category<A, B> substitute(Type.Var<V> argument, Type<V> replacement);
+    <Z> Category<A, B> substitute(Type.Var<Z> argument, Type<Z> replacement);
 
-    static <A, B> Category<T<A, B>, A> first(Type<A> left, Type<B> right) {
-        return new First<>(left, right);
+    static <A, B extends HList> Category<Cons<A, B>, A> head(Type<A> left, Type<B> right) {
+        return new Head<>(left, right);
     }
 
-    static <A, B> Category<T<A, B>, B> second(Type<A> left, Type<B> right) {
-        return new Second<>(left, right);
+    static <A, B extends HList> Category<Cons<A, B>, B> tail(Type<A> left, Type<B> right) {
+        return new Tail<>(left, right);
     }
 
     static <V, A, B> Category<V, B> call(Category<V, F<A, B>> f, Category<V, A> x) {
-        // fixme... there are a number of choices here...
         return new Call<>(f, x);
     }
 
-    static <A, B, C> Category<A, F<B, C>> curry(Category<T<A, B>, C> f) {
+    static <A, B extends HList, C> Category<B, F<A, C>> curry(Category<Cons<A, B>, C> f) {
         return new Curry<>(f);
     }
 
@@ -44,6 +43,9 @@ public interface Category<A, B> {
     }
 
     default <C> Category<C, B> compose(Category<C, A> g) {
+        if (g instanceof Identity) {
+            return (Category) this;
+        }
         return new Compose<>(this, g);
     }
 
@@ -73,6 +75,10 @@ public interface Category<A, B> {
     }
 
     record Identity<A>(Type<A>type) implements Category<A, A> {
+
+        public <C> Category<C, A> compose(Category<C, A> g) {
+            return g;
+        }
 
         public <V> Generic<V, F<A, A>> generic(Type.Var<V> argument, TVarGen vars) {
             var sig = new Type.FunType<>(domain(), range()).ccc(argument, vars);
@@ -125,23 +131,22 @@ public interface Category<A, B> {
     }
 
     // fixme... get type of the pair we are using..
-    record First<A, B>(Type<A>first, Type<B>second) implements Category<T<A, B>, A> {
-        public <V> Generic<V, F<T<A, B>, A>> generic(Type.Var<V> argument, TVarGen vars) {
-            return new Generic.First<>(domain().to(range()).ccc(argument, vars), first.ccc(argument, vars), second.ccc(argument, vars));
+    record Head<A, B extends HList>(Type<A>first, Type<B>second) implements Category<Cons<A, B>, A> {
+        public <V> Generic<V, F<Cons<A, B>, A>> generic(Type.Var<V> argument, TVarGen vars) {
+            return new Generic.Head<>(domain().to(range()).ccc(argument, vars), first.ccc(argument, vars), second.ccc(argument, vars));
         }
 
-        public <V> Category<T<A, B>, A> substitute(Type.Var<V> argument, Type<V> replacement) {
-            return new First<>(first.substitute(argument, replacement), second.substitute(argument, replacement));
+        public <V> Category<Cons<A, B>, A> substitute(Type.Var<V> argument, Type<V> replacement) {
+            return new Head<>(first.substitute(argument, replacement), second.substitute(argument, replacement));
         }
-
 
         public String toString() {
-            return "exl";
+            return "head";
         }
 
         @Override
-        public Type<T<A, B>> domain() {
-            return first.and(second);
+        public Type<Cons<A, B>> domain() {
+            return Type.cons(first, second);
         }
 
         @Override
@@ -150,18 +155,18 @@ public interface Category<A, B> {
         }
     }
 
-    record Second<A, B>(Type<A>first, Type<B>second) implements Category<T<A, B>, B> {
-        public <V> Generic<V, F<T<A, B>, B>> generic(Type.Var<V> argument, TVarGen vars) {
-            return new Generic.Second<>(domain().to(range()).ccc(argument, vars), first.ccc(argument, vars), second.ccc(argument, vars));
+    record Tail<A, B extends HList>(Type<A>first, Type<B>second) implements Category<Cons<A, B>, B> {
+        public <V> Generic<V, F<Cons<A, B>, B>> generic(Type.Var<V> argument, TVarGen vars) {
+            return new Generic.Tail<>(domain().to(range()).ccc(argument, vars), first.ccc(argument, vars), second.ccc(argument, vars));
         }
 
-        public <V> Category<T<A, B>, B> substitute(Type.Var<V> argument, Type<V> replacement) {
-            return new Second<>(first.substitute(argument, replacement), second.substitute(argument, replacement));
+        public <V> Category<Cons<A, B>, B> substitute(Type.Var<V> argument, Type<V> replacement) {
+            return new Tail<>(first.substitute(argument, replacement), second.substitute(argument, replacement));
         }
 
         @Override
-        public Type<T<A, B>> domain() {
-            return first.and(second);
+        public Type<Cons<A, B>> domain() {
+            return Type.cons(first, second);
         }
 
         @Override
@@ -170,35 +175,35 @@ public interface Category<A, B> {
         }
 
         public String toString() {
-            return "exr";
+            return "tail";
         }
     }
 
-    record Curry<A, B, C>(Category<T<A, B>, C>f) implements Category<A, F<B, C>> {
-        public <V> Generic<V, F<A, F<B, C>>> generic(Type.Var<V> argument, TVarGen vars) {
-            var prod = ((Type.ProductType<A, B>) (f.domain()));
+    record Curry<A, B extends HList, C>(Category<Cons<A, B>, C>f) implements Category<B, F<A, C>> {
+        public <V> Generic<V, F<B, F<A, C>>> generic(Type.Var<V> argument, TVarGen vars) {
+            var prod = ((Type.ConsType<A, B>) (f.domain()));
             return new Generic.Curry<>(domain().to(range()).ccc(argument, vars),
-                    prod.left().ccc(argument, vars),
-                    prod.right().ccc(argument, vars),
+                    prod.head().ccc(argument, vars),
+                    prod.tail().ccc(argument, vars),
                     f.generic(argument, vars));
         }
 
-        public <V> Category<A, F<B, C>> substitute(Type.Var<V> argument, Type<V> replacement) {
+        public <V> Category<B, F<A, C>> substitute(Type.Var<V> argument, Type<V> replacement) {
             return new Curry<>(f.substitute(argument, replacement));
         }
 
         @Override
-        public Type<A> domain() {
-            return ((Type.ProductType<A, B>) (f.domain())).left();
+        public Type<B> domain() {
+            return ((Type.ConsType<A, B>) (f.domain())).tail();
         }
 
         @Override
-        public Type<F<B, C>> range() {
+        public Type<F<A, C>> range() {
             return second().to(f.range());
         }
 
-        public Type<B> second() {
-            return ((Type.ProductType<A, B>) (f.domain())).right();
+        public Type<A> second() {
+            return ((Type.ConsType<A, B>) (f.domain())).head();
         }
 
         public String toString() {

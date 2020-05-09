@@ -104,6 +104,25 @@ public interface Pass1<A> {
 
     interface Body<A> {
         <V> Body<A> substitute(Var<V> argument, Pass1<V> replacement);
+
+        Type<A> type();
+    }
+
+
+    record Thunk<A>(Body<A>body) implements Pass1<A> {
+        @Override
+        public Type<A> type() {
+            return body.type();
+        }
+
+        @Override
+        public <V> Pass1<A> substitute(Var<V> argument, Pass1<V> replacement) {
+            return new Thunk<>(body.substitute(argument, replacement));
+        }
+
+        public String toString() {
+            return "(" + body + ")";
+        }
     }
 
     record Expr<A>(Pass1<A>body) implements Body<A> {
@@ -112,66 +131,27 @@ public interface Pass1<A> {
             return new Expr<>(body.substitute(argument, replacement));
         }
 
+        @Override
+        public Type<A> type() {
+            return body.type();
+        }
+
         public String toString() {
             return body.toString();
         }
     }
 
-    record Capture<A, B>(Pass1<A>capture, Function<Pass1<A>, Body<B>>f) implements Body<B> {
-
-        public String toString() {
-            return "{" + rightShow() + "}";
-        }
-
-        private String rightShow() {
-            var depth = DEPTH.get();
-            DEPTH.set(depth + 1);
-
-            String str;
-            try {
-                var dummy = new Var<>(capture.type(), depth);
-                var body = f.apply(new Load<>(dummy));
-                String bodyStr;
-                if (body instanceof Capture<?, ?> app) {
-                    bodyStr = app.rightShow();
-                } else {
-                    bodyStr = body.toString();
-                }
-
-                str = "{" + dummy + " = " + capture + "} -> " + bodyStr;
-            } finally {
-                DEPTH.set(depth);
-                if (depth == 0) {
-                    DEPTH.remove();
-                }
-            }
-            return str;
-        }
-
-        private static final ThreadLocal<Integer> DEPTH = Lambda.DEPTH;
-
-        @Override
-        public <X> Body<B> substitute(Var<X> argument, Pass1<X> replacement) {
-            return new Capture<>(capture.substitute(argument, replacement), x -> f.apply(x).substitute(argument, replacement));
-        }
-    }
-
-    record Lambda<A, B>(Type<A>domain, Function<Pass1<A>, Body<B>>f) implements Pass1<F<A, B>> {
-        public <V> Pass1<F<A, B>> substitute(Var<V> argument, Pass1<V> replacement) {
+    record Lambda<A, B>(Type<A>domain, Function<Pass1<A>, Body<B>>f) implements Body<F<A, B>> {
+        public <V> Body<F<A, B>> substitute(Var<V> argument, Pass1<V> replacement) {
             return new Lambda<>(domain, x -> f.apply(x).substitute(argument, replacement));
         }
 
         public Type<F<A, B>> type() {
-            throw null;
-            // var range = f.apply(new Var<>(domain, 0)).type();
-            //return new Type.FunType<>(domain, range);
+            var range = f.apply(new Load<>(new Var<A>(domain, 0))).type();
+            return new Type.FunType<>(domain, range);
         }
 
         public String toString() {
-            return "{" + rightShow() + "}";
-        }
-
-        private String rightShow() {
             var depth = DEPTH.get();
             DEPTH.set(depth + 1);
 

@@ -15,7 +15,6 @@ import java.util.Objects;
 import java.util.Set;
 import java.util.TreeSet;
 import java.util.function.Function;
-import java.util.stream.Collectors;
 
 // https://gitlab.haskell.org/ghc/ghc/-/wikis/commentary/compiler/core-syn-type
 // argument CoreExpr = Expr Var
@@ -61,13 +60,6 @@ public interface Term<L> {
 
     <A> Term<L> substitute(Var<A> argument, Term<A> replacement);
 
-    record Results<L>(Set<Var<?>>captured, Pass2<L>value) {
-    }
-
-    default Results<L> captureEnv(VarGen vars) {
-        throw null;
-    }
-
     default Pass1<L> aggregateLambdas(VarGen vars) {
         throw new UnsupportedOperationException(getClass().toString());
     }
@@ -82,19 +74,9 @@ public interface Term<L> {
 
     Type<L> type();
 
-    private static <A> Set<A> union(Set<A> left, Set<A> right) {
-        var x = new TreeSet<>(left);
-        x.addAll(right);
-        return x;
-    }
-
     record Load<A>(Var<A>variable) implements Term<A> {
         public Pass1<A> aggregateLambdas(VarGen vars) {
             return new Pass1.Load<>(variable);
-        }
-
-        public Results<A> captureEnv(VarGen vars) {
-            return new Results<A>(Set.of(variable), new Pass2.Load<>(variable));
         }
 
         @Override
@@ -117,15 +99,6 @@ public interface Term<L> {
     record Apply<A, B>(Term<F<A, B>>f, Term<A>x) implements Term<B> {
         public Pass1<B> aggregateLambdas(VarGen vars) {
             return new Pass1.Apply<>(f.aggregateLambdas(vars), x.aggregateLambdas(vars));
-        }
-
-        public Results<B> captureEnv(VarGen vars) {
-            var fCapture = f.captureEnv(vars);
-            var xCapture = x.captureEnv(vars);
-
-            var captures = union(fCapture.captured, xCapture.captured);
-
-            return new Results<>(captures, new Pass2.Apply<>(fCapture.value, xCapture.value));
         }
 
 
@@ -174,20 +147,6 @@ public interface Term<L> {
             }
 
             return new Pass1.Thunk<>(new Pass1.Lambda<>(domain, x -> new Pass1.Expr<>(body.substitute(v, x))));
-        }
-
-        public Results<F<A, B>> captureEnv(VarGen vars) {
-            var v = vars.createArgument(domain);
-            var body = f.apply(new Load<>(v));
-
-            var results = body.captureEnv(vars);
-            var captured = new TreeSet<>(results.captured);
-            captured.remove(v);
-
-            List<Var<?>> free = captured.stream().sorted().collect(Collectors.toUnmodifiableList());
-
-            var chunk = results.value;
-            return new Results<F<A, B>>(captured, helper(free, 0, new Pass2.Lambda<>(domain, x -> new Pass2.Expr<>(chunk.substitute(v, x)))));
         }
 
         private static <A> Pass2<A> helper(List<Var<?>> free, int ii, Pass2.Body<A> body) {
@@ -246,10 +205,6 @@ public interface Term<L> {
     record Pure<A extends Constable>(Type<A>type, ConstantDesc value) implements Term<A> {
         public Pass1<A> aggregateLambdas(VarGen vars) {
             return new Pass1.Pure<>(type, value);
-        }
-
-        public Results<A> captureEnv(VarGen vars) {
-            return new Results<>(Set.of(), new Pass2.Pure<>(type, value));
         }
 
         public <V> Term<A> substitute(Var<V> argument, Term<V> replacement) {

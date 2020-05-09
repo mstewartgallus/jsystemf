@@ -43,20 +43,8 @@ import java.util.stream.Collectors;
 
 // fixme... move types out of the ir package
 public interface Pass1<L> {
-    static <A, B> Pass1<B> apply(Pass1<V<A, B>> f, Type<A> x) {
-        return new TypeApply<>(f, x);
-    }
-
-    static <A, B> Pass1<B> apply(Pass1<F<A, B>> f, Pass1<A> x) {
-        return new Apply<>(f, x);
-    }
-
     static <A, B> Pass1<V<A, B>> v(Function<Type<A>, Pass1<B>> f) {
         return new Forall<>(f);
-    }
-
-    static <A> Pass1<A> ifCond(Type<A> t, Pass1<Boolean> cond, Pass1<A> onCond, Pass1<A> elseCond) {
-        return new IfCond<>(t, cond, onCond, elseCond);
     }
 
     <A> Pass1<L> substitute(Var<A> argument, Pass1<A> replacement);
@@ -66,14 +54,6 @@ public interface Pass1<L> {
 
     default Results<L> captureEnv(VarGen vars) {
         throw null;
-    }
-
-    static <T extends Constable> Pass1<T> pure(Type<T> type, T value) {
-        var constant = value.describeConstable();
-        if (constant.isEmpty()) {
-            throw new IllegalArgumentException("not a constant value " + value);
-        }
-        return new Pure<>(type, constant.get());
     }
 
     Type<L> type();
@@ -132,22 +112,6 @@ public interface Pass1<L> {
 
         public String toString() {
             return "{" + f + " " + x + "}";
-        }
-    }
-
-    record IfCond<A>(Type<A>t, Pass1<Boolean>cond, Pass1<A>onCond, Pass1<A>elseCond) implements Pass1<A> {
-
-        @Override
-        public <A1> Pass1<A> substitute(Var<A1> argument, Pass1<A1> replacement) {
-            throw new UnsupportedOperationException("unimplemented");
-        }
-
-        public Type<A> type() {
-            return t;
-        }
-
-        public String toString() {
-            return "{if " + t + " " + cond + " " + onCond + " " + elseCond + "}";
         }
     }
 

@@ -48,26 +48,6 @@ public interface Pass2<A> {
         }
     }
 
-    record IfCond<A>(Type<A>t, Pass2<Boolean>cond, Pass2<A>onCond, Pass2<A>elseCond) implements Pass2<A> {
-        @Override
-        public <A1> Pass2<A> substitute(Var<A1> argument, Pass2<A1> replacement) {
-            throw new UnsupportedOperationException("unimplemented");
-        }
-
-        @Override
-        public <T extends HList> Category<T, A> ccc(Var<T> argument, VarGen vars) {
-            throw null;
-        }
-
-        public Type<A> type() {
-            return t;
-        }
-
-        public String toString() {
-            return "{if " + t + " " + cond + " " + onCond + " " + elseCond + "}";
-        }
-    }
-
     record Head<A, B extends HList>(Type<A>head, Type<B>tail, Pass2<Cons<A, B>>list) implements Pass2<A> {
         public <V> Pass2<A> substitute(Var<V> argument, Pass2<V> replacement) {
             return new Head<>(head, tail, list.substitute(argument, replacement));
@@ -198,7 +178,7 @@ public interface Pass2<A> {
             var body = f.apply(new Load<>(newArg));
 
             var t = Type.cons(domain, tail);
-            var list = vars.createArgument(t);;
+            var list = vars.createArgument(t);
 
             body = body.substitute(newArg, new Head<>(domain, tail, new Load<>(list)));
             body = body.substitute(argument, new Tail<>(domain, tail, new Load<>(list)));

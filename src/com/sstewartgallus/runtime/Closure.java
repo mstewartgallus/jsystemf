@@ -6,6 +6,8 @@ import jdk.dynalink.linker.LinkRequest;
 import jdk.dynalink.linker.LinkerServices;
 import jdk.dynalink.linker.support.Guards;
 import org.objectweb.asm.ClassWriter;
+import org.objectweb.asm.ConstantDynamic;
+import org.objectweb.asm.Handle;
 import org.objectweb.asm.Type;
 
 import java.lang.invoke.MethodHandle;
@@ -20,6 +22,16 @@ import static java.lang.invoke.MethodType.methodType;
 import static org.objectweb.asm.Opcodes.*;
 
 public abstract class Closure<T> extends Value<T> {
+
+    private static final Handle BOOTSTRAP = new Handle(H_INVOKESTATIC, Type.getInternalName(Closure.class), "bootstrapInfoTable",
+            methodType(Infotable.class, Lookup.class, String.class, Class.class).descriptorString(),
+            false);
+    private static final ConstantDynamic INFO_BOOTSTRAP = new ConstantDynamic("infoTable", Infotable.class.descriptorString(), BOOTSTRAP);
+
+    @SuppressWarnings("unused")
+    protected static Infotable bootstrapInfoTable(Lookup lookup, String name, Class<?> klass) {
+        return (Infotable) ((AnonClassLoader<?>) lookup.lookupClass().getClassLoader()).getValue();
+    }
 
     // fixme... look furether into   https://gitlab.haskell.org/ghc/ghc/-/wikis/commentary/rts/haskell-execution/function-calls
     final GuardedInvocation getGuardedInvocation(LinkRequest linkRequest, LinkerServices linkerServices) throws NoSuchFieldException, IllegalAccessException {
@@ -46,9 +58,7 @@ public abstract class Closure<T> extends Value<T> {
     }
 
     private GuardedInvocation getStandardCall(LinkRequest linkRequest, LinkerServices linkerServices) throws NoSuchFieldException, IllegalAccessException {
-        var metadata = getMetadata();
-
-        var arguments = metadata.argument();
+        var metadata = infoTable();
 
         var cs = linkRequest.getCallSiteDescriptor();
         var calledWithParams = cs.getMethodType().parameterCount() - 2;
@@ -66,18 +76,18 @@ public abstract class Closure<T> extends Value<T> {
         return saturatedApplication(metadata, linkRequest, linkerServices);
     }
 
-    private GuardedInvocation superSaturatedApplication(Metadata metadata, LinkRequest linkRequest, LinkerServices linkerServices) {
+    private GuardedInvocation superSaturatedApplication(Infotable metadata, LinkRequest linkRequest, LinkerServices linkerServices) {
         throw new UnsupportedOperationException("unimplemented");
     }
 
-    private GuardedInvocation partialApplication(Metadata metadata, int calledWith, LinkRequest linkRequest, LinkerServices linkerServices) {
+    private GuardedInvocation partialApplication(Infotable metadata, int calledWith, LinkRequest linkRequest, LinkerServices linkerServices) {
         throw new UnsupportedOperationException("unimplemented");
     }
 
-    private GuardedInvocation saturatedApplication(Metadata metadata, LinkRequest linkRequest, LinkerServices linkerServices) throws NoSuchFieldException, IllegalAccessException {
+    private GuardedInvocation saturatedApplication(Infotable metadata, LinkRequest linkRequest, LinkerServices linkerServices) throws NoSuchFieldException, IllegalAccessException {
         var argument = metadata.argument();
         var environment = metadata.environment();
-        var execute = metadata.execute();
+        var execute = metadata.entryPoint();
 
         var environmentGetter = lookup().findGetter(getClass(), "environment", environment);
         var mh = filterArguments(execute, 0, environmentGetter);
@@ -90,13 +100,10 @@ public abstract class Closure<T> extends Value<T> {
         return new GuardedInvocation(mh, Guards.isOfClass(getClass(), mh.type().changeReturnType(boolean.class)));
     }
 
-
-    private Metadata getMetadata() {
-        return (Metadata) ((AnonClassLoader<?>) getClass().getClassLoader()).getValue();
-    }
+    public abstract Infotable infoTable();
 
     // fixme... cache comon frames?
-    public static MethodHandle spinFactory(Class<?> environment, Class<?> argument, MethodHandle execute) {
+    public static MethodHandle spinFactory(Class<?> environment, Class<?> argument, MethodHandle entryPoint) {
         var myname = Type.getInternalName(Closure.class);
         var newclassname = myname + "Impl";
 
@@ -129,31 +136,13 @@ public abstract class Closure<T> extends Value<T> {
         }
 
         {
-            var mw = cw.visitMethod(ACC_PUBLIC | ACC_STATIC, "of", methodType(Closure.class, environment).descriptorString(), null, null);
+            var mw = cw.visitMethod(ACC_PUBLIC, "infoTable", methodType(Infotable.class).descriptorString(), null, null);
             mw.visitCode();
-
-            mw.visitTypeInsn(NEW, newclassname);
-            mw.visitInsn(DUP);
-
-            if (environment.isPrimitive()) {
-                switch (environment.getName()) {
-                    case "boolean", "byte", "char", "short", "int" -> mw.visitVarInsn(ILOAD, 0);
-                    case "long" -> mw.visitVarInsn(LLOAD, 0);
-                    case "float" -> mw.visitVarInsn(FLOAD, 0);
-                    case "double" -> mw.visitVarInsn(DLOAD, 0);
-                    default -> throw new IllegalStateException(environment.getName());
-                }
-            } else {
-                mw.visitVarInsn(ALOAD, 0);
-            }
-
-            mw.visitMethodInsn(INVOKESPECIAL, newclassname, "<init>", methodType(void.class, environment).descriptorString(), false);
-
+            mw.visitLdcInsn(INFO_BOOTSTRAP);
             mw.visitInsn(ARETURN);
             mw.visitMaxs(0, 0);
             mw.visitEnd();
         }
-
 
         // fixme... make private if possible...
 
@@ -163,17 +152,17 @@ public abstract class Closure<T> extends Value<T> {
         cw.visitEnd();
         var bytes = cw.toByteArray();
 
-        var definedClass = AnonClassLoader.defineClass(new Metadata(environment, argument, execute), Closure.class.getClassLoader(), newclassname.replace('/', '.'), bytes);
+        var definedClass = AnonClassLoader.defineClass(new Infotable(environment, argument, entryPoint), Closure.class.getClassLoader(), newclassname.replace('/', '.'), bytes);
         var klass = definedClass.asSubclass(Closure.class);
 
         MethodHandle con;
         try {
-            con = lookup().findStatic(klass, "of", methodType(Closure.class, environment));
+            con = lookup().findConstructor(klass, methodType(void.class, environment));
         } catch (NoSuchMethodException | IllegalAccessException e) {
             throw new RuntimeException(e);
         }
 
-        return con;
+        return con.asType(con.type().changeReturnType(Closure.class));
     }
 
     public final String toString() {
@@ -198,7 +187,7 @@ public abstract class Closure<T> extends Value<T> {
 
 }
 
-record Metadata(Class<?>environment,
-                Class<?>argument,
-                MethodHandle execute) {
+record Infotable(Class<?>environment,
+                 Class<?>argument,
+                 MethodHandle entryPoint) {
 }

@@ -54,28 +54,27 @@ public final class Main {
 
         // hack to work around Java's lack of proper generics
         var expr = Term.apply(Type.INT.l(x -> Type.INT.l(y -> x)), Prims.of(4));
-
-        output("System F", expr + ": " + expr.type());
+        outputT("System F", expr, expr.type());
 
         var vars = new VarGen();
 
         var pass1 = expr.aggregateLambdas(vars);
-        output("Aggregate", pass1);
+        outputT("Aggregate", pass1, pass1.type());
 
         var captures = pass1.captureEnv(vars).value();
-        output("Capture Env", captures + ": " + captures.type());
+        outputT("Capture Env", captures, captures.type());
 
         var tupleArgs = captures.tuple(vars);
-        output("Tuple Args", tupleArgs + ": " + tupleArgs.type());
+        outputT("Tuple Args", tupleArgs, tupleArgs.type());
 
         var tupleCcc = tupleArgs.ccc(vars.createArgument(Type.nil()), vars);
-        output("Tuple Ccc", tupleCcc + ": " + tupleCcc.domain() + " -> " + tupleCcc.range());
+        outputT("Tuple Ccc", tupleCcc, tupleCcc.domain() + " -> " + tupleCcc.range());
 
         var ccc = captures.ccc(vars.createArgument(Type.nil()), vars);
-        output("Ccc", ccc + ": " + ccc.domain() + " -> " + ccc.range());
+        outputT("Ccc", ccc, ccc.domain() + " -> " + ccc.range());
 
         var generic = Category.generic(ccc);
-        output("Generic", generic + ": " + generic.signature());
+        outputT("Generic", generic, generic.signature());
 
         var main = Generic.compile(lookup(), generic);
         output("Main", main);
@@ -99,7 +98,15 @@ public final class Main {
     }
 
     static void output(String stage, Object results) {
-        System.err.print(stage + ("\t" + results).indent(16 - stage.length()));
+        System.err.println(stage + "\t" + results + "\t".repeat(16 - stage.length()));
+    }
+
+    static void outputT(String stage, Object results, Object type) {
+        var resultsStr = results.toString();
+        var x = 1 + (40 - stage.length()) / 8;
+        var y = (60 - resultsStr.length()) / 8;
+        var z = 1;
+        System.err.println(stage + "\t".repeat(x) + resultsStr + "\t".repeat(y) + ":" + "\t".repeat(z) + type);
     }
 
     private static Node.Array parse(Reader reader) throws IOException {

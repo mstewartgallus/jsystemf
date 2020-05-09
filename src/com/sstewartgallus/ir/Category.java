@@ -32,11 +32,11 @@ public interface Category<A, B> {
 
 
     static <B, A> Category<B, A> constant(Type<B> domain, Type<A> range, ConstantDesc value) {
-        return new Unit<A>(range, value).compose(new Initial<>(domain));
+        return new Unit<>(domain, range, value);
     }
 
-    static <A extends HList, R, B> Category<Void, R> makeLambda(Type<A> domain, Type<R> range, Args<A, B, R> arguments, Category<A, B> ccc) {
-        return new MakeLambda<>(domain, range, arguments, ccc);
+    static <A extends HList, R, B, Z> Category<Z, R> makeLambda(Type<Z> domain, Type<A> subdomain, Type<R> range, Args<A, B, R> arguments, Category<A, B> ccc) {
+        return new MakeLambda<>(domain, subdomain, range, arguments, ccc);
     }
 
     static <A, B, T extends HList> Category<T, F<A, B>> curry(Category<Cons<A, T>, B> ccc) {
@@ -59,25 +59,19 @@ public interface Category<A, B> {
 
     Type<B> range();
 
-    record Unit<A>(Type<A>range, ConstantDesc value) implements Category<Void, A> {
+    record Unit<A, B>(Type<A>domain, Type<B>range, ConstantDesc value) implements Category<A, B> {
         public String toString() {
             return "(K " + value.toString() + ")";
         }
 
-        @Override
-        public Type<Void> domain() {
-            return Type.VOID;
+        public <V> Generic<V, F<A, B>> generic(Type.Var<V> argument, TVarGen vars) {
+            var sig = domain.to(range).ccc(argument, vars);
+            return new Generic.Unit<V, A, B>(sig, domain.ccc(argument, vars), range.ccc(argument, vars), value);
         }
 
-        public <V> Generic<V, F<Void, A>> generic(Type.Var<V> argument, TVarGen vars) {
-            var sig = new Type.FunType<>(Type.VOID, range).ccc(argument, vars);
-            return new Generic.Unit<>(sig, range.ccc(argument, vars), value);
+        public <V> Category<A, B> substitute(Type.Var<V> argument, Type<V> replacement) {
+            return new Unit<>(domain.substitute(argument, replacement), range.substitute(argument, replacement), value);
         }
-
-        public <V> Category<Void, A> substitute(Type.Var<V> argument, Type<V> replacement) {
-            return new Unit<>(range.substitute(argument, replacement), value);
-        }
-
     }
 
     record Identity<A>(Type<A>type) implements Category<A, A> {
@@ -217,26 +211,6 @@ public interface Category<A, B> {
         }
     }
 
-    record Initial<A>(Type<A>domain) implements Category<A, Void> {
-        public <V> Generic<V, F<A, Void>> generic(Type.Var<V> argument, TVarGen vars) {
-            var sig = domain.ccc(argument, vars);
-            return new Generic.Initial<>(sig);
-        }
-
-        public <V> Category<A, Void> substitute(Type.Var<V> argument, Type<V> replacement) {
-            return new Initial<>(domain.substitute(argument, replacement));
-        }
-
-        public String toString() {
-            return "it";
-        }
-
-        @Override
-        public Type<Void> range() {
-            return Type.VOID;
-        }
-    }
-
     record Exists<X, A, B>(Type<A>x, Category<X, B>y) implements Category<X, E<A, B>> {
 
         @Override
@@ -310,20 +284,16 @@ public interface Category<A, B> {
         }
     }
 
-    record MakeLambda<A extends HList, B, R>(Type<A>funDomain, Type<R> range, Args<A, B, R>arguments, Category<A, B>ccc) implements Category<Void, R> {
+    record MakeLambda<Z, A extends HList, B, R>(Type<Z>domain, Type<A>funDomain, Type<R>range, Args<A, B, R>arguments,
+                                                Category<A, B>ccc) implements Category<Z, R> {
         @Override
-        public <Z> Generic<Z, F<Void, R>> generic(Type.Var<Z> argument, TVarGen vars) {
+        public <X> Generic<X, F<Z, R>> generic(Type.Var<X> argument, TVarGen vars) {
             throw null;
         }
 
         @Override
-        public <Z> Category<Void, R> substitute(Type.Var<Z> argument, Type<Z> replacement) {
+        public <X> Category<Z, R> substitute(Type.Var<X> argument, Type<X> replacement) {
             throw null;
-        }
-
-        @Override
-        public Type<Void> domain() {
-            return Type.VOID;
         }
 
         public String toString() {

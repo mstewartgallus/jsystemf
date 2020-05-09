@@ -20,6 +20,8 @@ import static java.lang.invoke.MethodType.methodType;
  * A category represents Term a -> Term b in a point free way
  * <p>
  * Generic represents Type a -> Term a in a point free way
+ *
+ * Fixme: Look into a symbolic representation of my target https://www.youtube.com/watch?v=PwL2c6rO6co and then make a dsl for it.
  */
 public interface Generic<A, B> {
     static <X, A, B, Z> Generic<Z, F<X, V<A, B>>> curry(Signature<Z, F<X, V<A, B>>> signature,
@@ -68,13 +70,16 @@ public interface Generic<A, B> {
         throw new UnsupportedOperationException(getClass().toString());
     }
 
-    record Unit<V, A>(Signature<V, F<Void, A>>signature, Signature<V, A>range,
-                      ConstantDesc value) implements Generic<V, F<Void, A>> {
+    record Unit<V, A, B>(Signature<V, F<A, B>>signature,
+                         Signature<V, A>domain,
+                         Signature<V, B>range,
+                         ConstantDesc value) implements Generic<V, F<A, B>> {
         public String toString() {
-            return value.toString();
+            return "(K " + value + ")";
         }
 
-        public Chunk<F<Void, A>> compile(Lookup lookup, Type<V> klass) {
+        public Chunk<F<A, B>> compile(Lookup lookup, Type<V> klass) {
+            var d = domain.apply(klass).erase();
             var t = range.apply(klass).erase();
 
             // fixme... do this lazily..
@@ -85,7 +90,7 @@ public interface Generic<A, B> {
                 throw new RuntimeException(e);
             }
             var handle = constant(t, k);
-            handle = dropArguments(handle, 0, Void.class);
+            handle = dropArguments(handle, 0, d);
             return new Chunk<>(handle);
         }
     }
@@ -97,7 +102,7 @@ public interface Generic<A, B> {
         }
 
         public String toString() {
-            return "id";
+            return "I";
         }
     }
 
@@ -205,19 +210,6 @@ public interface Generic<A, B> {
         }
     }
 
-    record Initial<V, A>(Signature<V, A>f) implements Generic<V, F<A, Void>> {
-        public String toString() {
-            return "it";
-        }
-
-        public Chunk<F<A, Void>> compile(Lookup lookup, Type<V> klass) {
-            var t = f.apply(klass).erase();
-            var handle = constant(Void.class, null);
-            handle = dropArguments(handle, 0, t);
-            return new Chunk<>(handle);
-        }
-    }
-
     record Call<V, Z, A, B>(Signature<V, F<Z, B>>signature, Generic<V, F<Z, F<A, B>>>f,
                             Generic<V, F<Z, A>>x) implements Generic<V, F<Z, B>> {
 
@@ -241,7 +233,7 @@ public interface Generic<A, B> {
         }
 
         public String toString() {
-            return "(call " + f + " " + x + ")";
+            return "(S " + f + " " + x + ")";
         }
     }
 }

@@ -134,7 +134,7 @@ public interface Pass3<A> {
             var body = f.apply(new Load<>(arg));
             var ccc = body.ccc(arg, vars);
 
-            return Category.makeLambda(domain, range, arguments, ccc).compose(new Category.Initial<>(argument.type()));
+            return Category.makeLambda(argument.type(), domain, range, arguments, ccc);
         }
 
         public String toString() {

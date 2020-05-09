@@ -89,22 +89,6 @@ public interface Generic<A, B> {
         }
     }
 
-    record Compose<V, A, B, C>(Signature<V, F<A, C>>signature,
-                               Generic<V, F<B, C>>f,
-                               Generic<V, F<A, B>>g) implements Generic<V, F<A, C>> {
-        public Chunk<F<A, C>> compile(MethodHandles.Lookup lookup, Type<V> klass) {
-            var gC = g.compile(lookup, klass);
-            var fC = f.compile(lookup, klass);
-            var intro = MethodHandles.filterReturnValue(gC.intro(), fC.intro());
-
-            return new Chunk<>(intro);
-        }
-
-        public String toString() {
-            return f + " ⚬ " + g;
-        }
-    }
-
     record Head<V, X, A, B extends HList>(Signature<V, F<X, A>>signature,
                                        Signature<V, A>first,
                                        Generic<V, F<X, Cons<A, B>>>product) implements Generic<V, F<X, A>> {

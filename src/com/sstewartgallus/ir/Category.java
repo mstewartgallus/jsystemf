@@ -47,13 +47,6 @@ public interface Category<A, B> {
 
     <Z> Category<A, B> substitute(Type.Var<Z> argument, Type<Z> replacement);
 
-    default <C> Category<C, B> compose(Category<C, A> g) {
-        if (g instanceof Identity) {
-            return (Category) this;
-        }
-        return new Compose<>(this, g);
-    }
-
     Type<A> domain();
 
     Type<B> range();
@@ -74,10 +67,6 @@ public interface Category<A, B> {
     }
 
     record Identity<A>(Type<A>type) implements Category<A, A> {
-
-        public <C> Category<C, A> compose(Category<C, A> g) {
-            return g;
-        }
 
         public <V> Generic<V, F<A, A>> generic(Type.Var<V> argument, TVarGen vars) {
             var sig = new Type.FunType<>(domain(), range()).ccc(argument, vars);
@@ -100,32 +89,6 @@ public interface Category<A, B> {
 
         public String toString() {
             return "I";
-        }
-
-    }
-
-    record Compose<A, B, C>(Category<B, C>f, Category<A, B>g) implements Category<A, C> {
-        public <V> Generic<V, F<A, C>> generic(Type.Var<V> argument, TVarGen vars) {
-            var sig = new Type.FunType<>(domain(), range()).ccc(argument, vars);
-            return new Generic.Compose<>(sig, f.generic(argument, vars), g.generic(argument, vars));
-        }
-
-        public <V> Category<A, C> substitute(Type.Var<V> argument, Type<V> replacement) {
-            return new Compose<>(f.substitute(argument, replacement), g.substitute(argument, replacement));
-        }
-
-        public String toString() {
-            return "(" + f + " ⚬ " + g + ")";
-        }
-
-        @Override
-        public Type<A> domain() {
-            return g.domain();
-        }
-
-        @Override
-        public Type<C> range() {
-            return f.range();
         }
     }
 
@@ -180,7 +143,6 @@ public interface Category<A, B> {
         public String toString() {
             return "(tail " + product + ")";
         }
-
     }
 
     record Curry<A, B extends HList, C>(Category<Cons<A, B>, C>f) implements Category<B, F<A, C>> {

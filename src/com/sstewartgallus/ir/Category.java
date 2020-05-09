@@ -35,7 +35,7 @@ public interface Category<A, B> {
     }
 
     static <A extends HList, R, B, Z> Category<Z, R> makeLambda(Type<Z> domain, Type<A> subdomain, Type<R> range, Args<A, B, R> arguments, Category<A, B> ccc) {
-        return new MakeLambda<>(domain, subdomain, range, arguments, ccc);
+        return new MakeLambda<>(domain, range, subdomain, arguments, ccc);
     }
 
     static <A, B, T extends HList> Category<T, F<A, B>> curry(Category<Cons<A, T>, B> ccc) {
@@ -283,11 +283,13 @@ public interface Category<A, B> {
         }
     }
 
-    record MakeLambda<Z, A extends HList, B, R>(Type<Z>domain, Type<A>funDomain, Type<R>range, Args<A, B, R>arguments,
+    record MakeLambda<Z, A extends HList, B, R>(Type<Z>domain, Type<R>range, Type<A>funDomain, Args<A, B, R>arguments,
                                                 Category<A, B>ccc) implements Category<Z, R> {
         @Override
         public <X> Generic<X, F<Z, R>> generic(Type.Var<X> argument, TVarGen vars) {
-            throw null;
+            return new Generic.MakeLambda<>(domain.ccc(argument, vars), range.ccc(argument, vars),
+                    funDomain.ccc(argument, vars),
+                    ccc.generic(argument, vars));
         }
 
         @Override
@@ -296,7 +298,7 @@ public interface Category<A, B> {
         }
 
         public String toString() {
-            return "(curry " + ccc.toString() + ")";
+            return "(λ " + ccc + ")";
         }
     }
 }

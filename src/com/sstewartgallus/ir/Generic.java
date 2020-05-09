@@ -20,7 +20,7 @@ import static java.lang.invoke.MethodType.methodType;
  * A category represents Term a -> Term b in a point free way
  * <p>
  * Generic represents Type a -> Term a in a point free way
- *
+ * <p>
  * Fixme: Look into a symbolic representation of my target https://www.youtube.com/watch?v=PwL2c6rO6co and then make a dsl for it.
  */
 public interface Generic<A, B> {
@@ -59,6 +59,7 @@ public interface Generic<A, B> {
         } catch (Throwable throwable) {
             throw new RuntimeException(throwable);
         }
+        System.err.println(" " + obj + " " + handle);
         return (Value) obj;
     }
 
@@ -234,6 +235,42 @@ public interface Generic<A, B> {
 
         public String toString() {
             return "(S " + f + " " + x + ")";
+        }
+    }
+
+    record MakeLambda<X, A extends HList, B, Z, R>(Signature<X, Z>domain, Signature<X, R>range,
+                                                   Signature<X, A>funDomain,
+                                                   Generic<X, F<A, B>>body) implements Generic<X, F<Z, R>> {
+        public String toString() {
+            return "(λ " + body + ")";
+        }
+
+        static final MethodHandle PAIR_MH;
+
+        static {
+            try {
+                PAIR_MH = MethodHandles.lookup().findStatic(ConsValue.class, "of", MethodType.methodType(ConsValue.class, Object.class, ConsValue.class));
+            } catch (NoSuchMethodException | IllegalAccessException e) {
+                throw new RuntimeException(e);
+            }
+        }
+
+        public Chunk<F<Z, R>> compile(Lookup lookup, Type<X> klass) {
+            var d = (Type.ConsType<?, ?>)funDomain.apply(klass);
+            var head = d.head().erase();
+            var tail = d.tail().erase();
+
+            var bodyEmit = body.compile(lookup, klass).intro();
+
+            var pair = PAIR_MH.asType(methodType(ConsValue.class, head, tail));
+            pair = permuteArguments(pair, methodType(ConsValue.class, tail, head), 1, 0);
+            bodyEmit = filterReturnValue(pair, bodyEmit);
+
+            System.err.println(d + " " + bodyEmit);
+
+            var intro = Closure.spinFactory(tail, head, bodyEmit);
+
+            return new Chunk<>(intro);
         }
     }
 }

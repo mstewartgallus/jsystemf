@@ -104,7 +104,7 @@ public final class Main {
     static void outputT(String stage, Object results, Object type) {
         var resultsStr = results.toString();
         var x = 1 + (40 - stage.length()) / 8;
-        var y = (60 - resultsStr.length()) / 8;
+        var y = (80 - resultsStr.length()) / 8;
         var z = 1;
         System.err.println(stage + "\t".repeat(x) + resultsStr + "\t".repeat(y) + ":" + "\t".repeat(z) + type);
     }

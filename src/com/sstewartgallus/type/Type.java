@@ -10,6 +10,7 @@ import java.lang.constant.ClassDesc;
 import java.lang.constant.ConstantDesc;
 import java.lang.constant.DirectMethodHandleDesc;
 import java.lang.constant.DynamicConstantDesc;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.function.Function;
 
@@ -17,7 +18,6 @@ public interface Type<X> {
     Type<Integer> INT = new PureType<>(int.class);
     Type<Boolean> BOOLEAN = new PureType<>(boolean.class);
     Type<Void> VOID = new PureType<>(Void.class);
-    Type<Nil> NIL = new PureType<>(Nil.class);
 
     static <A, B> Type<E<A, B>> e(Type<A> x, Type<B> y) {
         return new Exists<>(x, y);
@@ -66,6 +66,10 @@ public interface Type<X> {
 
     enum NilType implements Type<Nil> {
         NIL;
+
+        public List<Class<?>> flatten() {
+            return List.of();
+        }
 
         public <X> Signature<X, Nil> ccc(Var<X> v, TVarGen vars) {
             return new Signature.NilType<>();
@@ -205,6 +209,12 @@ public interface Type<X> {
         public Class<?> erase() {
             // fixme... should be possible to flatten
             return ConsValue.class;
+        }
+
+        public List<Class<?>> flatten() {
+            var l = new ArrayList<>(tail.flatten());
+            l.add(head.erase());
+            return l;
         }
 
         public <X> Signature<X, Cons<H, T>> ccc(Var<X> v, TVarGen vars) {

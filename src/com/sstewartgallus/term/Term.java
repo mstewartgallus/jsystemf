@@ -114,7 +114,7 @@ public interface Term<L> {
         }
 
         public String toString() {
-            return "{" + f + " " + x + "}";
+            return "(" + f + " " + x + ")";
         }
     }
 
@@ -171,10 +171,6 @@ public interface Term<L> {
         }
 
         public String toString() {
-            return "{" + rightShow() + "}";
-        }
-
-        private String rightShow() {
             var depth = DEPTH.get();
             DEPTH.set(depth + 1);
 
@@ -182,14 +178,9 @@ public interface Term<L> {
             try {
                 var dummy = new Load<>(new Var<>(domain, depth));
                 var body = f.apply(dummy);
-                String bodyStr;
-                if (body instanceof Lambda<?, ?> app) {
-                    bodyStr = app.rightShow();
-                } else {
-                    bodyStr = body.toString();
-                }
+                String bodyStr = body.toString();
 
-                str = "{" + dummy + ": " + domain + "} → " + bodyStr;
+                str = "({" + dummy + ": " + domain + "} → " + bodyStr + ")";
             } finally {
                 DEPTH.set(depth);
                 if (depth == 0) {

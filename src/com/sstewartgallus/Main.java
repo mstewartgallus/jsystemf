@@ -74,10 +74,11 @@ public final class Main {
 
         output("System F", expr + ": " + expr.type());
 
-        var captures = expr.captures(new VarGen()).value();
+        var vars = new VarGen();
+        var captures = expr.captures(vars).value();
         output("Captures", captures);
 
-        var ccc = expr.ccc();
+        var ccc = captures.ccc(vars.createArgument(Type.nil()), vars);
         output("Ccc", ccc + ": " + ccc.domain() + " -> " + ccc.range());
 
         var generic = Category.generic(ccc);

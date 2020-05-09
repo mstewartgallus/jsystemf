@@ -20,9 +20,18 @@ public interface Pass1<A> {
         throw null;
     }
 
+    <T extends HList> Category<T, A> ccc(Var<T> argument, VarGen vars);
+
     record Apply<A, B>(Pass1<F<A, B>>f, Pass1<A>x) implements Pass1<B> {
         public <V> Pass1<B> substitute(Var<V> argument, Pass1<V> replacement) {
             return new Apply<>(f.substitute(argument, replacement), x.substitute(argument, replacement));
+        }
+
+        @Override
+        public <T extends HList> Category<T, B> ccc(Var<T> argument, VarGen vars) {
+            var fCcc = f.ccc(argument, vars);
+            var xCcc = x.ccc(argument, vars);
+            return Category.call(fCcc, xCcc);
         }
 
         public Type<B> type() {
@@ -45,6 +54,11 @@ public interface Pass1<A> {
             throw new UnsupportedOperationException("unimplemented");
         }
 
+        @Override
+        public <T extends HList> Category<T, A> ccc(Var<T> argument, VarGen vars) {
+            throw null;
+        }
+
         public Type<A> type() {
             return t;
         }
@@ -60,6 +74,12 @@ public interface Pass1<A> {
         }
 
         @Override
+        public <T extends HList> Category<T, A> ccc(Var<T> argument, VarGen vars) {
+            var prod = list.ccc(argument, vars);
+            return Category.head(this.head, this.tail).compose(prod);
+        }
+
+        @Override
         public Type<A> type() {
             return head;
         }
@@ -68,6 +88,12 @@ public interface Pass1<A> {
     record Tail<A, B extends HList>(Type<A>head, Type<B>tail, Pass1<Cons<A, B>>list) implements Pass1<B> {
         public <V> Pass1<B> substitute(Var<V> argument, Pass1<V> replacement) {
             return new Tail<>(head, tail, list.substitute(argument, replacement));
+        }
+
+        @Override
+        public <T extends HList> Category<T, B> ccc(Var<T> argument, VarGen vars) {
+            var prod = list.ccc(argument, vars);
+            return Category.tail(this.head, this.tail).compose(prod);
         }
 
         @Override
@@ -106,6 +132,8 @@ public interface Pass1<A> {
         <V> Body<A> substitute(Var<V> argument, Pass1<V> replacement);
 
         Type<A> type();
+
+        <T extends HList> Category<T, A> ccc(Var<T> argument, VarGen vars);
     }
 
 
@@ -118,6 +146,11 @@ public interface Pass1<A> {
         @Override
         public <V> Pass1<A> substitute(Var<V> argument, Pass1<V> replacement) {
             return new Thunk<>(body.substitute(argument, replacement));
+        }
+
+        @Override
+        public <T extends HList> Category<T, A> ccc(Var<T> argument, VarGen vars) {
+            return body.ccc(argument, vars);
         }
 
         public String toString() {
@@ -136,6 +169,11 @@ public interface Pass1<A> {
             return body.type();
         }
 
+        @Override
+        public <T extends HList> Category<T, A> ccc(Var<T> argument, VarGen vars) {
+            return body.ccc(argument, vars);
+        }
+
         public String toString() {
             return body.toString();
         }
@@ -149,6 +187,23 @@ public interface Pass1<A> {
         public Type<F<A, B>> type() {
             var range = f.apply(new Load<>(new Var<A>(domain, 0))).type();
             return new Type.FunType<>(domain, range);
+        }
+
+        @Override
+        public <T extends HList> Category<T, F<A, B>> ccc(Var<T> argument, VarGen vars) {
+            var tail = argument.type();
+
+            var newArg = vars.createArgument(domain);
+
+            var body = f.apply(new Load<>(newArg));
+
+            var t = Type.cons(domain, tail);
+            var list = vars.createArgument(t);
+
+            body = body.substitute(newArg, new Head<>(domain, tail, new Load<>(list)));
+            body = body.substitute(argument, new Tail<>(domain, tail, new Load<>(list)));
+
+            return Category.curry(body.ccc(list, vars));
         }
 
         public String toString() {
@@ -177,6 +232,11 @@ public interface Pass1<A> {
 
         public <V> Pass1<A> substitute(Var<V> argument, Pass1<V> replacement) {
             return this;
+        }
+
+        @Override
+        public <T extends HList> Category<T, A> ccc(Var<T> argument, VarGen vars) {
+            return Category.constant(argument.type(), type, value);
         }
 
         public Type<A> type() {

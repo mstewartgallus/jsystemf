@@ -56,16 +56,6 @@ public interface Term<L> {
         return new IfCond<>(t, cond, onCond, elseCond);
     }
 
-    // fixme... type check
-    default Category<Nil, L> ccc() {
-        var vars = new VarGen();
-        return ccc(vars.createArgument(Type.nil()), vars);
-    }
-
-    // fixme... should be for internal use only...
-    <A extends HList> Category<A, L> ccc(Var<A> argument, VarGen vars);
-
-    // fixme... should be for internal use only... somehow (maybe Stack wakling?)
     <A> Term<L> substitute(Var<A> argument, Term<A> replacement);
 
     record Results<L>(Set<Var<?>>captured, Pass1<L>value) {
@@ -101,13 +91,6 @@ public interface Term<L> {
             return variable.type();
         }
 
-        public <V extends HList> Category<V, A> ccc(com.sstewartgallus.term.Var<V> argument, VarGen vars) {
-            if (argument == variable) {
-                return (Category<V, A>) new Category.Identity<>(variable.type());
-            }
-            throw new IllegalStateException("mismatching variables " + this);
-        }
-
         public <V> Term<A> substitute(com.sstewartgallus.term.Var<V> argument, Term<V> replacement) {
             if (argument == variable) {
                 return (Term<A>) replacement;
@@ -135,12 +118,6 @@ public interface Term<L> {
             return new Apply<>(f.substitute(argument, replacement), x.substitute(argument, replacement));
         }
 
-        public <V extends HList> Category<V, B> ccc(Var<V> argument, VarGen vars) {
-            Category<V, F<A, B>> fCcc = f.ccc(argument, vars);
-            Category<V, A> xCcc = x.ccc(argument, vars);
-            return Category.call(fCcc, xCcc);
-        }
-
         public Type<B> type() {
             var funType = ((Type.FunType<A, B>) f.type());
             var t = x.type();
@@ -156,10 +133,6 @@ public interface Term<L> {
     }
 
     record IfCond<A>(Type<A>t, Term<Boolean>cond, Term<A>onCond, Term<A>elseCond) implements Term<A> {
-        @Override
-        public <A1 extends HList> Category<A1, A> ccc(Var<A1> argument, VarGen vars) {
-            throw new UnsupportedOperationException("unimplemented");
-        }
 
         @Override
         public <A1> Term<A> substitute(Var<A1> argument, Term<A1> replacement) {
@@ -181,12 +154,6 @@ public interface Term<L> {
             return new Head<>(head, tail, list.substitute(argument, replacement));
         }
 
-        @Override
-        public <V extends HList> Category<V, A> ccc(Var<V> argument, VarGen vars) {
-            Category<V, Cons<A, B>> prod = list.ccc(argument, vars);
-            return Category.head(this.head, this.tail).compose(prod);
-        }
-
 
         @Override
         public Type<A> type() {
@@ -199,12 +166,6 @@ public interface Term<L> {
 
         public <V> Term<B> substitute(Var<V> argument, Term<V> replacement) {
             return new Tail<>(head, tail, list.substitute(argument, replacement));
-        }
-
-        @Override
-        public <V extends HList> Category<V, B> ccc(Var<V> argument, VarGen vars) {
-            Category<V, Cons<A, B>> prod = list.ccc(argument, vars);
-            return Category.tail(this.head, this.tail).compose(prod);
         }
 
         @Override
@@ -227,40 +188,23 @@ public interface Term<L> {
             List<Var<?>> free = captured.stream().sorted().collect(Collectors.toUnmodifiableList());
 
             var chunk = results.value;
-            return new Results<F<A, B>>(captured, new Pass1.Lambda<A, B>(domain, x -> setEnv(free, 0,
-                    new Pass1.Expr<>(chunk.substitute(v, x)))));
+            return new Results<F<A, B>>(captured, helper(free, 0, new Pass1.Lambda<>(domain, x -> new Pass1.Expr<>(chunk.substitute(v, x)))));
         }
 
-        private static <A> Pass1.Body<A> setEnv(List<Var<?>> free, int ii, Pass1.Body<A> body) {
+        private static <A> Pass1<A> helper(List<Var<?>> free, int ii, Pass1.Body<A> body) {
             if (ii >= free.size()) {
-                return body;
+                return new Pass1.Thunk<>(body);
             }
             return helper(free, ii, free.get(ii), body);
         }
 
-        private static <A, B> Pass1.Body<A> helper(List<Var<?>> free, int ii,Var<B> freeVar, Pass1.Body<A> body) {
-            return new Pass1.Capture<B, A>(new Pass1.Load<B>(freeVar), replacement -> setEnv(free, ii + 1, body.substitute(freeVar, replacement)));
+        private static <A, B> Pass1<A> helper(List<Var<?>> free, int ii, Var<B> freeVar, Pass1.Body<A> body) {
+            return new Pass1.Apply<>(helper(free, ii + 1, new Pass1.Lambda<>(freeVar.type(), x -> body.substitute(freeVar, x))),
+                    new Pass1.Load<>(freeVar));
         }
 
         public <V> Term<F<A, B>> substitute(Var<V> argument, Term<V> replacement) {
             return new Lambda<>(domain, arg -> f.apply(arg).substitute(argument, replacement));
-        }
-
-        public <V extends HList> Category<V, F<A, B>> ccc(Var<V> argument, VarGen vars) {
-            var tail = argument.type();
-
-
-            var newArg = vars.createArgument(domain);
-
-            var body = f.apply(new Load<>(newArg));
-
-            var t = Type.cons(domain, tail);
-            var list = vars.createArgument(t);
-
-            body = body.substitute(newArg, new Head<>(domain, tail, new Load<>(list)));
-            body = body.substitute(argument, new Tail<>(domain, tail, new Load<>(list)));
-
-            return Category.curry(body.ccc(list, vars));
         }
 
         public Type<F<A, B>> type() {
@@ -309,10 +253,6 @@ public interface Term<L> {
             return this;
         }
 
-        public <V extends HList> Category<V, A> ccc(Var<V> argument, VarGen vars) {
-            return Category.constant(argument.type(), type, value);
-        }
-
         public Type<A> type() {
             return type;
         }
@@ -324,11 +264,6 @@ public interface Term<L> {
     }
 
     record TypeApply<A, B>(Term<V<A, B>>f, Type<A>x) implements Term<B> {
-
-        @Override
-        public <A extends HList> Category<A, B> ccc(Var<A> argument, VarGen vars) {
-            throw new UnsupportedOperationException("unimplemented");
-        }
 
         @Override
         public <A> Term<B> substitute(Var<A> argument, Term<A> replacement) {
@@ -351,11 +286,6 @@ public interface Term<L> {
             return new Type.Forall<>(x -> f.apply(x).type());
         }
 
-        public <X extends HList> Category<X, V<A, B>> ccc(Var<X> argument, VarGen vars) {
-            // fixme... sending mutable state through here...
-            return new Category.Forall<>(argument.type(), x -> f.apply(x).ccc(argument, vars));
-        }
-
         @Override
         public <X> Term<V<A, B>> substitute(Var<X> argument, Term<X> replacement) {
             throw new UnsupportedOperationException("unimplemented");
@@ -375,10 +305,6 @@ public interface Term<L> {
     record Exists<A, B>(Type<A>x, Term<B>y) implements Term<E<A, B>> {
         public Type<E<A, B>> type() {
             return new Type.Exists<>(x, y.type());
-        }
-
-        public <X extends HList> Category<X, E<A, B>> ccc(Var<X> argument, VarGen vars) {
-            return new Category.Exists<>(x, y.ccc(argument, vars));
         }
 
         @Override

@@ -116,36 +116,25 @@ public interface Pass3<A> {
         }
     }
 
-    record Lambda<A extends HList, B, R>(Type<A>domain, Args<A, B, R>nesting,
+    record Lambda<A extends HList, B, R>(Type<A>domain, Type<R> range, Args<A, B, R>arguments,
                                          Function<Pass3<A>, Pass3<B>>f) implements Pass3<R> {
         private static final ThreadLocal<Integer> DEPTH = ThreadLocal.withInitial(() -> 0);
 
         public <V> Pass3<R> substitute(Var<V> argument, Pass3<V> replacement) {
-            return new Lambda<>(domain, nesting, x -> f.apply(x).substitute(argument, replacement));
+            return new Lambda<>(domain, range, arguments, x -> f.apply(x).substitute(argument, replacement));
         }
 
         public Type<R> type() {
-            throw null;
-            //var range = f.apply(new Load<>(new Var<A>(domain, 0))).type();
-            // return new Type.FunType<>(domain, range);
+            return range;
         }
 
         @Override
         public <T extends HList> Category<T, R> ccc(Var<T> argument, VarGen vars) {
-            var tail = argument.type();
+            var arg = vars.createArgument(domain);
+            var body = f.apply(new Load<>(arg));
+            var ccc = body.ccc(arg, vars);
 
-            var newArg = vars.createArgument(domain);
-
-            var body = f.apply(new Load<>(newArg));
-
-            var t = Type.cons(domain, tail);
-            var list = vars.createArgument(t);
-
-            body = body.substitute(newArg, new Head<>(domain, tail, new Load<>(list)));
-            body = body.substitute(argument, new Tail<>(domain, tail, new Load<>(list)));
-
-            throw null;
-//            return Category.curry(body.ccc(list, vars));
+            return Category.makeLambda(domain, range, arguments, ccc).compose(new Category.Initial<>(argument.type()));
         }
 
         public String toString() {

@@ -1,5 +1,6 @@
 package com.sstewartgallus.ir;
 
+import com.sstewartgallus.pass1.Args;
 import com.sstewartgallus.type.*;
 
 import java.lang.constant.ConstantDesc;
@@ -29,12 +30,17 @@ public interface Category<A, B> {
         return new Call<>(f, x);
     }
 
-    static <A, B extends HList, C> Category<B, F<A, C>> curry(Category<Cons<A, B>, C> f) {
-        return new Curry<>(f);
-    }
 
     static <B, A> Category<B, A> constant(Type<B> domain, Type<A> range, ConstantDesc value) {
         return new Unit<A>(range, value).compose(new Initial<>(domain));
+    }
+
+    static <A extends HList, R, B> Category<Void, R> makeLambda(Type<A> domain, Type<R> range, Args<A, B, R> arguments, Category<A, B> ccc) {
+        return new MakeLambda<>(domain, range, arguments, ccc);
+    }
+
+    static <A, B, T extends HList> Category<T, F<A, B>> curry(Category<Cons<A, T>, B> ccc) {
+        return new Curry<>(ccc);
     }
 
     // fixme.. use separate TypeVarGen type
@@ -55,7 +61,7 @@ public interface Category<A, B> {
 
     record Unit<A>(Type<A>range, ConstantDesc value) implements Category<Void, A> {
         public String toString() {
-            return value.toString();
+            return "(K " + value.toString() + ")";
         }
 
         @Override
@@ -100,7 +106,7 @@ public interface Category<A, B> {
         }
 
         public String toString() {
-            return "id";
+            return "I";
         }
 
     }
@@ -300,7 +306,28 @@ public interface Category<A, B> {
         }
 
         public String toString() {
-            return "(call " + f + " " + x + ")";
+            return "(S " + f + " " + x + ")";
+        }
+    }
+
+    record MakeLambda<A extends HList, B, R>(Type<A>funDomain, Type<R> range, Args<A, B, R>arguments, Category<A, B>ccc) implements Category<Void, R> {
+        @Override
+        public <Z> Generic<Z, F<Void, R>> generic(Type.Var<Z> argument, TVarGen vars) {
+            throw null;
+        }
+
+        @Override
+        public <Z> Category<Void, R> substitute(Type.Var<Z> argument, Type<Z> replacement) {
+            throw null;
+        }
+
+        @Override
+        public Type<Void> domain() {
+            return Type.VOID;
+        }
+
+        public String toString() {
+            return "(curry " + ccc.toString() + ")";
         }
     }
 }

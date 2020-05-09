@@ -34,10 +34,6 @@ public interface Pass2<A> {
         <T extends HList> Category<T, A> ccc(Var<T> argument, VarGen vars);
 
         Results<? extends HList, ?, A> tuple(VarGen vars);
-
-        default Pass3<A> tupleResult(VarGen vars) {
-            return tuple(vars).lambda();
-        }
     }
 
     record Apply<A, B>(Pass2<F<A, B>>f, Pass2<A>x) implements Pass2<B> {
@@ -144,15 +140,15 @@ public interface Pass2<A> {
     record Results<L extends HList, R, A>(Type<L>type,
                                           Args<L, R, A>proof,
                                           Function<Pass3<L>, Pass3<R>>f) {
-        public Pass3.Lambda<L, R, A> lambda() {
-            return new Pass3.Lambda<L, R, A>(type, proof, f);
+        public Pass3.Lambda<L, R, A> lambda(Type<A> range) {
+            return new Pass3.Lambda<>(type, range, proof, f);
         }
 
     }
 
     record Thunk<A>(Body<A>body) implements Pass2<A> {
         public Pass3<A> tuple(VarGen vars) {
-            return body.tuple(vars).lambda();
+            return body.tuple(vars).lambda(body.type());
         }
 
         @Override

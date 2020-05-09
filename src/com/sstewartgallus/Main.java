@@ -63,10 +63,13 @@ public final class Main {
         output("Aggregate", pass1);
 
         var captures = pass1.captureEnv(vars).value();
-        output("Capture Env", captures);
+        output("Capture Env", captures + ": " + captures.type());
 
         var tupleArgs = captures.tuple(vars);
-        output("Tuple Args", tupleArgs);
+        output("Tuple Args", tupleArgs + ": " + tupleArgs.type());
+
+        var tupleCcc = tupleArgs.ccc(vars.createArgument(Type.nil()), vars);
+        output("Tuple Ccc", tupleCcc + ": " + tupleCcc.domain() + " -> " + tupleCcc.range());
 
         var ccc = captures.ccc(vars.createArgument(Type.nil()), vars);
         output("Ccc", ccc + ": " + ccc.domain() + " -> " + ccc.range());

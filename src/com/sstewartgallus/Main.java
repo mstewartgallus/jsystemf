@@ -75,7 +75,10 @@ public final class Main {
         output("System F", expr + ": " + expr.type());
 
         var vars = new VarGen();
-        var captures = expr.captures(vars).value();
+
+        output("Aggregate", expr.aggregateLambdas(vars));
+
+        var captures = expr.captureEnv(vars).value();
         output("Captures", captures);
 
         var ccc = captures.ccc(vars.createArgument(Type.nil()), vars);

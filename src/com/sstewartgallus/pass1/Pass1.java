@@ -2,36 +2,121 @@ package com.sstewartgallus.pass1;
 
 import com.sstewartgallus.ir.Category;
 import com.sstewartgallus.ir.VarGen;
+import com.sstewartgallus.term.Term;
 import com.sstewartgallus.term.Var;
-import com.sstewartgallus.type.Cons;
-import com.sstewartgallus.type.F;
-import com.sstewartgallus.type.HList;
-import com.sstewartgallus.type.Type;
+import com.sstewartgallus.type.*;
 
 import java.lang.constant.Constable;
 import java.lang.constant.ConstantDesc;
+import java.util.List;
 import java.util.Objects;
+import java.util.Set;
+import java.util.TreeSet;
 import java.util.function.Function;
+import java.util.stream.Collectors;
 
-public interface Pass1<A> {
-    Type<A> type();
+// https://gitlab.haskell.org/ghc/ghc/-/wikis/commentary/compiler/core-syn-type
+// argument CoreExpr = Expr Var
 
-    default <V> Pass1<A> substitute(Var<V> argument, Pass1<V> replacement) {
+// data Expr b	-- "b" for the argument of binders,
+//   = Var	  Id
+//   | Lit   Literal
+//   | App   (Expr b) (Arg b)
+//   | Lam   b (Expr b)
+//   | Let   (Bind b) (Expr b)
+//   | Case  (Expr b) b Type [Alt b]
+//   | Cast  (Expr b) Coercion
+//   | Tick  (Tickish Id) (Expr b)
+//   | Type  Type
+
+// argument Arg b = Expr b
+// argument Alt b = (AltCon, [b], Expr b)
+
+// data AltCon = DataAlt DataCon | LitAlt  Literal | DEFAULT
+
+// data Bind b = NonRec b (Expr b) | Rec [(b, (Expr b))]
+
+
+// https://github.com/DanBurton/Blog/blob/master/Literate%20Haskell/SystemF.lhs
+
+// fixme... move types out of the ir package
+public interface Pass1<L> {
+    static <A, B> Pass1<B> apply(Pass1<V<A, B>> f, Type<A> x) {
+        return new TypeApply<>(f, x);
+    }
+
+    static <A, B> Pass1<B> apply(Pass1<F<A, B>> f, Pass1<A> x) {
+        return new Apply<>(f, x);
+    }
+
+    static <A, B> Pass1<V<A, B>> v(Function<Type<A>, Pass1<B>> f) {
+        return new Forall<>(f);
+    }
+
+    static <A> Pass1<A> ifCond(Type<A> t, Pass1<Boolean> cond, Pass1<A> onCond, Pass1<A> elseCond) {
+        return new IfCond<>(t, cond, onCond, elseCond);
+    }
+
+    <A> Pass1<L> substitute(Var<A> argument, Pass1<A> replacement);
+
+    record Results<L>(Set<Var<?>>captured, Pass2<L>value) {
+    }
+
+    default Results<L> captures(VarGen vars) {
         throw null;
     }
 
-    <T extends HList> Category<T, A> ccc(Var<T> argument, VarGen vars);
+    static <T extends Constable> Pass1<T> pure(Type<T> type, T value) {
+        var constant = value.describeConstable();
+        if (constant.isEmpty()) {
+            throw new IllegalArgumentException("not a constant value " + value);
+        }
+        return new Pure<>(type, constant.get());
+    }
 
-    record Apply<A, B>(Pass1<F<A, B>>f, Pass1<A>x) implements Pass1<B> {
-        public <V> Pass1<B> substitute(Var<V> argument, Pass1<V> replacement) {
-            return new Apply<>(f.substitute(argument, replacement), x.substitute(argument, replacement));
+    Type<L> type();
+
+    private static <A> Set<A> union(Set<A> left, Set<A> right) {
+        var x = new TreeSet<>(left);
+        x.addAll(right);
+        return x;
+    }
+
+    record Load<A>(Var<A>variable) implements Pass1<A> {
+        public Results<A> captures(VarGen vars) {
+            return new Results<A>(Set.of(variable), new Pass2.Load<>(variable));
         }
 
         @Override
-        public <T extends HList> Category<T, B> ccc(Var<T> argument, VarGen vars) {
-            var fCcc = f.ccc(argument, vars);
-            var xCcc = x.ccc(argument, vars);
-            return Category.call(fCcc, xCcc);
+        public Type<A> type() {
+            return variable.type();
+        }
+
+        public <V> Pass1<A> substitute(Var<V> argument, Pass1<V> replacement) {
+            if (argument == variable) {
+                return (Pass1<A>) replacement;
+            }
+            return this;
+        }
+
+        public String toString() {
+            return variable.toString();
+        }
+    }
+
+    record Apply<A, B>(Pass1<F<A, B>>f, Pass1<A>x) implements Pass1<B> {
+        public Results<B> captures(VarGen vars) {
+            var fCapture = f.captures(vars);
+            var xCapture = x.captures(vars);
+
+            var captures = union(fCapture.captured, xCapture.captured);
+
+            return new Results<>(captures, new Pass2.Apply<>(fCapture.value, xCapture.value));
+        }
+
+
+        public <V> Pass1<B> substitute(Var<V> argument, Pass1<V> replacement) {
+            return new Apply<>(f.substitute(argument, replacement), x.substitute(argument, replacement));
         }
 
         public Type<B> type() {
@@ -49,14 +134,10 @@ public interface Pass1<A> {
     }
 
     record IfCond<A>(Type<A>t, Pass1<Boolean>cond, Pass1<A>onCond, Pass1<A>elseCond) implements Pass1<A> {
+
         @Override
         public <A1> Pass1<A> substitute(Var<A1> argument, Pass1<A1> replacement) {
             throw new UnsupportedOperationException("unimplemented");
-        }
-
-        @Override
-        public <T extends HList> Category<T, A> ccc(Var<T> argument, VarGen vars) {
-            throw null;
         }
 
         public Type<A> type() {
@@ -68,68 +149,8 @@ public interface Pass1<A> {
         }
     }
 
-    record Head<A, B extends HList>(Type<A>head, Type<B>tail, Pass1<Cons<A, B>>list) implements Pass1<A> {
-        public <V> Pass1<A> substitute(Var<V> argument, Pass1<V> replacement) {
-            return new Head<>(head, tail, list.substitute(argument, replacement));
-        }
-
-        @Override
-        public <T extends HList> Category<T, A> ccc(Var<T> argument, VarGen vars) {
-            var prod = list.ccc(argument, vars);
-            return Category.head(this.head, this.tail).compose(prod);
-        }
-
-        @Override
-        public Type<A> type() {
-            return head;
-        }
-    }
-
-    record Tail<A, B extends HList>(Type<A>head, Type<B>tail, Pass1<Cons<A, B>>list) implements Pass1<B> {
-        public <V> Pass1<B> substitute(Var<V> argument, Pass1<V> replacement) {
-            return new Tail<>(head, tail, list.substitute(argument, replacement));
-        }
-
-        @Override
-        public <T extends HList> Category<T, B> ccc(Var<T> argument, VarGen vars) {
-            var prod = list.ccc(argument, vars);
-            return Category.tail(this.head, this.tail).compose(prod);
-        }
-
-        @Override
-        public Type<B> type() {
-            return tail;
-        }
-    }
-
-    record Load<A>(Var<A>variable) implements Pass1<A> {
-
-        @Override
-        public Type<A> type() {
-            return variable.type();
-        }
-
-        public <V extends HList> Category<V, A> ccc(Var<V> argument, VarGen vars) {
-            if (argument == variable) {
-                return (Category<V, A>) new Category.Identity<>(variable.type());
-            }
-            throw new IllegalStateException("mismatching variables " + this);
-        }
-
-        public <V> Pass1<A> substitute(Var<V> argument, Pass1<V> replacement) {
-            if (argument == variable) {
-                return (Pass1<A>) replacement;
-            }
-            return this;
-        }
-
-        public String toString() {
-            return variable.toString();
-        }
-    }
-
     interface Body<A> {
-        <V> Body<A> substitute(Var<V> argument, Pass1<V> replacement);
+        <V> Pass1.Body<A> substitute(Var<V> argument, Pass1<V> replacement);
 
         Type<A> type();
 
@@ -138,6 +159,30 @@ public interface Pass1<A> {
 
 
     record Thunk<A>(Body<A>body) implements Pass1<A> {
+        public Results<A> captures(VarGen vars) {
+            /*
+            var results = body.captures(vars);
+            var captured = new TreeSet<>(results.captured);
+
+            List<Var<?>> free = captured.stream().sorted().collect(Collectors.toUnmodifiableList());
+
+            var chunk = results.value;
+            return new Term.Results<A>(captured, helper(free, 0, new Pass2.Expr<>(chunk.substitute(v, x))); */
+            throw null;
+        }
+
+        private static <A> Pass2<A> helper(List<Var<?>> free, int ii, Pass2.Body<A> body) {
+            if (ii >= free.size()) {
+                return new Pass2.Thunk<>(body);
+            }
+            return helper(free, ii, free.get(ii), body);
+        }
+
+        private static <A, B> Pass2<A> helper(List<Var<?>> free, int ii, Var<B> freeVar, Pass2.Body<A> body) {
+            return new Pass2.Apply<>(helper(free, ii + 1, new Pass2.Lambda<>(freeVar.type(), x -> body.substitute(freeVar, x))),
+                    new Pass2.Load<>(freeVar));
+        }
+
         @Override
         public Type<A> type() {
             return body.type();
@@ -148,20 +193,15 @@ public interface Pass1<A> {
             return new Thunk<>(body.substitute(argument, replacement));
         }
 
-        @Override
-        public <T extends HList> Category<T, A> ccc(Var<T> argument, VarGen vars) {
-            return body.ccc(argument, vars);
-        }
-
         public String toString() {
             return "(" + body + ")";
         }
     }
 
-    record Expr<A>(Pass1<A>body) implements Body<A> {
+    record Expr<A>(Pass1<A>body) implements Pass1.Body<A> {
         @Override
-        public <X> Body<A> substitute(Var<X> argument, Pass1<X> replacement) {
-            return new Expr<>(body.substitute(argument, replacement));
+        public <X> Pass1.Body<A> substitute(Var<X> argument, Pass1<X> replacement) {
+            return new Pass1.Expr<>(body.substitute(argument, replacement));
         }
 
         @Override
@@ -171,7 +211,7 @@ public interface Pass1<A> {
 
         @Override
         public <T extends HList> Category<T, A> ccc(Var<T> argument, VarGen vars) {
-            return body.ccc(argument, vars);
+            throw null;
         }
 
         public String toString() {
@@ -179,31 +219,19 @@ public interface Pass1<A> {
         }
     }
 
-    record Lambda<A, B>(Type<A>domain, Function<Pass1<A>, Body<B>>f) implements Body<F<A, B>> {
-        public <V> Body<F<A, B>> substitute(Var<V> argument, Pass1<V> replacement) {
-            return new Lambda<>(domain, x -> f.apply(x).substitute(argument, replacement));
+    record Lambda<A, B>(Type<A>domain, Function<Pass1<A>, Pass1.Body<B>>f) implements Pass1.Body<F<A, B>> {
+        public <V> Pass1.Body<F<A, B>> substitute(Var<V> argument, Pass1<V> replacement) {
+            return new Pass1.Lambda<>(domain, x -> f.apply(x).substitute(argument, replacement));
         }
 
         public Type<F<A, B>> type() {
-            var range = f.apply(new Load<>(new Var<A>(domain, 0))).type();
+            var range = f.apply(new Pass1.Load<>(new Var<A>(domain, 0))).type();
             return new Type.FunType<>(domain, range);
         }
 
         @Override
         public <T extends HList> Category<T, F<A, B>> ccc(Var<T> argument, VarGen vars) {
-            var tail = argument.type();
-
-            var newArg = vars.createArgument(domain);
-
-            var body = f.apply(new Load<>(newArg));
-
-            var t = Type.cons(domain, tail);
-            var list = vars.createArgument(t);
-
-            body = body.substitute(newArg, new Head<>(domain, tail, new Load<>(list)));
-            body = body.substitute(argument, new Tail<>(domain, tail, new Load<>(list)));
-
-            return Category.curry(body.ccc(list, vars));
+            throw null;
         }
 
         public String toString() {
@@ -213,7 +241,7 @@ public interface Pass1<A> {
             String str;
             try {
                 var dummy = new Var<>(domain, depth);
-                var body = f.apply(new Load<>(dummy));
+                var body = f.apply(new Pass1.Load<>(dummy));
 
                 str = "{" + dummy + ": " + domain + "} -> " + body;
             } finally {
@@ -228,15 +256,14 @@ public interface Pass1<A> {
         private static final ThreadLocal<Integer> DEPTH = ThreadLocal.withInitial(() -> 0);
     }
 
+
     record Pure<A extends Constable>(Type<A>type, ConstantDesc value) implements Pass1<A> {
+        public Results<A> captures(VarGen vars) {
+            return new Results<>(Set.of(), new Pass2.Pure<>(type, value));
+        }
 
         public <V> Pass1<A> substitute(Var<V> argument, Pass1<V> replacement) {
             return this;
-        }
-
-        @Override
-        public <T extends HList> Category<T, A> ccc(Var<T> argument, VarGen vars) {
-            return Category.constant(argument.type(), type, value);
         }
 
         public Type<A> type() {
@@ -246,6 +273,60 @@ public interface Pass1<A> {
         @Override
         public String toString() {
             return String.valueOf(value);
+        }
+    }
+
+    record TypeApply<A, B>(Pass1<V<A, B>>f, Type<A>x) implements Pass1<B> {
+
+        @Override
+        public <A> Pass1<B> substitute(Var<A> argument, Pass1<A> replacement) {
+            throw new UnsupportedOperationException("unimplemented");
+        }
+
+        public Type<B> type() {
+            return ((Type.Forall<A, B>) f.type()).f().apply(x);
+        }
+
+        @Override
+        public String toString() {
+            return "{" + f + " " + x + "}";
+        }
+
+    }
+
+    record Forall<A, B>(Function<Type<A>, Pass1<B>>f) implements Pass1<V<A, B>> {
+        public Type<V<A, B>> type() {
+            return new Type.Forall<>(x -> f.apply(x).type());
+        }
+
+        @Override
+        public <X> Pass1<V<A, B>> substitute(Var<X> argument, Pass1<X> replacement) {
+            throw new UnsupportedOperationException("unimplemented");
+        }
+
+        @Override
+        public int hashCode() {
+            return 0;
+        }
+
+        public String toString() {
+            var dummy = new Type.Var<A>(0);
+            return "{forall " + dummy + ". " + f.apply(dummy) + "}";
+        }
+    }
+
+    record Exists<A, B>(Type<A>x, Pass1<B>y) implements Pass1<E<A, B>> {
+        public Type<E<A, B>> type() {
+            return new Type.Exists<>(x, y.type());
+        }
+
+        @Override
+        public <X> Pass1<E<A, B>> substitute(Var<X> argument, Pass1<X> replacement) {
+            throw new UnsupportedOperationException("unimplemented");
+        }
+
+        public String toString() {
+            return "{exists " + x + ". " + y + "}";
         }
     }
 }

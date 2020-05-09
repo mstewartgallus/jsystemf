@@ -1,9 +1,12 @@
 package com.sstewartgallus.term;
 
-import com.sstewartgallus.ir.Category;
 import com.sstewartgallus.ir.VarGen;
 import com.sstewartgallus.pass1.Pass1;
-import com.sstewartgallus.type.*;
+import com.sstewartgallus.pass1.Pass2;
+import com.sstewartgallus.type.E;
+import com.sstewartgallus.type.F;
+import com.sstewartgallus.type.Type;
+import com.sstewartgallus.type.V;
 
 import java.lang.constant.Constable;
 import java.lang.constant.ConstantDesc;
@@ -58,11 +61,15 @@ public interface Term<L> {
 
     <A> Term<L> substitute(Var<A> argument, Term<A> replacement);
 
-    record Results<L>(Set<Var<?>>captured, Pass1<L>value) {
+    record Results<L>(Set<Var<?>>captured, Pass2<L>value) {
     }
 
-    default Results<L> captures(VarGen vars) {
+    default Results<L> captureEnv(VarGen vars) {
         throw null;
+    }
+
+    default Pass1<L> aggregateLambdas(VarGen vars) {
+        throw new UnsupportedOperationException(getClass().toString());
     }
 
     static <T extends Constable> Term<T> pure(Type<T> type, T value) {
@@ -82,8 +89,12 @@ public interface Term<L> {
     }
 
     record Load<A>(Var<A>variable) implements Term<A> {
-        public Results<A> captures(VarGen vars) {
-            return new Results<A>(Set.of(variable), new Pass1.Load<>(variable));
+        public Pass1<A> aggregateLambdas(VarGen vars) {
+            return new Pass1.Load<>(variable);
+        }
+
+        public Results<A> captureEnv(VarGen vars) {
+            return new Results<A>(Set.of(variable), new Pass2.Load<>(variable));
         }
 
         @Override
@@ -104,13 +115,17 @@ public interface Term<L> {
     }
 
     record Apply<A, B>(Term<F<A, B>>f, Term<A>x) implements Term<B> {
-        public Results<B> captures(VarGen vars) {
-            var fCapture = f.captures(vars);
-            var xCapture = x.captures(vars);
+        public Pass1<B> aggregateLambdas(VarGen vars) {
+            return new Pass1.Apply<>(f.aggregateLambdas(vars), x.aggregateLambdas(vars));
+        }
+
+        public Results<B> captureEnv(VarGen vars) {
+            var fCapture = f.captureEnv(vars);
+            var xCapture = x.captureEnv(vars);
 
             var captures = union(fCapture.captured, xCapture.captured);
 
-            return new Results<>(captures, new Pass1.Apply<>(fCapture.value, xCapture.value));
+            return new Results<>(captures, new Pass2.Apply<>(fCapture.value, xCapture.value));
         }
 
 
@@ -148,59 +163,43 @@ public interface Term<L> {
         }
     }
 
-    record Head<A, B extends HList>(Type<A>head, Type<B>tail, Term<Cons<A, B>>list) implements Term<A> {
-
-        public <V> Term<A> substitute(Var<V> argument, Term<V> replacement) {
-            return new Head<>(head, tail, list.substitute(argument, replacement));
-        }
-
-
-        @Override
-        public Type<A> type() {
-            return head;
-        }
-
-    }
-
-    record Tail<A, B extends HList>(Type<A>head, Type<B>tail, Term<Cons<A, B>>list) implements Term<B> {
-
-        public <V> Term<B> substitute(Var<V> argument, Term<V> replacement) {
-            return new Tail<>(head, tail, list.substitute(argument, replacement));
-        }
-
-        @Override
-        public Type<B> type() {
-            return tail;
-        }
-
-    }
-
-    // fixme... define equality properly...
     record Lambda<A, B>(Type<A>domain, Function<Term<A>, Term<B>>f) implements Term<F<A, B>> {
-        public Results<F<A, B>> captures(VarGen vars) {
+        public Pass1<F<A, B>> aggregateLambdas(VarGen vars) {
+            var v = vars.createArgument(domain);
+            var body = f.apply(new Load<>(v)).aggregateLambdas(vars);
+
+            if (body instanceof Pass1.Thunk<B> thunk) {
+                var expr = thunk.body();
+                return new Pass1.Thunk<>(new Pass1.Lambda<>(domain, x -> expr.substitute(v, x)));
+            }
+
+            return new Pass1.Thunk<>(new Pass1.Lambda<>(domain, x -> new Pass1.Expr<>(body.substitute(v, x))));
+        }
+
+        public Results<F<A, B>> captureEnv(VarGen vars) {
             var v = vars.createArgument(domain);
             var body = f.apply(new Load<>(v));
 
-            var results = body.captures(vars);
+            var results = body.captureEnv(vars);
             var captured = new TreeSet<>(results.captured);
             captured.remove(v);
 
             List<Var<?>> free = captured.stream().sorted().collect(Collectors.toUnmodifiableList());
 
             var chunk = results.value;
-            return new Results<F<A, B>>(captured, helper(free, 0, new Pass1.Lambda<>(domain, x -> new Pass1.Expr<>(chunk.substitute(v, x)))));
+            return new Results<F<A, B>>(captured, helper(free, 0, new Pass2.Lambda<>(domain, x -> new Pass2.Expr<>(chunk.substitute(v, x)))));
         }
 
-        private static <A> Pass1<A> helper(List<Var<?>> free, int ii, Pass1.Body<A> body) {
+        private static <A> Pass2<A> helper(List<Var<?>> free, int ii, Pass2.Body<A> body) {
             if (ii >= free.size()) {
-                return new Pass1.Thunk<>(body);
+                return new Pass2.Thunk<>(body);
             }
             return helper(free, ii, free.get(ii), body);
         }
 
-        private static <A, B> Pass1<A> helper(List<Var<?>> free, int ii, Var<B> freeVar, Pass1.Body<A> body) {
-            return new Pass1.Apply<>(helper(free, ii + 1, new Pass1.Lambda<>(freeVar.type(), x -> body.substitute(freeVar, x))),
-                    new Pass1.Load<>(freeVar));
+        private static <A, B> Pass2<A> helper(List<Var<?>> free, int ii, Var<B> freeVar, Pass2.Body<A> body) {
+            return new Pass2.Apply<>(helper(free, ii + 1, new Pass2.Lambda<>(freeVar.type(), x -> body.substitute(freeVar, x))),
+                    new Pass2.Load<>(freeVar));
         }
 
         public <V> Term<F<A, B>> substitute(Var<V> argument, Term<V> replacement) {
@@ -245,8 +244,12 @@ public interface Term<L> {
     }
 
     record Pure<A extends Constable>(Type<A>type, ConstantDesc value) implements Term<A> {
-        public Results<A> captures(VarGen vars) {
-            return new Results<>(Set.of(), new Pass1.Pure<>(type, value));
+        public Pass1<A> aggregateLambdas(VarGen vars) {
+            return new Pass1.Pure<>(type, value);
+        }
+
+        public Results<A> captureEnv(VarGen vars) {
+            return new Results<>(Set.of(), new Pass2.Pure<>(type, value));
         }
 
         public <V> Term<A> substitute(Var<V> argument, Term<V> replacement) {

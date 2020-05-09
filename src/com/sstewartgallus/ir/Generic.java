@@ -34,23 +34,8 @@ public interface Generic<A, B> {
     static <B> Value<B> compile(MethodHandles.Lookup lookup, Generic<Void, F<Nil, B>> generic) {
         var chunk = generic.compile(lookup, Type.VOID);
 
-        var intro = chunk.intro();
-        var eliminators = chunk.eliminators();
-        var numEliminators = eliminators.size();
+        var handle = chunk.intro();
 
-        if (numEliminators == 0) {
-            throw new UnsupportedOperationException("void results aren't implemented yet");
-        }
-
-        MethodHandle handle;
-        if (numEliminators == 1) {
-            handle = intro;
-        } else {
-            var mkArray = MethodHandles.identity(Object[].class).asCollector(Object[].class, numEliminators);
-            var mkTuple = filterArguments(mkArray, 0, eliminators.toArray(MethodHandle[]::new));
-
-            handle = filterReturnValue(intro, mkTuple);
-        }
         Object obj;
         try {
             obj = handle.invoke((Object) null);
@@ -59,7 +44,7 @@ public interface Generic<A, B> {
         } catch (Throwable throwable) {
             throw new RuntimeException(throwable);
         }
-        System.err.println(" " + obj + " " + handle);
+
         return (Value) obj;
     }
 
@@ -256,7 +241,7 @@ public interface Generic<A, B> {
         }
 
         public Chunk<F<Z, R>> compile(Lookup lookup, Type<X> klass) {
-            var d = (Type.ConsType<?, ?>)funDomain.apply(klass);
+            var d = (Type.ConsType<?, ?>) funDomain.apply(klass);
             var head = d.head().erase();
             var tail = d.tail().erase();
 

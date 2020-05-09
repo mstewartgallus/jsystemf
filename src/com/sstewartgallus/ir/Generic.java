@@ -170,6 +170,16 @@ public interface Generic<A, B> {
                                            Signature<V, B>tail,
                                            Generic<V, F<Cons<A, B>, C>>f) implements Generic<V, F<B, F<A, C>>> {
 
+        static final MethodHandle PAIR_MH;
+
+        static {
+            try {
+                PAIR_MH = MethodHandles.lookup().findStatic(ConsValue.class, "of", MethodType.methodType(ConsValue.class, Object.class, ConsValue.class));
+            } catch (NoSuchMethodException | IllegalAccessException e) {
+                throw new RuntimeException(e);
+            }
+        }
+
         public String toString() {
             return "(curry " + f + ")";
         }
@@ -192,16 +202,6 @@ public interface Generic<A, B> {
             var intro = Closure.spinFactory(tail, head, fEmit);
 
             return new Chunk<>(intro);
-        }
-
-        static final MethodHandle PAIR_MH;
-
-        static {
-            try {
-                PAIR_MH = MethodHandles.lookup().findStatic(ConsValue.class, "of", MethodType.methodType(ConsValue.class, Object.class, ConsValue.class));
-            } catch (NoSuchMethodException | IllegalAccessException e) {
-                throw new RuntimeException(e);
-            }
         }
     }
 

@@ -13,7 +13,7 @@ public interface Node {
         return new Array(nodes);
     }
 
-    record Array(Node... nodes) implements Node {
+    record Array(Node...nodes) implements Node {
 
         public String toString() {
             return Arrays.toString(nodes);

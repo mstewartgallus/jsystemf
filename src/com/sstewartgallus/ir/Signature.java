@@ -3,13 +3,13 @@ package com.sstewartgallus.ir;
 import com.sstewartgallus.type.*;
 
 public interface Signature<A, B> {
+    static <B, A, T> Signature<T, V<A, B>> curry(Signature<E<A, T>, B> body) {
+        return new Signature.Curry<>(body);
+    }
+
     // fixme... probably going to need my own runtime of type values... my current type is more like ClassDesc than class
     default Type<B> apply(Type<A> input) {
         throw new UnsupportedOperationException(getClass().toString());
-    }
-
-    static <B, A, T> Signature<T, V<A, B>> curry(Signature<E<A, T>, B> body) {
-        return new Signature.Curry<>(body);
     }
 
     default <C> Signature<A, F<A, C>> compose(Signature<A, F<A, B>> signature) {
@@ -38,7 +38,7 @@ public interface Signature<A, B> {
 
     record First<L, A, B>(Signature<L, E<A, B>>sig) implements Signature<L, A> {
         public Type<A> apply(Type<L> input) {
-            return ((Type.Exists<A, B>)sig.apply(input)).x();
+            return ((Type.Exists<A, B>) sig.apply(input)).x();
         }
 
         public String toString() {
@@ -48,7 +48,7 @@ public interface Signature<A, B> {
 
     record Second<L, A, B>(Signature<L, E<A, B>>sig) implements Signature<L, B> {
         public Type<B> apply(Type<L> input) {
-            return ((Type.Exists<A, B>)sig.apply(input)).y();
+            return ((Type.Exists<A, B>) sig.apply(input)).y();
         }
 
         public String toString() {
@@ -80,16 +80,19 @@ public interface Signature<A, B> {
         public Type<Nil> apply(Type<X> input) {
             return Type.nil();
         }
+
         public String toString() {
             return "[]";
         }
 
     }
 
-    record ConsType<X, H, T extends HList>(Signature<X, H>head, Signature<X, T>tail) implements Signature<X, Cons<H, T>> {
+    record ConsType<X, H, T extends HList>(Signature<X, H>head,
+                                           Signature<X, T>tail) implements Signature<X, Cons<H, T>> {
         public Type<Cons<H, T>> apply(Type<X> input) {
             return Type.cons(head.apply(input), tail.apply(input));
         }
+
         public String toString() {
             return "(" + head + " : " + tail + ")";
         }

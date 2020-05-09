@@ -1,6 +1,9 @@
 package com.sstewartgallus.runtime;
 
-import jdk.dynalink.*;
+import jdk.dynalink.CallSiteDescriptor;
+import jdk.dynalink.DynamicLinker;
+import jdk.dynalink.DynamicLinkerFactory;
+import jdk.dynalink.Operation;
 import jdk.dynalink.linker.GuardedInvocation;
 import jdk.dynalink.linker.LinkRequest;
 import jdk.dynalink.linker.LinkerServices;

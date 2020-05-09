@@ -3,7 +3,10 @@ package com.sstewartgallus.pass1;
 import com.sstewartgallus.ir.Category;
 import com.sstewartgallus.ir.VarGen;
 import com.sstewartgallus.term.Var;
-import com.sstewartgallus.type.*;
+import com.sstewartgallus.type.Cons;
+import com.sstewartgallus.type.F;
+import com.sstewartgallus.type.HList;
+import com.sstewartgallus.type.Type;
 
 import java.lang.constant.Constable;
 import java.lang.constant.ConstantDesc;
@@ -114,7 +117,9 @@ public interface Pass3<A> {
     }
 
     record Lambda<A extends HList, B, R>(Type<A>domain, Args<A, B, R>nesting,
-                                            Function<Pass3<A>, Pass3<B>>f) implements Pass3<R> {
+                                         Function<Pass3<A>, Pass3<B>>f) implements Pass3<R> {
+        private static final ThreadLocal<Integer> DEPTH = ThreadLocal.withInitial(() -> 0);
+
         public <V> Pass3<R> substitute(Var<V> argument, Pass3<V> replacement) {
             return new Lambda<>(domain, nesting, x -> f.apply(x).substitute(argument, replacement));
         }
@@ -161,8 +166,6 @@ public interface Pass3<A> {
             }
             return str;
         }
-
-        private static final ThreadLocal<Integer> DEPTH = ThreadLocal.withInitial(() -> 0);
     }
 
     record Pure<A extends Constable>(Type<A>type, ConstantDesc value) implements Pass3<A> {

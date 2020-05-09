@@ -16,14 +16,14 @@ final class AnonClassLoader<T> extends ClassLoader {
         this.value = value;
     }
 
-    // fixme... make private to the class we created....
-    public T getValue() {
-        return value;
-    }
-
     // fixme.. pass classloader as param
     static <T> Class<?> defineClass(T value, ClassLoader parent, String name, byte[] bytes) {
         var inst = new AnonClassLoader<>(parent, value);
         return inst.defineClass(name, bytes, 0, bytes.length);
+    }
+
+    // fixme... make private to the class we created....
+    public T getValue() {
+        return value;
     }
 }

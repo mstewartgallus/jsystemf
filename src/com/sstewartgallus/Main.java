@@ -29,23 +29,6 @@ import static java.lang.invoke.MethodHandles.lookup;
 
 public final class Main {
     static final Supplier<Object> TO_EXEC;
-
-    // fixme.. argument check more safely...
-    static <A> Term<?> apply(Term<?> f, Term<A> x) {
-        if (f.type() instanceof Type.FunType<?, ?> funType) {
-            if (!Objects.equals(funType.domain(), x.type())) {
-                throw new UnsupportedOperationException("type error");
-            }
-            // fixme... do this more safely..
-            return Term.apply((Term) f, x);
-        }
-        throw new UnsupportedOperationException("applying nonfunction");
-    }
-
-    static void output(String stage, Object results) {
-        System.err.print(stage + ("\t" + results).indent(16 - stage.length()));
-    }
-
     private static final TypeApply TP = ValueInvoker.newInstance(lookup(), TypeApply.class);
     private static final Apply AP = ValueInvoker.newInstance(lookup(), Apply.class);
     private static final ApplyInt API = ValueInvoker.newInstance(lookup(), ApplyInt.class);
@@ -100,20 +83,20 @@ public final class Main {
         TO_EXEC = () -> API.apply(main, 3);
     }
 
-    // fixme... pass in type as well?
-    @FunctionalInterface
-    public interface TypeApply {
-        <A, B> Value<B> apply(Value<V<A, B>> f, Class<A> x);
+    // fixme.. argument check more safely...
+    static <A> Term<?> apply(Term<?> f, Term<A> x) {
+        if (f.type() instanceof Type.FunType<?, ?> funType) {
+            if (!Objects.equals(funType.domain(), x.type())) {
+                throw new UnsupportedOperationException("type error");
+            }
+            // fixme... do this more safely..
+            return Term.apply((Term) f, x);
+        }
+        throw new UnsupportedOperationException("applying nonfunction");
     }
 
-    @FunctionalInterface
-    public interface Apply {
-        <A, B> Value<B> apply(Value<F<A, B>> f, int x);
-    }
-
-    @FunctionalInterface
-    public interface ApplyInt {
-        <A, B> int apply(Value<F<A, Integer>> f, int x);
+    static void output(String stage, Object results) {
+        System.err.print(stage + ("\t" + results).indent(16 - stage.length()));
     }
 
     private static Node.Array parse(Reader reader) throws IOException {
@@ -186,6 +169,22 @@ public final class Main {
             results[(int) (ii % results.length)] = TO_EXEC.get();
         }
         System.out.println(results[0]);
+    }
+
+    // fixme... pass in type as well?
+    @FunctionalInterface
+    public interface TypeApply {
+        <A, B> Value<B> apply(Value<V<A, B>> f, Class<A> x);
+    }
+
+    @FunctionalInterface
+    public interface Apply {
+        <A, B> Value<B> apply(Value<F<A, B>> f, int x);
+    }
+
+    @FunctionalInterface
+    public interface ApplyInt {
+        <A, B> int apply(Value<F<A, Integer>> f, int x);
     }
 
 }

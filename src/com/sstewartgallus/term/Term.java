@@ -12,8 +12,6 @@ import java.lang.constant.Constable;
 import java.lang.constant.ConstantDesc;
 import java.util.List;
 import java.util.Objects;
-import java.util.Set;
-import java.util.TreeSet;
 import java.util.function.Function;
 
 // https://gitlab.haskell.org/ghc/ghc/-/wikis/commentary/compiler/core-syn-type
@@ -58,18 +56,18 @@ public interface Term<L> {
         return new IfCond<>(t, cond, onCond, elseCond);
     }
 
-    <A> Term<L> substitute(Var<A> argument, Term<A> replacement);
-
-    default Pass1<L> aggregateLambdas(VarGen vars) {
-        throw new UnsupportedOperationException(getClass().toString());
-    }
-
     static <T extends Constable> Term<T> pure(Type<T> type, T value) {
         var constant = value.describeConstable();
         if (constant.isEmpty()) {
             throw new IllegalArgumentException("not a constant value " + value);
         }
         return new Pure<>(type, constant.get());
+    }
+
+    <A> Term<L> substitute(Var<A> argument, Term<A> replacement);
+
+    default Pass1<L> aggregateLambdas(VarGen vars) {
+        throw new UnsupportedOperationException(getClass().toString());
     }
 
     Type<L> type();
@@ -137,17 +135,7 @@ public interface Term<L> {
     }
 
     record Lambda<A, B>(Type<A>domain, Function<Term<A>, Term<B>>f) implements Term<F<A, B>> {
-        public Pass1<F<A, B>> aggregateLambdas(VarGen vars) {
-            var v = vars.createArgument(domain);
-            var body = f.apply(new Load<>(v)).aggregateLambdas(vars);
-
-            if (body instanceof Pass1.Thunk<B> thunk) {
-                var expr = thunk.body();
-                return new Pass1.Thunk<>(new Pass1.Lambda<>(domain, x -> expr.substitute(v, x)));
-            }
-
-            return new Pass1.Thunk<>(new Pass1.Lambda<>(domain, x -> new Pass1.Expr<>(body.substitute(v, x))));
-        }
+        private static final ThreadLocal<Integer> DEPTH = ThreadLocal.withInitial(() -> 0);
 
         private static <A> Pass2<A> helper(List<Var<?>> free, int ii, Pass2.Body<A> body) {
             if (ii >= free.size()) {
@@ -159,6 +147,18 @@ public interface Term<L> {
         private static <A, B> Pass2<A> helper(List<Var<?>> free, int ii, Var<B> freeVar, Pass2.Body<A> body) {
             return new Pass2.Apply<>(helper(free, ii + 1, new Pass2.Lambda<>(freeVar.type(), x -> body.substitute(freeVar, x))),
                     new Pass2.Load<>(freeVar));
+        }
+
+        public Pass1<F<A, B>> aggregateLambdas(VarGen vars) {
+            var v = vars.createArgument(domain);
+            var body = f.apply(new Load<>(v)).aggregateLambdas(vars);
+
+            if (body instanceof Pass1.Thunk<B> thunk) {
+                var expr = thunk.body();
+                return new Pass1.Thunk<>(new Pass1.Lambda<>(domain, x -> expr.substitute(v, x)));
+            }
+
+            return new Pass1.Thunk<>(new Pass1.Lambda<>(domain, x -> new Pass1.Expr<>(body.substitute(v, x))));
         }
 
         public <V> Term<F<A, B>> substitute(Var<V> argument, Term<V> replacement) {
@@ -198,8 +198,6 @@ public interface Term<L> {
             }
             return str;
         }
-
-        private static final ThreadLocal<Integer> DEPTH = ThreadLocal.withInitial(() -> 0);
     }
 
     record Pure<A extends Constable>(Type<A>type, ConstantDesc value) implements Term<A> {

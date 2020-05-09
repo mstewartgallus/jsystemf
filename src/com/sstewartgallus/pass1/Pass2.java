@@ -22,6 +22,24 @@ public interface Pass2<A> {
 
     <T extends HList> Category<T, A> ccc(Var<T> argument, VarGen vars);
 
+    default Pass3<A> tuple(VarGen vars) {
+        throw new UnsupportedOperationException(getClass().toString());
+    }
+
+    interface Body<A> {
+        <V> Body<A> substitute(Var<V> argument, Pass2<V> replacement);
+
+        Type<A> type();
+
+        <T extends HList> Category<T, A> ccc(Var<T> argument, VarGen vars);
+
+        Results<? extends HList, ?, A> tuple(VarGen vars);
+
+        default Pass3<A> tupleResult(VarGen vars) {
+            return tuple(vars).lambda();
+        }
+    }
+
     record Apply<A, B>(Pass2<F<A, B>>f, Pass2<A>x) implements Pass2<B> {
         public Pass3<B> tuple(VarGen vars) {
             return new Pass3.Apply<>(f.tuple(vars), x.tuple(vars));
@@ -132,20 +150,6 @@ public interface Pass2<A> {
 
     }
 
-    interface Body<A> {
-        <V> Body<A> substitute(Var<V> argument, Pass2<V> replacement);
-
-        Type<A> type();
-
-        <T extends HList> Category<T, A> ccc(Var<T> argument, VarGen vars);
-
-        Results<? extends HList, ?, A> tuple(VarGen vars);
-
-        default Pass3<A> tupleResult(VarGen vars) {
-            return tuple(vars).lambda();
-        }
-    }
-
     record Thunk<A>(Body<A>body) implements Pass2<A> {
         public Pass3<A> tuple(VarGen vars) {
             return body.tuple(vars).lambda();
@@ -169,10 +173,6 @@ public interface Pass2<A> {
         public String toString() {
             return "(" + body + ")";
         }
-    }
-
-    default Pass3<A> tuple(VarGen vars) {
-        throw new UnsupportedOperationException(getClass().toString());
     }
 
     record Expr<A>(Pass2<A>body) implements Body<A> {
@@ -203,6 +203,8 @@ public interface Pass2<A> {
 
     record Lambda<A, B>(Type<A>domain,
                         Function<Pass2<A>, Body<B>>f) implements Body<F<A, B>> {
+        private static final ThreadLocal<Integer> DEPTH = ThreadLocal.withInitial(() -> 0);
+
         public Results<? extends HList, ?, F<A, B>> tuple(VarGen vars) {
             var v = vars.createArgument(domain);
             var body = f.apply(new Load<>(v));
@@ -261,8 +263,6 @@ public interface Pass2<A> {
             }
             return str;
         }
-
-        private static final ThreadLocal<Integer> DEPTH = ThreadLocal.withInitial(() -> 0);
     }
 
     record Pure<A extends Constable>(Type<A>type, ConstantDesc value) implements Pass2<A> {

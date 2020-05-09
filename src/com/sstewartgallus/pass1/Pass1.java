@@ -7,7 +7,6 @@ import com.sstewartgallus.type.F;
 import com.sstewartgallus.type.Type;
 import com.sstewartgallus.type.V;
 
-import javax.xml.transform.Result;
 import java.lang.constant.Constable;
 import java.lang.constant.ConstantDesc;
 import java.util.List;
@@ -47,10 +46,13 @@ public interface Pass1<L> {
         return new Forall<>(f);
     }
 
-    <A> Pass1<L> substitute(Var<A> argument, Pass1<A> replacement);
-
-    record Results<L>(Set<Var<?>>captured, Pass2<L>value) {
+    private static <A> Set<A> union(Set<A> left, Set<A> right) {
+        var x = new TreeSet<>(left);
+        x.addAll(right);
+        return x;
     }
+
+    <A> Pass1<L> substitute(Var<A> argument, Pass1<A> replacement);
 
     default Results<L> captureEnv(VarGen vars) {
         throw null;
@@ -58,10 +60,15 @@ public interface Pass1<L> {
 
     Type<L> type();
 
-    private static <A> Set<A> union(Set<A> left, Set<A> right) {
-        var x = new TreeSet<>(left);
-        x.addAll(right);
-        return x;
+    interface Body<A> {
+        <V> Pass1.Body<A> substitute(Var<V> argument, Pass1<V> replacement);
+
+        Type<A> type();
+
+        BodyResults<A> captureEnv(VarGen vars);
+    }
+
+    record Results<L>(Set<Var<?>>captured, Pass2<L>value) {
     }
 
     record Load<A>(Var<A>variable) implements Pass1<A> {
@@ -118,26 +125,7 @@ public interface Pass1<L> {
     record BodyResults<L>(Set<Var<?>>captured, Pass2.Body<L>value) {
     }
 
-    interface Body<A> {
-        <V> Pass1.Body<A> substitute(Var<V> argument, Pass1<V> replacement);
-
-        Type<A> type();
-
-        BodyResults<A> captureEnv(VarGen vars);
-    }
-
-
     record Thunk<A>(Body<A>body) implements Pass1<A> {
-        public Results<A> captureEnv(VarGen vars) {
-            var results = body.captureEnv(vars);
-            var captured = new TreeSet<>(results.captured);
-
-            List<Var<?>> free = captured.stream().sorted().collect(Collectors.toUnmodifiableList());
-
-            var chunk = results.value;
-            return new Results<A>(captured, helper(free, 0, chunk));
-        }
-
         private static <A> Pass2<A> helper(List<Var<?>> free, int ii, Pass2.Body<A> body) {
             if (ii >= free.size()) {
                 return new Pass2.Thunk<>(body);
@@ -148,6 +136,16 @@ public interface Pass1<L> {
         private static <A, B> Pass2<A> helper(List<Var<?>> free, int ii, Var<B> freeVar, Pass2.Body<A> body) {
             return new Pass2.Apply<>(helper(free, ii + 1, new Pass2.Lambda<>(freeVar.type(), x -> body.substitute(freeVar, x))),
                     new Pass2.Load<>(freeVar));
+        }
+
+        public Results<A> captureEnv(VarGen vars) {
+            var results = body.captureEnv(vars);
+            var captured = new TreeSet<>(results.captured);
+
+            List<Var<?>> free = captured.stream().sorted().collect(Collectors.toUnmodifiableList());
+
+            var chunk = results.value;
+            return new Results<A>(captured, helper(free, 0, chunk));
         }
 
         @Override
@@ -188,6 +186,8 @@ public interface Pass1<L> {
     }
 
     record Lambda<A, B>(Type<A>domain, Function<Pass1<A>, Body<B>>f) implements Body<F<A, B>> {
+        private static final ThreadLocal<Integer> DEPTH = ThreadLocal.withInitial(() -> 0);
+
         public <V> Pass1.Body<F<A, B>> substitute(Var<V> argument, Pass1<V> replacement) {
             return new Pass1.Lambda<>(domain, x -> f.apply(x).substitute(argument, replacement));
         }
@@ -227,8 +227,6 @@ public interface Pass1<L> {
             }
             return str;
         }
-
-        private static final ThreadLocal<Integer> DEPTH = ThreadLocal.withInitial(() -> 0);
     }
 
 

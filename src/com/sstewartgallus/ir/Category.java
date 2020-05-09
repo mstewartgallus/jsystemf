@@ -17,11 +17,6 @@ public interface Category<A, B> {
         return category.generic(vars.createTypeVar(), vars);
     }
 
-    // fixme.. use separate TypeVarGen type
-    <Z> Generic<Z, F<A, B>> generic(Type.Var<Z> argument, TVarGen vars);
-
-    <Z> Category<A, B> substitute(Type.Var<Z> argument, Type<Z> replacement);
-
     static <A, B extends HList> Category<Cons<A, B>, A> head(Type<A> left, Type<B> right) {
         return new Head<>(left, right);
     }
@@ -41,6 +36,11 @@ public interface Category<A, B> {
     static <B, A> Category<B, A> constant(Type<B> domain, Type<A> range, ConstantDesc value) {
         return new Unit<A>(range, value).compose(new Initial<>(domain));
     }
+
+    // fixme.. use separate TypeVarGen type
+    <Z> Generic<Z, F<A, B>> generic(Type.Var<Z> argument, TVarGen vars);
+
+    <Z> Category<A, B> substitute(Type.Var<Z> argument, Type<Z> replacement);
 
     default <C> Category<C, B> compose(Category<C, A> g) {
         if (g instanceof Identity) {

@@ -27,20 +27,20 @@ public interface Type<X> {
         return new Forall<>(f);
     }
 
-    default <B> Term<F<X, B>> l(Function<Term<X>, Term<B>> f) {
-        return new Term.Lambda<>(this, f);
-    }
-
-    default <B> Type<F<X, B>> to(Type<B> range) {
-        return new FunType<>(this, range);
-    }
-
     static Type<Nil> nil() {
         return NilType.NIL;
     }
 
     static <H, T extends HList> Type<Cons<H, T>> cons(Type<H> head, Type<T> tail) {
         return new ConsType<>(head, tail);
+    }
+
+    default <B> Term<F<X, B>> l(Function<Term<X>, Term<B>> f) {
+        return new Term.Lambda<>(this, f);
+    }
+
+    default <B> Type<F<X, B>> to(Type<B> range) {
+        return new FunType<>(this, range);
     }
 
     default List<Class<?>> flatten() {
@@ -62,6 +62,19 @@ public interface Type<X> {
 
     default <T> Type<X> substitute(Var<T> v, Type<T> replacement) {
         throw new UnsupportedOperationException(getClass().toString());
+    }
+
+    enum NilType implements Type<Nil> {
+        NIL;
+
+        public <X> Signature<X, Nil> ccc(Var<X> v, TVarGen vars) {
+            return new Signature.NilType<>();
+        }
+
+        public Class<?> erase() {
+            // fixme... should be possible to flatten
+            return ConsValue.class;
+        }
     }
 
     record FunType<A, B>(Type<A>domain, Type<B>range) implements Type<F<A, B>> {
@@ -124,6 +137,8 @@ public interface Type<X> {
     }
 
     record Forall<A, B>(Function<Type<A>, Type<B>>f) implements Type<com.sstewartgallus.type.V<A, B>> {
+        private static final ThreadLocal<Integer> DEPTH = ThreadLocal.withInitial(() -> 0);
+
         public <T> Signature<T, V<A, B>> ccc(Var<T> argument, TVarGen vars) {
             Type.Var<E<A, T>> newVar = vars.createTypeVar();
             System.err.println(argument + " " + newVar);
@@ -150,8 +165,6 @@ public interface Type<X> {
             }
             return str;
         }
-
-        private static final ThreadLocal<Integer> DEPTH = ThreadLocal.withInitial(() -> 0);
     }
 
     record Exists<A, B>(Type<A>x, Type<B>y) implements Type<com.sstewartgallus.type.E<A, B>> {
@@ -188,19 +201,6 @@ public interface Type<X> {
         }
     }
 
-    enum NilType implements Type<Nil> {
-        NIL;
-
-        public <X> Signature<X, Nil> ccc(Var<X> v, TVarGen vars) {
-            return new Signature.NilType<>();
-        }
-
-        public Class<?> erase() {
-            // fixme... should be possible to flatten
-            return ConsValue.class;
-        }
-    }
-
     record ConsType<H, T extends HList>(Type<H>head, Type<T>tail) implements Type<Cons<H, T>> {
         public Class<?> erase() {
             // fixme... should be possible to flatten
@@ -223,7 +223,7 @@ public interface Type<X> {
                 current = cons.tail;
             }
             builder.append(" Δ .)");
-            return  builder.toString();
+            return builder.toString();
         }
     }
 }

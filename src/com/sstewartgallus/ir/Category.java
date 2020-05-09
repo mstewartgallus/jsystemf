@@ -30,7 +30,6 @@ public interface Category<A, B> {
         return new Call<>(f, x);
     }
 
-
     static <B, A> Category<B, A> constant(Type<B> domain, Type<A> range, ConstantDesc value) {
         return new Unit<>(domain, range, value);
     }

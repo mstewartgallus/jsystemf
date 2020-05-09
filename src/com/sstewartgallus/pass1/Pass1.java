@@ -1,11 +1,13 @@
 package com.sstewartgallus.pass1;
 
-import com.sstewartgallus.ir.Category;
 import com.sstewartgallus.ir.VarGen;
-import com.sstewartgallus.term.Term;
 import com.sstewartgallus.term.Var;
-import com.sstewartgallus.type.*;
+import com.sstewartgallus.type.E;
+import com.sstewartgallus.type.F;
+import com.sstewartgallus.type.Type;
+import com.sstewartgallus.type.V;
 
+import javax.xml.transform.Result;
 import java.lang.constant.Constable;
 import java.lang.constant.ConstantDesc;
 import java.util.List;
@@ -62,7 +64,7 @@ public interface Pass1<L> {
     record Results<L>(Set<Var<?>>captured, Pass2<L>value) {
     }
 
-    default Results<L> captures(VarGen vars) {
+    default Results<L> captureEnv(VarGen vars) {
         throw null;
     }
 
@@ -83,7 +85,7 @@ public interface Pass1<L> {
     }
 
     record Load<A>(Var<A>variable) implements Pass1<A> {
-        public Results<A> captures(VarGen vars) {
+        public Results<A> captureEnv(VarGen vars) {
             return new Results<A>(Set.of(variable), new Pass2.Load<>(variable));
         }
 
@@ -105,9 +107,9 @@ public interface Pass1<L> {
     }
 
     record Apply<A, B>(Pass1<F<A, B>>f, Pass1<A>x) implements Pass1<B> {
-        public Results<B> captures(VarGen vars) {
-            var fCapture = f.captures(vars);
-            var xCapture = x.captures(vars);
+        public Results<B> captureEnv(VarGen vars) {
+            var fCapture = f.captureEnv(vars);
+            var xCapture = x.captureEnv(vars);
 
             var captures = union(fCapture.captured, xCapture.captured);
 
@@ -149,26 +151,27 @@ public interface Pass1<L> {
         }
     }
 
+    record BodyResults<L>(Set<Var<?>>captured, Pass2.Body<L>value) {
+    }
+
     interface Body<A> {
         <V> Pass1.Body<A> substitute(Var<V> argument, Pass1<V> replacement);
 
         Type<A> type();
 
-        <T extends HList> Category<T, A> ccc(Var<T> argument, VarGen vars);
+        BodyResults<A> captureEnv(VarGen vars);
     }
 
 
     record Thunk<A>(Body<A>body) implements Pass1<A> {
-        public Results<A> captures(VarGen vars) {
-            /*
-            var results = body.captures(vars);
+        public Results<A> captureEnv(VarGen vars) {
+            var results = body.captureEnv(vars);
             var captured = new TreeSet<>(results.captured);
 
             List<Var<?>> free = captured.stream().sorted().collect(Collectors.toUnmodifiableList());
 
             var chunk = results.value;
-            return new Term.Results<A>(captured, helper(free, 0, new Pass2.Expr<>(chunk.substitute(v, x))); */
-            throw null;
+            return new Results<A>(captured, helper(free, 0, chunk));
         }
 
         private static <A> Pass2<A> helper(List<Var<?>> free, int ii, Pass2.Body<A> body) {
@@ -210,8 +213,9 @@ public interface Pass1<L> {
         }
 
         @Override
-        public <T extends HList> Category<T, A> ccc(Var<T> argument, VarGen vars) {
-            throw null;
+        public BodyResults<A> captureEnv(VarGen vars) {
+            var results = body.captureEnv(vars);
+            return new BodyResults<>(results.captured, new Pass2.Expr<>(results.value));
         }
 
         public String toString() {
@@ -219,7 +223,7 @@ public interface Pass1<L> {
         }
     }
 
-    record Lambda<A, B>(Type<A>domain, Function<Pass1<A>, Pass1.Body<B>>f) implements Pass1.Body<F<A, B>> {
+    record Lambda<A, B>(Type<A>domain, Function<Pass1<A>, Body<B>>f) implements Body<F<A, B>> {
         public <V> Pass1.Body<F<A, B>> substitute(Var<V> argument, Pass1<V> replacement) {
             return new Pass1.Lambda<>(domain, x -> f.apply(x).substitute(argument, replacement));
         }
@@ -230,8 +234,15 @@ public interface Pass1<L> {
         }
 
         @Override
-        public <T extends HList> Category<T, F<A, B>> ccc(Var<T> argument, VarGen vars) {
-            throw null;
+        public BodyResults<F<A, B>> captureEnv(VarGen vars) {
+            var v = vars.createArgument(domain);
+            var body = f.apply(new Load<>(v));
+            var results = body.captureEnv(vars);
+            Set<Var<?>> captures = new TreeSet<>(results.captured);
+            captures.remove(v);
+
+            var chunk = results.value;
+            return new BodyResults<F<A, B>>(captures, new Pass2.Lambda<A, B>(domain, x -> chunk.substitute(v, x)));
         }
 
         public String toString() {
@@ -258,7 +269,7 @@ public interface Pass1<L> {
 
 
     record Pure<A extends Constable>(Type<A>type, ConstantDesc value) implements Pass1<A> {
-        public Results<A> captures(VarGen vars) {
+        public Results<A> captureEnv(VarGen vars) {
             return new Results<>(Set.of(), new Pass2.Pure<>(type, value));
         }
 

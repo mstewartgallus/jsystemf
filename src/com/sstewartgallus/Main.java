@@ -76,10 +76,11 @@ public final class Main {
 
         var vars = new VarGen();
 
-        output("Aggregate", expr.aggregateLambdas(vars));
+        var pass1 = expr.aggregateLambdas(vars);
+        output("Aggregate", pass1);
 
-        var captures = expr.captureEnv(vars).value();
-        output("Captures", captures);
+        var captures = pass1.captureEnv(vars).value();
+        output("Capture Env", captures);
 
         var ccc = captures.ccc(vars.createArgument(Type.nil()), vars);
         output("Ccc", ccc + ": " + ccc.domain() + " -> " + ccc.range());

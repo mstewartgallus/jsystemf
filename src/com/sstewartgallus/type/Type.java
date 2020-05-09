@@ -79,7 +79,7 @@ public interface Type<X> {
         }
 
         public String toString() {
-            return "{" + domain + " -> " + range + "}";
+            return "{" + domain + " → " + range + "}";
         }
     }
 
@@ -209,6 +209,21 @@ public interface Type<X> {
 
         public <X> Signature<X, Cons<H, T>> ccc(Var<X> v, TVarGen vars) {
             return new Signature.ConsType<>(head.ccc(v, vars), tail.ccc(v, vars));
+        }
+
+        public String toString() {
+            var builder = new StringBuilder();
+            builder.append("(");
+            builder.append(head);
+
+            Type<? extends HList> current = tail;
+            while (current instanceof ConsType<?, ?> cons) {
+                builder.append(" Δ ");
+                builder.append(cons.head);
+                current = cons.tail;
+            }
+            builder.append(" Δ .)");
+            return  builder.toString();
         }
     }
 }

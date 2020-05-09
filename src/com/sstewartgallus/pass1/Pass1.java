@@ -218,7 +218,7 @@ public interface Pass1<L> {
                 var dummy = new Var<>(domain, depth);
                 var body = f.apply(new Pass1.Load<>(dummy));
 
-                str = "{" + dummy + ": " + domain + "} -> " + body;
+                str = "{" + dummy + ": " + domain + "} → " + body;
             } finally {
                 DEPTH.set(depth);
                 if (depth == 0) {

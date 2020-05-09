@@ -82,6 +82,9 @@ public final class Main {
         var captures = pass1.captureEnv(vars).value();
         output("Capture Env", captures);
 
+        var tupleArgs = captures.tuple(vars);
+        output("Tuple Args", tupleArgs);
+
         var ccc = captures.ccc(vars.createArgument(Type.nil()), vars);
         output("Ccc", ccc + ": " + ccc.domain() + " -> " + ccc.range());
 

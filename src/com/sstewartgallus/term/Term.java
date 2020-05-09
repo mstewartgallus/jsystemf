@@ -189,7 +189,7 @@ public interface Term<L> {
                     bodyStr = body.toString();
                 }
 
-                str = "{" + dummy + ": " + domain + "} -> " + bodyStr;
+                str = "{" + dummy + ": " + domain + "} → " + bodyStr;
             } finally {
                 DEPTH.set(depth);
                 if (depth == 0) {

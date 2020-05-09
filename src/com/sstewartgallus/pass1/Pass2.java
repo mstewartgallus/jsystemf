@@ -23,6 +23,10 @@ public interface Pass2<A> {
     <T extends HList> Category<T, A> ccc(Var<T> argument, VarGen vars);
 
     record Apply<A, B>(Pass2<F<A, B>>f, Pass2<A>x) implements Pass2<B> {
+        public Pass3<B> tuple(VarGen vars) {
+            return new Pass3.Apply<>(f.tuple(vars), x.tuple(vars));
+        }
+
         public <V> Pass2<B> substitute(Var<V> argument, Pass2<V> replacement) {
             return new Apply<>(f.substitute(argument, replacement), x.substitute(argument, replacement));
         }
@@ -49,6 +53,10 @@ public interface Pass2<A> {
     }
 
     record Head<A, B extends HList>(Type<A>head, Type<B>tail, Pass2<Cons<A, B>>list) implements Pass2<A> {
+        public String toString() {
+            return "(head " + list + ")";
+        }
+
         public <V> Pass2<A> substitute(Var<V> argument, Pass2<V> replacement) {
             return new Head<>(head, tail, list.substitute(argument, replacement));
         }
@@ -66,6 +74,10 @@ public interface Pass2<A> {
     }
 
     record Tail<A, B extends HList>(Type<A>head, Type<B>tail, Pass2<Cons<A, B>>list) implements Pass2<B> {
+        public String toString() {
+            return "(tail " + list + ")";
+        }
+
         public <V> Pass2<B> substitute(Var<V> argument, Pass2<V> replacement) {
             return new Tail<>(head, tail, list.substitute(argument, replacement));
         }
@@ -83,6 +95,9 @@ public interface Pass2<A> {
     }
 
     record Load<A>(Var<A>variable) implements Pass2<A> {
+        public Pass3<A> tuple(VarGen vars) {
+            return new Pass3.Load<>(variable);
+        }
 
         @Override
         public Type<A> type() {
@@ -108,16 +123,34 @@ public interface Pass2<A> {
         }
     }
 
+    record Results<L extends HList, R, A>(Type<L>type,
+                                          Args<L, R, A>proof,
+                                          Function<Pass3<L>, Pass3<R>>f) {
+        public Pass3.Lambda<L, R, A> lambda() {
+            return new Pass3.Lambda<L, R, A>(type, proof, f);
+        }
+
+    }
+
     interface Body<A> {
         <V> Body<A> substitute(Var<V> argument, Pass2<V> replacement);
 
         Type<A> type();
 
         <T extends HList> Category<T, A> ccc(Var<T> argument, VarGen vars);
+
+        Results<? extends HList, ?, A> tuple(VarGen vars);
+
+        default Pass3<A> tupleResult(VarGen vars) {
+            return tuple(vars).lambda();
+        }
     }
 
-
     record Thunk<A>(Body<A>body) implements Pass2<A> {
+        public Pass3<A> tuple(VarGen vars) {
+            return body.tuple(vars).lambda();
+        }
+
         @Override
         public Type<A> type() {
             return body.type();
@@ -138,7 +171,16 @@ public interface Pass2<A> {
         }
     }
 
+    default Pass3<A> tuple(VarGen vars) {
+        throw new UnsupportedOperationException(getClass().toString());
+    }
+
     record Expr<A>(Pass2<A>body) implements Body<A> {
+        public Results<? extends HList, ?, A> tuple(VarGen vars) {
+            var bodyTuple = body.tuple(vars);
+            return new Results<>(Type.nil(), new Args.Zero<>(), nil -> bodyTuple);
+        }
+
         @Override
         public <X> Body<A> substitute(Var<X> argument, Pass2<X> replacement) {
             return new Expr<>(body.substitute(argument, replacement));
@@ -159,7 +201,22 @@ public interface Pass2<A> {
         }
     }
 
-    record Lambda<A, B>(Type<A>domain, Function<Pass2<A>, Body<B>>f) implements Body<F<A, B>> {
+    record Lambda<A, B>(Type<A>domain,
+                        Function<Pass2<A>, Body<B>>f) implements Body<F<A, B>> {
+        public Results<? extends HList, ?, F<A, B>> tuple(VarGen vars) {
+            var v = vars.createArgument(domain);
+            var body = f.apply(new Load<>(v));
+            var bodyTuple = body.tuple(vars);
+            return consArgument(v, bodyTuple);
+        }
+
+        public <L extends HList, R> Results<Cons<A, L>, R, F<A, B>> consArgument(Var<A> v, Results<L, R, B> bodyTuple) {
+            var tail = bodyTuple.type;
+            var proof = bodyTuple.proof;
+            var f = bodyTuple.f;
+            return new Results<>(Type.cons(domain, tail), new Args.Add<>(domain, proof), argList -> f.apply(new Pass3.Tail<>(domain, tail, argList)).substitute(v, new Pass3.Head<>(domain, tail, argList)));
+        }
+
         public <V> Body<F<A, B>> substitute(Var<V> argument, Pass2<V> replacement) {
             return new Lambda<>(domain, x -> f.apply(x).substitute(argument, replacement));
         }
@@ -195,7 +252,7 @@ public interface Pass2<A> {
                 var dummy = new Var<>(domain, depth);
                 var body = f.apply(new Load<>(dummy));
 
-                str = "{" + dummy + ": " + domain + "} -> " + body;
+                str = "{" + dummy + ": " + domain + "} → " + body;
             } finally {
                 DEPTH.set(depth);
                 if (depth == 0) {
@@ -209,6 +266,9 @@ public interface Pass2<A> {
     }
 
     record Pure<A extends Constable>(Type<A>type, ConstantDesc value) implements Pass2<A> {
+        public Pass3<A> tuple(VarGen vars) {
+            return new Pass3.Pure<>(type, value);
+        }
 
         public <V> Pass2<A> substitute(Var<V> argument, Pass2<V> replacement) {
             return this;

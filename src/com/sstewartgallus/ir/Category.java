@@ -18,12 +18,12 @@ public interface Category<A, B> {
         return category.generic(vars.createTypeVar(), vars);
     }
 
-    static <A, B extends HList> Category<Cons<A, B>, A> head(Type<A> left, Type<B> right) {
-        return new Head<>(left, right);
+    static <X, A, B extends HList> Category<X, A> head(Category<X, Cons<A, B>> product) {
+        return new Head<>(product);
     }
 
-    static <A, B extends HList> Category<Cons<A, B>, B> tail(Type<A> left, Type<B> right) {
-        return new Tail<>(left, right);
+    static <X, A, B extends HList> Category<X, B> tail(Category<X, Cons<A, B>> product) {
+        return new Tail<>(product);
     }
 
     static <V, A, B> Category<V, B> call(Category<V, F<A, B>> f, Category<V, A> x) {
@@ -34,8 +34,8 @@ public interface Category<A, B> {
         return new Unit<>(domain, range, value);
     }
 
-    static <A extends HList, R, B, Z> Category<Z, R> makeLambda(Type<Z> domain, Type<A> subdomain, Type<R> range, Args<A, B, R> arguments, Category<A, B> ccc) {
-        return new MakeLambda<>(domain, range, subdomain, arguments, ccc);
+    static <A extends HList, R, B, Z> Category<Z, R> makeLambda(Type<Z> domain, Type<R> range, Args<A, B, R> arguments, Category<A, B> ccc) {
+        return new MakeLambda<>(domain, range, arguments, ccc);
     }
 
     static <A, B, T extends HList> Category<T, F<A, B>> curry(Category<Cons<A, T>, B> ccc) {
@@ -130,52 +130,57 @@ public interface Category<A, B> {
     }
 
     // fixme... get type of the pair we are using..
-    record Head<A, B extends HList>(Type<A>first, Type<B>second) implements Category<Cons<A, B>, A> {
-        public <V> Generic<V, F<Cons<A, B>, A>> generic(Type.Var<V> argument, TVarGen vars) {
-            return new Generic.Head<>(domain().to(range()).ccc(argument, vars), first.ccc(argument, vars), second.ccc(argument, vars));
+    record Head<X, A, B extends HList>(Category<X, Cons<A, B>>product) implements Category<X, A> {
+        public <V> Generic<V, F<X, A>> generic(Type.Var<V> argument, TVarGen vars) {
+            return new Generic.Head<V, X, A, B>(domain().to(range()).ccc(argument, vars),
+                    range().ccc(argument, vars),
+                    product.generic(argument, vars));
         }
 
-        public <V> Category<Cons<A, B>, A> substitute(Type.Var<V> argument, Type<V> replacement) {
-            return new Head<>(first.substitute(argument, replacement), second.substitute(argument, replacement));
+        public <V> Category<X, A> substitute(Type.Var<V> argument, Type<V> replacement) {
+            return new Head<>(product.substitute(argument, replacement));
         }
 
         public String toString() {
-            return "head";
+            return "(head " + product + ")";
         }
 
         @Override
-        public Type<Cons<A, B>> domain() {
-            return Type.cons(first, second);
+        public Type<X> domain() {
+            return product.domain();
         }
 
         @Override
         public Type<A> range() {
-            return first;
+            return ((Type.ConsType<A, B>) product.range()).head();
         }
     }
 
-    record Tail<A, B extends HList>(Type<A>first, Type<B>second) implements Category<Cons<A, B>, B> {
-        public <V> Generic<V, F<Cons<A, B>, B>> generic(Type.Var<V> argument, TVarGen vars) {
-            return new Generic.Tail<>(domain().to(range()).ccc(argument, vars), first.ccc(argument, vars), second.ccc(argument, vars));
+    record Tail<X, A, B extends HList>(Category<X, Cons<A, B>>product) implements Category<X, B> {
+        public <V> Generic<V, F<X, B>> generic(Type.Var<V> argument, TVarGen vars) {
+            return new Generic.Tail<V, X, A, B>(domain().to(range()).ccc(argument, vars),
+                    range().ccc(argument, vars),
+                    product.generic(argument, vars));
         }
 
-        public <V> Category<Cons<A, B>, B> substitute(Type.Var<V> argument, Type<V> replacement) {
-            return new Tail<>(first.substitute(argument, replacement), second.substitute(argument, replacement));
+        public <V> Category<X, B> substitute(Type.Var<V> argument, Type<V> replacement) {
+            return new Tail<>(product.substitute(argument, replacement));
         }
 
         @Override
-        public Type<Cons<A, B>> domain() {
-            return Type.cons(first, second);
+        public Type<X> domain() {
+            return product.domain();
         }
 
         @Override
         public Type<B> range() {
-            return second;
+            return ((Type.ConsType<A, B>) product.range()).tail();
         }
 
         public String toString() {
-            return "tail";
+            return "(tail " + product + ")";
         }
+
     }
 
     record Curry<A, B extends HList, C>(Category<Cons<A, B>, C>f) implements Category<B, F<A, C>> {
@@ -260,7 +265,7 @@ public interface Category<A, B> {
         @Override
         public <V> Generic<V, F<Z, B>> generic(Type.Var<V> argument, TVarGen vars) {
             var sig = domain().to(range()).ccc(argument, vars);
-            return new Generic.Call<>(sig, f.generic(argument, vars), x.generic(argument, vars));
+            return new Generic.Call<>(sig, domain().ccc(argument, vars), f.generic(argument, vars), x.generic(argument, vars));
         }
 
         @Override
@@ -283,13 +288,13 @@ public interface Category<A, B> {
         }
     }
 
-    record MakeLambda<Z, A extends HList, B, R>(Type<Z>domain, Type<R>range, Type<A>funDomain, Args<A, B, R>arguments,
-                                                Category<A, B>ccc) implements Category<Z, R> {
+    record MakeLambda<Z, A extends HList, B, R>(Type<Z>domain, Type<R>range, Args<A, B, R>arguments,
+                                                Category<A, B>body) implements Category<Z, R> {
         @Override
         public <X> Generic<X, F<Z, R>> generic(Type.Var<X> argument, TVarGen vars) {
             return new Generic.MakeLambda<>(domain.ccc(argument, vars), range.ccc(argument, vars),
-                    funDomain.ccc(argument, vars),
-                    ccc.generic(argument, vars));
+                    body.domain().ccc(argument, vars), body.range().ccc(argument, vars),
+                    body.generic(argument, vars));
         }
 
         @Override
@@ -298,7 +303,7 @@ public interface Category<A, B> {
         }
 
         public String toString() {
-            return "(λ " + ccc + ")";
+            return "(λ " + body + ")";
         }
     }
 }

@@ -60,7 +60,7 @@ public interface Pass3<A> {
         @Override
         public <T extends HList> Category<T, A> ccc(Var<T> argument, VarGen vars) {
             var prod = list.ccc(argument, vars);
-            return Category.head(this.head, this.tail).compose(prod);
+            return Category.head(prod);
         }
 
         @Override
@@ -71,7 +71,7 @@ public interface Pass3<A> {
 
     record Tail<A, B extends HList>(Type<A>head, Type<B>tail, Pass3<Cons<A, B>>list) implements Pass3<B> {
         public String toString() {
-            return "(tail " + list + ")";
+            return "(product " + list + ")";
         }
 
         public <V> Pass3<B> substitute(Var<V> argument, Pass3<V> replacement) {
@@ -81,7 +81,7 @@ public interface Pass3<A> {
         @Override
         public <T extends HList> Category<T, B> ccc(Var<T> argument, VarGen vars) {
             var prod = list.ccc(argument, vars);
-            return Category.tail(this.head, this.tail).compose(prod);
+            return Category.tail(prod);
         }
 
         @Override
@@ -134,7 +134,7 @@ public interface Pass3<A> {
             var body = f.apply(new Load<>(arg));
             var ccc = body.ccc(arg, vars);
 
-            return Category.makeLambda(argument.type(), domain, range, arguments, ccc);
+            return Category.makeLambda(argument.type(), range, arguments, ccc);
         }
 
         public String toString() {

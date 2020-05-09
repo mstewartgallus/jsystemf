@@ -35,7 +35,7 @@ public final class Main {
 
     static {
         // fixme plan: Source File -> AST -> System F IR -> Category IR -> CPS? -> SSA? -> MethodHandle (or ConstantDesc?)
-        // fixme... still need to introduce lazy values and tail recursion..
+        // fixme... still need to introduce lazy values and product recursion..
         var source = "53";
 
         output("Source", source);

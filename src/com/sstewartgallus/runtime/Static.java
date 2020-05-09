@@ -22,9 +22,9 @@ import static java.lang.invoke.MethodHandles.*;
 import static java.lang.invoke.MethodType.methodType;
 import static org.objectweb.asm.Opcodes.*;
 
-public abstract class Closure<T> extends Value<T> {
+public abstract class Static<T> extends Value<T> {
 
-    private static final Handle BOOTSTRAP = new Handle(H_INVOKESTATIC, Type.getInternalName(Closure.class), "bootstrapInfoTable",
+    private static final Handle BOOTSTRAP = new Handle(H_INVOKESTATIC, Type.getInternalName(Static.class), "bootstrapInfoTable",
             methodType(Infotable.class, Lookup.class, String.class, Class.class).descriptorString(),
             false);
     private static final ConstantDynamic INFO_BOOTSTRAP = new ConstantDynamic("infoTable", Infotable.class.descriptorString(), BOOTSTRAP);
@@ -34,39 +34,40 @@ public abstract class Closure<T> extends Value<T> {
         return (Infotable) ((AnonClassLoader<?>) lookup.lookupClass().getClassLoader()).getValue();
     }
 
-    // fixme... cache comon frames?
-    public static MethodHandle spinFactory(Class<?> environment, Class<?> argument, MethodHandle entryPoint) {
-        var myname = Type.getInternalName(Closure.class);
+    public static Static<?> spin(List<Class<?>> arguments, Class<?> result, MethodHandle entryPoint) {
+        var myname = Type.getInternalName(Static.class);
         var newclassname = myname + "Impl";
 
-        // fixme... privatise as much as possible...
         var cw = new ClassWriter(ClassWriter.COMPUTE_FRAMES | ClassWriter.COMPUTE_MAXS);
-        cw.visit(V14, ACC_FINAL | ACC_PUBLIC, newclassname, null, myname, null);
+        cw.visit(V14, ACC_FINAL | ACC_PRIVATE, newclassname, null, myname, null);
+
+        cw.visitField(ACC_PUBLIC | ACC_FINAL | ACC_STATIC, "SINGLE", Type.getObjectType(newclassname).getDescriptor(), null, null)
+                .visitEnd();
 
         {
-            var mw = cw.visitMethod(ACC_PUBLIC, "<init>", methodType(void.class, environment).descriptorString(), null, null);
+            var mw = cw.visitMethod(ACC_PRIVATE | ACC_STATIC, "<clinit>", methodType(void.class).descriptorString(), null, null);
             mw.visitCode();
-            mw.visitVarInsn(ALOAD, 0);
-            mw.visitMethodInsn(INVOKESPECIAL, myname, "<init>", methodType(void.class).descriptorString(), false);
-            mw.visitVarInsn(ALOAD, 0);
-
-            if (environment.isPrimitive()) {
-                switch (environment.getName()) {
-                    case "boolean", "byte", "char", "short", "int" -> mw.visitVarInsn(ILOAD, 1);
-                    case "long" -> mw.visitVarInsn(LLOAD, 1);
-                    case "float" -> mw.visitVarInsn(FLOAD, 1);
-                    case "double" -> mw.visitVarInsn(DLOAD, 1);
-                    default -> throw new IllegalStateException(environment.getName());
-                }
-            } else {
-                mw.visitVarInsn(ALOAD, 1);
-            }
-            mw.visitFieldInsn(PUTFIELD, newclassname, "environment", environment.descriptorString());
+            mw.visitTypeInsn(NEW, newclassname);
+            mw.visitInsn(DUP);
+            mw.visitMethodInsn(INVOKESPECIAL, newclassname, "<init>", methodType(void.class).descriptorString(), false);
+            mw.visitFieldInsn(PUTSTATIC, newclassname, "SINGLE", Type.getObjectType(newclassname).getDescriptor());
             mw.visitInsn(RETURN);
             mw.visitMaxs(0, 0);
             mw.visitEnd();
         }
 
+        {
+            var mw = cw.visitMethod(ACC_PRIVATE, "<init>", methodType(void.class).descriptorString(), null, null);
+            mw.visitCode();
+            mw.visitVarInsn(ALOAD, 0);
+            mw.visitMethodInsn(INVOKESPECIAL, myname, "<init>", methodType(void.class).descriptorString(), false);
+            mw.visitVarInsn(ALOAD, 0);
+            mw.visitInsn(RETURN);
+            mw.visitMaxs(0, 0);
+            mw.visitEnd();
+        }
+
+        // fixme... no need for dynamically spinning this in the singleton static case...
         {
             var mw = cw.visitMethod(ACC_PUBLIC, "infoTable", methodType(Infotable.class).descriptorString(), null, null);
             mw.visitCode();
@@ -76,25 +77,24 @@ public abstract class Closure<T> extends Value<T> {
             mw.visitEnd();
         }
 
-        // fixme... make private if possible...
-
-        cw.visitField(ACC_PUBLIC, "environment", environment.descriptorString(), null, null)
-                .visitEnd();
-
         cw.visitEnd();
         var bytes = cw.toByteArray();
 
-        var definedClass = AnonClassLoader.defineClass(new Infotable(List.of(environment), List.of(argument), entryPoint), Closure.class.getClassLoader(), newclassname.replace('/', '.'), bytes);
-        var klass = definedClass.asSubclass(Closure.class);
+        var definedClass = AnonClassLoader.defineClass(new Infotable(List.of(), arguments, entryPoint), Static.class.getClassLoader(), newclassname.replace('/', '.'), bytes);
+        var klass = definedClass.asSubclass(Static.class);
 
-        MethodHandle con;
+        MethodHandle singleGetter;
         try {
-            con = lookup().findConstructor(klass, methodType(void.class, environment));
-        } catch (NoSuchMethodException | IllegalAccessException e) {
+            singleGetter = lookup().findStaticGetter(klass, "SINGLE", klass);
+        } catch (IllegalAccessException | NoSuchFieldException e) {
             throw new RuntimeException(e);
         }
 
-        return con.asType(con.type().changeReturnType(Closure.class));
+        try {
+            return (Static) singleGetter.invoke();
+        } catch (Throwable throwable) {
+            throw new RuntimeException(throwable);
+        }
     }
 
     // fixme... look furether into   https://gitlab.haskell.org/ghc/ghc/-/wikis/commentary/rts/haskell-execution/function-calls
@@ -150,11 +150,9 @@ public abstract class Closure<T> extends Value<T> {
 
     private GuardedInvocation saturatedApplication(Infotable metadata, LinkRequest linkRequest, LinkerServices linkerServices) throws NoSuchFieldException, IllegalAccessException {
         var argument = metadata.argument();
-        var environment = metadata.environment().get(0);
-        var execute = metadata.entryPoint();
+        var environment = metadata.environment();
 
-        var environmentGetter = lookup().findGetter(getClass(), "environment", environment);
-        var mh = filterArguments(execute, 0, environmentGetter);
+        var mh = metadata.entryPoint();
 
         // fit into the stupid dummy receiver thing...
         mh = dropArguments(mh, 1, Void.class);
@@ -167,9 +165,9 @@ public abstract class Closure<T> extends Value<T> {
     public abstract Infotable infoTable();
 
     public final String toString() {
-        // fixme... setup metadata for the originator of the closure
+        // fixme... setup metadata for the originator of the Static
 
-        var str = Closure.class.getSimpleName();
+        var str = Static.class.getSimpleName();
         // fixme.. extremely slow reflection based toString
         str += Arrays
                 .stream(getClass().getFields())
@@ -185,6 +183,4 @@ public abstract class Closure<T> extends Value<T> {
                 .collect(Collectors.toList());
         return str;
     }
-
 }
-

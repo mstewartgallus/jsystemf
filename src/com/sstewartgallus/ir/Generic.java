@@ -1,9 +1,6 @@
 package com.sstewartgallus.ir;
 
-import com.sstewartgallus.runtime.Closure;
-import com.sstewartgallus.runtime.ConsValue;
-import com.sstewartgallus.runtime.Value;
-import com.sstewartgallus.runtime.ValueLinker;
+import com.sstewartgallus.runtime.*;
 import com.sstewartgallus.type.*;
 import jdk.dynalink.StandardNamespace;
 import jdk.dynalink.StandardOperation;
@@ -108,37 +105,46 @@ public interface Generic<A, B> {
         }
     }
 
-    record Head<V, A, B extends HList>(Signature<V, F<Cons<A, B>, A>>signature,
-                                       Signature<V, A>head,
-                                       Signature<V, B>tail) implements Generic<V, F<Cons<A, B>, A>> {
-        public Chunk<F<Cons<A, B>, A>> compile(Lookup lookup, Type<V> klass) {
-            var first = head.apply(klass).erase();
+    record Head<V, X, A, B extends HList>(Signature<V, F<X, A>>signature,
+                                       Signature<V, A>first,
+                                       Generic<V, F<X, Cons<A, B>>>product) implements Generic<V, F<X, A>> {
+        public Chunk<F<X, A>> compile(Lookup lookup, Type<V> klass) {
+            var productC = product.compile(lookup, klass).intro();
 
+            var first = this.first.apply(klass).erase();
+
+            System.err.println("head " + first);
             var cs = ValueLinker.link(lookup, StandardOperation.GET.withNamespace(StandardNamespace.PROPERTY).named("head"), methodType(first, ConsValue.class));
             var intro = cs.dynamicInvoker();
+
+            intro = filterReturnValue(productC, intro);
 
             return new Chunk<>(intro);
         }
 
         public String toString() {
-            return "head";
+            return "(head " + product + ")";
         }
     }
 
-    record Tail<V, A, B extends HList>(Signature<V, F<Cons<A, B>, B>>signature,
-                                       Signature<V, A>head,
-                                       Signature<V, B>tail) implements Generic<V, F<Cons<A, B>, B>> {
-        public Chunk<F<Cons<A, B>, B>> compile(Lookup lookup, Type<V> klass) {
-            var second = tail.apply(klass).erase();
+    record Tail<V, X, A, B extends HList>(Signature<V, F<X, B>>signature,
+                                          Signature<V, B>second,
+                                          Generic<V, F<X, Cons<A, B>>>product) implements Generic<V, F<X, B>> {
+        public Chunk<F<X, B>> compile(Lookup lookup, Type<V> klass) {
+            var productC = product.compile(lookup, klass).intro();
+
+            var second = this.second.apply(klass).erase();
 
             var cs = ValueLinker.link(lookup, StandardOperation.GET.withNamespace(StandardNamespace.PROPERTY).named("tail"), methodType(second, ConsValue.class));
             var intro = cs.dynamicInvoker();
 
+            intro = filterReturnValue(productC, intro);
+
             return new Chunk<>(intro);
         }
 
         public String toString() {
-            return "tail";
+            return "(tail " + product + ")";
         }
     }
 
@@ -196,16 +202,21 @@ public interface Generic<A, B> {
         }
     }
 
-    record Call<V, Z, A, B>(Signature<V, F<Z, B>>signature, Generic<V, F<Z, F<A, B>>>f,
+    record Call<V, Z, A, B>(Signature<V, F<Z, B>>signature,
+                            Signature<V, Z>domain,
+                            Generic<V, F<Z, F<A, B>>>f,
                             Generic<V, F<Z, A>>x) implements Generic<V, F<Z, B>> {
 
         public Chunk<F<Z, B>> compile(MethodHandles.Lookup lookup, Type<V> klass) {
+            var d = domain.apply(klass);
+
             var fEmit = f.compile(lookup, klass).intro();
             var xEmit = x.compile(lookup, klass).intro();
 
             var cs = ValueLinker.link(lookup, StandardOperation.CALL, methodType(Object.class, fEmit.type().returnType(), Void.class, xEmit.type().returnType()));
             var mh = cs.dynamicInvoker();
             mh = insertArguments(mh, 1, (Object) null);
+            System.err.println("domain " + d + " " + fEmit + " " + xEmit);
             mh = filterArguments(mh, 0, fEmit, xEmit);
             var reorder = new int[mh.type().parameterCount()];
             for (var ii = 0; ii < reorder.length; ++ii) {
@@ -224,37 +235,26 @@ public interface Generic<A, B> {
     }
 
     record MakeLambda<X, A extends HList, B, Z, R>(Signature<X, Z>domain, Signature<X, R>range,
-                                                   Signature<X, A>funDomain,
+                                                   Signature<X, A>funDomain, Signature<X, B>funRange,
                                                    Generic<X, F<A, B>>body) implements Generic<X, F<Z, R>> {
         public String toString() {
             return "(λ " + body + ")";
         }
 
-        static final MethodHandle PAIR_MH;
-
-        static {
-            try {
-                PAIR_MH = MethodHandles.lookup().findStatic(ConsValue.class, "of", MethodType.methodType(ConsValue.class, Object.class, ConsValue.class));
-            } catch (NoSuchMethodException | IllegalAccessException e) {
-                throw new RuntimeException(e);
-            }
-        }
-
         public Chunk<F<Z, R>> compile(Lookup lookup, Type<X> klass) {
-            var d = (Type.ConsType<?, ?>) funDomain.apply(klass);
-            var head = d.head().erase();
-            var tail = d.tail().erase();
+            var toIgnore = domain.apply(klass).flatten();
+
+            var d = funDomain.apply(klass).flatten();
+            var r = funRange.apply(klass).erase();
 
             var bodyEmit = body.compile(lookup, klass).intro();
 
-            var pair = PAIR_MH.asType(methodType(ConsValue.class, head, tail));
-            pair = permuteArguments(pair, methodType(ConsValue.class, tail, head), 1, 0);
-            bodyEmit = filterReturnValue(pair, bodyEmit);
+            var staticK = Static.spin(d, r, bodyEmit);
 
-            System.err.println(d + " " + bodyEmit);
+            var intro = constant(Value.class, staticK);
+            intro = dropArguments(intro, 0, toIgnore);
 
-            var intro = Closure.spinFactory(tail, head, bodyEmit);
-
+            System.err.println("stati " + intro);
             return new Chunk<>(intro);
         }
     }

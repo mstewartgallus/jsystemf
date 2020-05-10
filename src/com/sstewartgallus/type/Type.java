@@ -2,8 +2,7 @@ package com.sstewartgallus.type;
 
 import com.sstewartgallus.ir.Signature;
 import com.sstewartgallus.ir.TVarGen;
-import com.sstewartgallus.runtime.Closure;
-import com.sstewartgallus.runtime.ConsValue;
+import com.sstewartgallus.runtime.FunValue;
 import com.sstewartgallus.term.Term;
 
 import java.lang.constant.ClassDesc;
@@ -76,8 +75,7 @@ public interface Type<X> {
         }
 
         public Class<?> erase() {
-            // fixme... should be possible to flatten
-            return ConsValue.class;
+            throw new UnsupportedOperationException("unimplemented");
         }
     }
 
@@ -90,9 +88,9 @@ public interface Type<X> {
             return new FunType<>(domain.substitute(v, replacement), range.substitute(v, replacement));
         }
 
-        // we use a generic protocol for our functions
+        // fixme... consider just object as we use a generic protocol for our functions
         public Class<?> erase() {
-            return Closure.class;
+            return FunValue.class;
         }
 
         public String toString() {
@@ -145,7 +143,6 @@ public interface Type<X> {
 
         public <T> Signature<T, V<A, B>> ccc(Var<T> argument, TVarGen vars) {
             Type.Var<E<A, T>> newVar = vars.createTypeVar();
-            System.err.println(argument + " " + newVar);
 
             var body = f.apply(new First<>(newVar))
                     .substitute(argument, new Second<>(newVar))
@@ -207,8 +204,7 @@ public interface Type<X> {
 
     record ConsType<H, T extends HList<T>>(Type<H>head, Type<T>tail) implements Type<HList.Cons<H, T>> {
         public Class<?> erase() {
-            // fixme... should be possible to flatten
-            return ConsValue.class;
+            throw new UnsupportedOperationException("unimplemented");
         }
 
         public List<Class<?>> flatten() {

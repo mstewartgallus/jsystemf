@@ -27,7 +27,7 @@ public interface Category<A, B> {
     }
 
     static <A extends HList<A>, R, B, Z> Category<Z, R> makeLambda(Type<Z> domain, Type<R> range, Args<A, B, R> arguments, Category<A, B> ccc) {
-        return new MakeLambda<>(domain, range, arguments, ccc);
+        return new Lambda<>(domain, range, arguments, ccc);
     }
 
     // fixme.. use separate TypeVarGen type
@@ -154,11 +154,11 @@ public interface Category<A, B> {
         }
     }
 
-    record MakeLambda<Z, A extends HList<A>, B, R>(Type<Z>domain, Type<R>range, Args<A, B, R>arguments,
-                                                   Category<A, B>body) implements Category<Z, R> {
+    record Lambda<Z, A extends HList<A>, B, R>(Type<Z>domain, Type<R>range, Args<A, B, R>arguments,
+                                               Category<A, B>body) implements Category<Z, R> {
         @Override
         public <X> Generic<X, F<Z, R>> generic(Type.Var<X> argument, TVarGen vars) {
-            return new Generic.MakeLambda<>(
+            return new Generic.Lambda<>(
                     domain.to(range).ccc(argument, vars),
                     domain.ccc(argument, vars), range.ccc(argument, vars),
                     body.domain().ccc(argument, vars), body.range().ccc(argument, vars),

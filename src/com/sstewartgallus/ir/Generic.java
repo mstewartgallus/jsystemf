@@ -148,7 +148,7 @@ public interface Generic<A, B> {
         }
     }
 
-    record MakeLambda<X, A extends HList<A>, B, Z, R>(
+    record Lambda<X, A extends HList<A>, B, Z, R>(
             Signature<X, F<Z, R>>signature,
             Signature<X, Z>domain, Signature<X, R>range,
             Signature<X, A>funDomain, Signature<X, B>funRange,

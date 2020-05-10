@@ -119,42 +119,16 @@ public interface Category<A, B> {
         }
     }
 
-    // fixme... get type of the pair we are using..
-    record HeadIndex<X, A, B extends HList<B>>(Type<X> domain, Index<X, HList.Cons<A, B>>product) implements Category<X, A> {
-        public <V> Generic<V, F<X, A>> generic(Type.Var<V> argument, TVarGen vars) {
-            return new Generic.HeadIndex<>(domain().to(range()).ccc(argument, vars),
-                    range().ccc(argument, vars),
-                    product.generic(argument, vars));
-        }
+    record Get<A extends HList<A>, B extends HList<B>, X>(Type<A>type,
+                                                       com.sstewartgallus.pass1.Index<A, HList.Cons<X, B>>ix) implements Category<A, X> {
 
-        public <V> Category<X, A> substitute(Type.Var<V> argument, Type<V> replacement) {
-            return new HeadIndex<>(domain, product.substitute(argument, replacement));
-        }
-
-        public String toString() {
-            return "(head " + product + ")";
-        }
-
-        @Override
-        public Type<X> domain() {
-            return domain;
-        }
-
-        @Override
-        public Type<A> range() {
-            return ((Type.ConsType<A, B>) product.range()).head();
-        }
-    }
-
-    record IdentityZero<A extends HList<A>>(Type<A>type) implements Index<A, A> {
-
-        public <V> Generic.Index<V, F<A, A>> generic(Type.Var<V> argument, TVarGen vars) {
+        public <V> Generic<V, F<A, X>> generic(Type.Var<V> argument, TVarGen vars) {
             var sig = new Type.FunType<>(domain(), range()).ccc(argument, vars);
-            return new Generic.IdentityIndex<>(sig, type.ccc(argument, vars));
+            return new Generic.Get<V, X, A, B>(sig, type.ccc(argument, vars), ix);
         }
 
-        public <V> Category.Index<A, A> substitute(Type.Var<V> argument, Type<V> replacement) {
-            return new IdentityZero<>(type.substitute(argument, replacement));
+        public <V> Category<A, X> substitute(Type.Var<V> argument, Type<V> replacement) {
+            return new Get(type.substitute(argument, replacement), ix.substitute(argument, replacement));
         }
 
         @Override
@@ -163,48 +137,12 @@ public interface Category<A, B> {
         }
 
         @Override
-        public Type<A> range() {
-            return type;
+        public Type<X> range() {
+            return ((Type.ConsType<X, B>)ix.range()).head();
         }
 
         public String toString() {
-            return "I";
-        }
-    }
-
-    interface Index<X, A> {
-        <V> Generic.Index<V, F<X, A>> generic(Type.Var<V> argument, TVarGen vars);
-
-        <V> Category.Index<X, A> substitute(Type.Var<V> argument, Type<V> replacement);
-
-        Type<X> domain();
-
-        Type<A> range();
-    }
-
-    record TailIndex<X, A, B extends HList<B>>(Index<X, HList.Cons<A, B>>product) implements Index<X, B> {
-        public <V> Generic.Index<V, F<X, B>> generic(Type.Var<V> argument, TVarGen vars) {
-            return new Generic.TailIndex<V, X, A, B>(domain().to(range()).ccc(argument, vars),
-                    range().ccc(argument, vars),
-                    product.generic(argument, vars));
-        }
-
-        public <V> Category.Index<X, B> substitute(Type.Var<V> argument, Type<V> replacement) {
-            return new TailIndex<>(product.substitute(argument, replacement));
-        }
-
-        @Override
-        public Type<X> domain() {
-            return product.domain();
-        }
-
-        @Override
-        public Type<B> range() {
-            return ((Type.ConsType<A, B>) product.range()).tail();
-        }
-
-        public String toString() {
-            return "(tail " + product + ")";
+            return "[" + ix + "]";
         }
     }
 

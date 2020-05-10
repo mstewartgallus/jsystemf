@@ -1,5 +1,6 @@
 package com.sstewartgallus.ir;
 
+import com.sstewartgallus.pass1.Index;
 import com.sstewartgallus.runtime.*;
 import com.sstewartgallus.type.*;
 import jdk.dynalink.StandardNamespace;
@@ -9,6 +10,7 @@ import java.lang.constant.ConstantDesc;
 import java.lang.invoke.MethodHandle;
 import java.lang.invoke.MethodHandles;
 import java.lang.invoke.MethodType;
+import java.util.stream.Collectors;
 
 import static java.lang.invoke.MethodHandles.*;
 import static java.lang.invoke.MethodType.methodType;
@@ -62,7 +64,7 @@ public interface Generic<A, B> {
         }
 
         public Chunk<F<A, B>> compile(Lookup lookup, Type<V> klass) {
-            var d = domain.apply(klass).erase();
+            var d = domain.apply(klass).flatten();
             var t = range.apply(klass).erase();
 
             // fixme... do this lazily..
@@ -200,7 +202,7 @@ public interface Generic<A, B> {
             var cs = ValueLinker.link(lookup, StandardOperation.CALL, methodType(Object.class, fEmit.type().returnType(), Void.class, xEmit.type().returnType()));
             var mh = cs.dynamicInvoker();
             mh = insertArguments(mh, 1, (Object) null);
-            System.err.println("domain " + d + " " + fEmit + " " + xEmit);
+            System.err.println("domain " + mh + " " + fEmit + " " + xEmit);
             mh = filterArguments(mh, 0, fEmit, xEmit);
             var reorder = new int[mh.type().parameterCount()];
             for (var ii = 0; ii < reorder.length; ++ii) {
@@ -218,61 +220,28 @@ public interface Generic<A, B> {
         }
     }
 
-    interface Index<X, A> {
-        Chunk<A> compile(MethodHandles.Lookup lookup, Type<X> klass);
-    }
+    record Get<V, X, A extends HList<A>, B extends HList<B>>(Signature<V, F<A, X>>signature,
+                                                             Signature<V, A>value,
+                                                             Index<A, HList.Cons<X, B>>ix) implements Generic<V, F<A, X>> {
+        public Chunk<F<A, X>> compile(Lookup lookup, Type<V> klass) {
+            var domain = value.apply(klass).flatten();
+            var num = ix.reify();
+            var result = domain.get(num);
 
-    record IdentityIndex<V, A>(Signature<V, F<A, A>>signature, Signature<V, A>value) implements Index<V, F<A, A>> {
-        public Chunk<F<A, A>> compile(MethodHandles.Lookup lookup, Type<V> klass) {
-            var type = value.apply(klass).erase();
-            return new Chunk<>(MethodHandles.identity(type));
+            var before = domain.stream().limit(num).collect(Collectors.toUnmodifiableList());
+            var after = domain.stream().skip(num + 1).collect(Collectors.toUnmodifiableList());
+
+            var mh = MethodHandles.identity(result);
+            mh = dropArguments(mh, 0, before);
+            mh = dropArguments(mh, mh.type().parameterCount(), after);
+
+            System.err.println(domain + " " + num + " " + before + " " + after + " " + mh);
+
+            return new Chunk<>(mh);
         }
 
         public String toString() {
-            return "I";
-        }
-    }
-
-    record HeadIndex<V, X, A, B extends HList<B>>(Signature<V, F<X, A>>signature,
-                                                  Signature<V, A>first,
-                                                  Index<V, F<X, HList.Cons<A, B>>>product) implements Generic<V, F<X, A>> {
-        public Chunk<F<X, A>> compile(Lookup lookup, Type<V> klass) {
-            var productC = product.compile(lookup, klass).intro();
-
-            var first = this.first.apply(klass).erase();
-
-            System.err.println("head " + first);
-            var cs = ValueLinker.link(lookup, StandardOperation.GET.withNamespace(StandardNamespace.PROPERTY).named("head"), methodType(first, ConsValue.class));
-            var intro = cs.dynamicInvoker();
-
-            intro = filterReturnValue(productC, intro);
-
-            return new Chunk<>(intro);
-        }
-
-        public String toString() {
-            return "(head " + product + ")";
-        }
-    }
-
-    record TailIndex<V, X, A, B extends HList<B>>(Signature<V, F<X, B>>signature,
-                                                  Signature<V, B>second,
-                                                  Index<V, F<X, HList.Cons<A, B>>>product) implements Index<V, F<X, B>> {
-        public Chunk<F<X, B>> compile(Lookup lookup, Type<V> klass) {
-            var productC = product.compile(lookup, klass).intro();
-
-            var second = this.second.apply(klass).erase();
-
-            var cs = ValueLinker.link(lookup, StandardOperation.GET.withNamespace(StandardNamespace.PROPERTY).named("tail"), methodType(second, ConsValue.class));
-            var intro = cs.dynamicInvoker();
-
-            intro = filterReturnValue(productC, intro);
-
-            return new Chunk<>(intro);
-        }
-
-        public String toString() {
-            return "(tail " + product + ")";
+            return "[" + ix + "]";
         }
     }
 

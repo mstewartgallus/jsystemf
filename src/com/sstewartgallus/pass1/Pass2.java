@@ -136,9 +136,9 @@ public interface Pass2<A> {
 
     record Results<L extends HList<L>, R, A>(Type<L>type,
                                              Args<L, R, A>proof,
-                                             Function<Pass3.Index<L>, Pass3<R>>f) {
+                                             Function<Pass3.Get<?, L>, Pass3<R>>f) {
         public Pass3.Lambda<L, R, A> lambda(Type<A> range) {
-            return new Pass3.Lambda<>(type, range, proof, x -> f.apply(new Pass3.LoadZero<>(x, new Pass3.Ix.Zip<>(x.type()))));
+            return new Pass3.Lambda<>(type, range, proof, x -> f.apply(new Pass3.Get<>(x, new Index.Zip<>(type))));
         }
 
     }
@@ -210,7 +210,12 @@ public interface Pass2<A> {
             var proof = bodyTuple.proof;
             var f = bodyTuple.f;
             return new Results<>(Type.cons(domain, tail), new Args.Add<>(domain, proof),
-                    argList -> f.apply(new Pass3.Tail<>(argList)).substitute(v, new Pass3.Head<>(argList)));
+                    argList -> helper(v, f, argList));
+        }
+
+        public <Q extends HList<Q>, L extends HList<L>, R> Pass3<R> helper(Var<A> v, Function<Pass3.Get<?, L>, Pass3<R>> f, Pass3.Get<Q, HList.Cons<A, L>> argList) {
+            Index<Q, L> next = new Index.Next<A, Q, L>(argList.ix());
+            return f.apply(new Pass3.Get<Q, L>(argList.variable(), next)).substitute(v, new Pass3.WrapGet<>(argList));
         }
 
         public <V> Body<F<A, B>> substitute(Var<V> argument, Pass2<V> replacement) {

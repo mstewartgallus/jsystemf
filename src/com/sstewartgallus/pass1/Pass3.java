@@ -47,56 +47,27 @@ public interface Pass3<A> {
         }
     }
 
-    interface Index<A> {
-        <V> Index<A> substitute(Var<V> argument, Pass3<V> replacement);
-
-        // fixme... remove....
-        <T extends HList<T>> Category.Index<T, A> ccc(Var<T> argument, VarGen vars);
-
-        // fixme... remove..
-        Type<A> type();
-    }
-
-    // fixme... use an hlist of args instead...
-    record Head<A, B extends HList<B>>(Index<HList.Cons<A, B>>list) implements Pass3<A> {
+    // fixme... eventually eliminated
+    record WrapGet<C extends HList<C>, A, B extends HList<B>>(Get<C, HList.Cons<A, B>> list) implements Pass3<A> {
         public String toString() {
-            return "(head " + list + ")";
+            return list.toString();
         }
 
         public <V> Pass3<A> substitute(Var<V> argument, Pass3<V> replacement) {
-            return new Head<>(list.substitute(argument, replacement));
+            throw null;
         }
 
         @Override
         public <T extends HList<T>> Category<T, A> ccc(Var<T> argument, VarGen vars) {
-            var prod = list.ccc(argument, vars);
-            return new Category.HeadIndex<>(argument.type(), prod);
+            if (argument == list.variable) {
+                return (Category<T, A>) new Category.Get<>(list.variable.type(), list.ix);
+            }
+            throw new IllegalStateException("mismatching variables " + list);
         }
 
         @Override
         public Type<A> type() {
             return ((Type.ConsType<A, B>) list.type()).head();
-        }
-    }
-
-    record Tail<A, B extends HList<B>>(Index<HList.Cons<A, B>>list) implements Index<B> {
-        public String toString() {
-            return "(tail " + list + ")";
-        }
-
-        public <V> Index<B> substitute(Var<V> argument, Pass3<V> replacement) {
-            return new Tail<>(list.substitute(argument, replacement));
-        }
-
-        @Override
-        public <T extends HList<T>> Category.Index<T, B> ccc(Var<T> argument, VarGen vars) {
-            var prod = list.ccc(argument, vars);
-            return new Category.TailIndex<>(prod);
-        }
-
-        @Override
-        public Type<B> type() {
-            return ((Type.ConsType<A, B>) list.type()).tail();
         }
     }
 
@@ -126,26 +97,13 @@ public interface Pass3<A> {
         }
     }
 
-    record LoadZero<A extends HList<A>, B>(Var<A>variable) implements Index<A> {
-
-        @Override
+    record Get<A extends HList<A>, B extends HList<B>>(Var<A>variable, Index<A, B>ix) {
         public Type<A> type() {
             return variable.type();
         }
 
-        public <V extends HList<V>> Category.Index<V, A> ccc(Var<V> argument, VarGen vars) {
-            if (argument == variable) {
-                return (Category.Index<V, A>) new Category.IdentityZero<>(variable.type());
-            }
-            throw new IllegalStateException("mismatching variables " + this);
-        }
-
-        public <V> Index<A> substitute(Var<V> argument, Pass3<V> replacement) {
-            throw new UnsupportedOperationException("unimplemented");
-        }
-
         public String toString() {
-            return variable.toString();
+            return variable + "[" + ix + "]";
         }
     }
 

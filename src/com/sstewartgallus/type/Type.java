@@ -68,7 +68,7 @@ public interface Type<X> {
         NIL;
 
         public List<Class<?>> flatten() {
-            return List.of();
+            return List.of(Void.class);
         }
 
         public <X> Signature<X, HList.Nil> ccc(Var<X> v, TVarGen vars) {
@@ -212,8 +212,14 @@ public interface Type<X> {
         }
 
         public List<Class<?>> flatten() {
-            var l = new ArrayList<>(tail.flatten());
+            var l = new ArrayList<Class<?>>();
             l.add(head.erase());
+
+            Type<?> current = tail;
+            while (current instanceof ConsType<?, ?> cons) {
+                l.add(cons.head.erase());
+                current = cons.tail;
+            }
             return l;
         }
 

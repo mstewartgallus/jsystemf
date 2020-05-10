@@ -66,13 +66,13 @@ public interface Pass2<A> {
         }
     }
 
-    record Head<A, B extends HList>(Type<A>head, Type<B>tail, Pass2<Cons<A, B>>list) implements Pass2<A> {
+    record Head<A, B extends HList>(Pass2<Cons<A, B>>list) implements Pass2<A> {
         public String toString() {
             return "(head " + list + ")";
         }
 
         public <V> Pass2<A> substitute(Var<V> argument, Pass2<V> replacement) {
-            return new Head<>(head, tail, list.substitute(argument, replacement));
+            return new Head<>(list.substitute(argument, replacement));
         }
 
         @Override
@@ -82,17 +82,17 @@ public interface Pass2<A> {
 
         @Override
         public Type<A> type() {
-            return head;
+            return ((Type.ConsType<A, B>)list.type()).head();
         }
     }
 
-    record Tail<A, B extends HList>(Type<A>head, Type<B>tail, Pass2<Cons<A, B>>list) implements Pass2<B> {
+    record Tail<A, B extends HList>(Pass2<Cons<A, B>>list) implements Pass2<B> {
         public String toString() {
-            return "(product " + list + ")";
+            return "(tail " + list + ")";
         }
 
         public <V> Pass2<B> substitute(Var<V> argument, Pass2<V> replacement) {
-            return new Tail<>(head, tail, list.substitute(argument, replacement));
+            return new Tail<>(list.substitute(argument, replacement));
         }
 
         @Override
@@ -102,7 +102,7 @@ public interface Pass2<A> {
 
         @Override
         public Type<B> type() {
-            return tail;
+            return ((Type.ConsType<A, B>)list.type()).tail();
         }
     }
 
@@ -137,9 +137,9 @@ public interface Pass2<A> {
 
     record Results<L extends HList, R, A>(Type<L>type,
                                           Args<L, R, A>proof,
-                                          Function<Pass3<L>, Pass3<R>>f) {
+                                          Function<Pass3.Index<L>, Pass3<R>>f) {
         public Pass3.Lambda<L, R, A> lambda(Type<A> range) {
-            return new Pass3.Lambda<>(type, range, proof, f);
+            return new Pass3.Lambda<>(type, range, proof, x -> f.apply(new Pass3.LoadZero<>(x)));
         }
 
     }
@@ -210,7 +210,7 @@ public interface Pass2<A> {
             var tail = bodyTuple.type;
             var proof = bodyTuple.proof;
             var f = bodyTuple.f;
-            return new Results<>(Type.cons(domain, tail), new Args.Add<>(domain, proof), argList -> f.apply(new Pass3.Tail<>(domain, tail, argList)).substitute(v, new Pass3.Head<>(domain, tail, argList)));
+            return new Results<>(Type.cons(domain, tail), new Args.Add<>(domain, proof), argList -> f.apply(new Pass3.Tail<>(argList)).substitute(v, new Pass3.Head<>(argList)));
         }
 
         public <V> Body<F<A, B>> substitute(Var<V> argument, Pass2<V> replacement) {
@@ -233,8 +233,8 @@ public interface Pass2<A> {
             var t = Type.cons(domain, tail);
             var list = vars.createArgument(t);
 
-            body = body.substitute(newArg, new Head<>(domain, tail, new Load<>(list)));
-            body = body.substitute(argument, new Tail<>(domain, tail, new Load<>(list)));
+            body = body.substitute(newArg, new Head<>(new Load<>(list)));
+            body = body.substitute(argument, new Tail<>(new Load<>(list)));
 
             return Category.curry(body.ccc(list, vars));
         }

@@ -48,13 +48,23 @@ public interface Pass3<A> {
         }
     }
 
-    record Head<A, B extends HList>(Type<A>head, Type<B>tail, Pass3<Cons<A, B>>list) implements Pass3<A> {
+    interface Index<A> {
+        <V> Index<A> substitute(Var<V> argument, Pass3<V> replacement);
+
+        // fixme... remove....
+        <T extends HList> Category<T, A> ccc(Var<T> argument, VarGen vars);
+
+        // fixme... remove..
+        Type<A> type();
+    }
+
+    record Head<A, B extends HList>(Index<Cons<A, B>>list) implements Pass3<A> {
         public String toString() {
             return "(head " + list + ")";
         }
 
         public <V> Pass3<A> substitute(Var<V> argument, Pass3<V> replacement) {
-            return new Head<>(head, tail, list.substitute(argument, replacement));
+            return new Head<>(list.substitute(argument, replacement));
         }
 
         @Override
@@ -65,17 +75,17 @@ public interface Pass3<A> {
 
         @Override
         public Type<A> type() {
-            return head;
+            return ((Type.ConsType<A, B>) list.type()).head();
         }
     }
 
-    record Tail<A, B extends HList>(Type<A>head, Type<B>tail, Pass3<Cons<A, B>>list) implements Pass3<B> {
+    record Tail<A, B extends HList>(Index<Cons<A, B>>list) implements Index<B> {
         public String toString() {
-            return "(product " + list + ")";
+            return "(tail " + list + ")";
         }
 
-        public <V> Pass3<B> substitute(Var<V> argument, Pass3<V> replacement) {
-            return new Tail<>(head, tail, list.substitute(argument, replacement));
+        public <V> Index<B> substitute(Var<V> argument, Pass3<V> replacement) {
+            return new Tail<>(list.substitute(argument, replacement));
         }
 
         @Override
@@ -86,7 +96,7 @@ public interface Pass3<A> {
 
         @Override
         public Type<B> type() {
-            return tail;
+            return ((Type.ConsType<A, B>) list.type()).tail();
         }
     }
 
@@ -116,8 +126,32 @@ public interface Pass3<A> {
         }
     }
 
-    record Lambda<A extends HList, B, R>(Type<A>domain, Type<R> range, Args<A, B, R>arguments,
-                                         Function<Pass3<A>, Pass3<B>>f) implements Pass3<R> {
+
+    record LoadZero<A extends HList>(Var<A>variable) implements Index<A> {
+
+        @Override
+        public Type<A> type() {
+            return variable.type();
+        }
+
+        public <V extends HList> Category<V, A> ccc(Var<V> argument, VarGen vars) {
+            if (argument == variable) {
+                return (Category<V, A>) new Category.Identity<>(variable.type());
+            }
+            throw new IllegalStateException("mismatching variables " + this);
+        }
+
+        public <V> Index<A> substitute(Var<V> argument, Pass3<V> replacement) {
+            throw new UnsupportedOperationException("unimplemented");
+        }
+
+        public String toString() {
+            return variable.toString();
+        }
+    }
+
+    record Lambda<A extends HList, B, R>(Type<A>domain, Type<R>range, Args<A, B, R>arguments,
+                                         Function<Var<A>, Pass3<B>>f) implements Pass3<R> {
         private static final ThreadLocal<Integer> DEPTH = ThreadLocal.withInitial(() -> 0);
 
         public <V> Pass3<R> substitute(Var<V> argument, Pass3<V> replacement) {
@@ -131,7 +165,7 @@ public interface Pass3<A> {
         @Override
         public <T extends HList> Category<T, R> ccc(Var<T> argument, VarGen vars) {
             var arg = vars.createArgument(domain);
-            var body = f.apply(new Load<>(arg));
+            var body = f.apply(arg);
             var ccc = body.ccc(arg, vars);
 
             return Category.makeLambda(argument.type(), range, arguments, ccc);
@@ -144,7 +178,7 @@ public interface Pass3<A> {
             String str;
             try {
                 var dummy = new Var<>(domain, depth);
-                var body = f.apply(new Load<>(dummy));
+                var body = f.apply(dummy);
 
                 str = "{" + dummy + ": " + domain + "} -> " + body;
             } finally {

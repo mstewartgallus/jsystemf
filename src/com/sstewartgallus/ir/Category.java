@@ -292,7 +292,7 @@ public interface Category<A, B> {
         }
 
         public String toString() {
-            return "(λ " + body + ")";
+            return "(λ" + arguments + " " + body + ")";
         }
     }
 }

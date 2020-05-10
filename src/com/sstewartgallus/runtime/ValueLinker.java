@@ -40,7 +40,7 @@ public final class ValueLinker implements TypeBasedGuardingDynamicLinker {
     @Override
     public GuardedInvocation getGuardedInvocation(LinkRequest linkRequest, LinkerServices linkerServices) throws NoSuchFieldException, IllegalAccessException {
         // fixme... do stuff for other values?
-        var receiver = (Closure<?>) linkRequest.getReceiver();
+        var receiver = (FunValue<?>) linkRequest.getReceiver();
         return receiver.getGuardedInvocation(linkRequest, linkerServices);
     }
 }

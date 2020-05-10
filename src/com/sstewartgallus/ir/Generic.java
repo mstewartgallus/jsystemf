@@ -218,6 +218,64 @@ public interface Generic<A, B> {
         }
     }
 
+    interface Index<X, A> {
+        Chunk<A> compile(MethodHandles.Lookup lookup, Type<X> klass);
+    }
+
+    record IdentityIndex<V, A>(Signature<V, F<A, A>>signature, Signature<V, A>value) implements Index<V, F<A, A>> {
+        public Chunk<F<A, A>> compile(MethodHandles.Lookup lookup, Type<V> klass) {
+            var type = value.apply(klass).erase();
+            return new Chunk<>(MethodHandles.identity(type));
+        }
+
+        public String toString() {
+            return "I";
+        }
+    }
+
+    record HeadIndex<V, X, A, B extends HList<B>>(Signature<V, F<X, A>>signature,
+                                                  Signature<V, A>first,
+                                                  Index<V, F<X, HList.Cons<A, B>>>product) implements Generic<V, F<X, A>> {
+        public Chunk<F<X, A>> compile(Lookup lookup, Type<V> klass) {
+            var productC = product.compile(lookup, klass).intro();
+
+            var first = this.first.apply(klass).erase();
+
+            System.err.println("head " + first);
+            var cs = ValueLinker.link(lookup, StandardOperation.GET.withNamespace(StandardNamespace.PROPERTY).named("head"), methodType(first, ConsValue.class));
+            var intro = cs.dynamicInvoker();
+
+            intro = filterReturnValue(productC, intro);
+
+            return new Chunk<>(intro);
+        }
+
+        public String toString() {
+            return "(head " + product + ")";
+        }
+    }
+
+    record TailIndex<V, X, A, B extends HList<B>>(Signature<V, F<X, B>>signature,
+                                                  Signature<V, B>second,
+                                                  Index<V, F<X, HList.Cons<A, B>>>product) implements Index<V, F<X, B>> {
+        public Chunk<F<X, B>> compile(Lookup lookup, Type<V> klass) {
+            var productC = product.compile(lookup, klass).intro();
+
+            var second = this.second.apply(klass).erase();
+
+            var cs = ValueLinker.link(lookup, StandardOperation.GET.withNamespace(StandardNamespace.PROPERTY).named("tail"), methodType(second, ConsValue.class));
+            var intro = cs.dynamicInvoker();
+
+            intro = filterReturnValue(productC, intro);
+
+            return new Chunk<>(intro);
+        }
+
+        public String toString() {
+            return "(tail " + product + ")";
+        }
+    }
+
     record MakeLambda<X, A extends HList<A>, B, Z, R>(Signature<X, Z>domain, Signature<X, R>range,
                                                       Signature<X, A>funDomain, Signature<X, B>funRange,
                                                       Generic<X, F<A, B>>body) implements Generic<X, F<Z, R>> {

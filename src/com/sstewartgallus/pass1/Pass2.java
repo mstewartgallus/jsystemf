@@ -81,7 +81,7 @@ public interface Pass2<A> {
 
         @Override
         public Type<A> type() {
-            return ((Type.ConsType<A, B>)list.type()).head();
+            return ((Type.ConsType<A, B>) list.type()).head();
         }
     }
 
@@ -101,7 +101,7 @@ public interface Pass2<A> {
 
         @Override
         public Type<B> type() {
-            return ((Type.ConsType<A, B>)list.type()).tail();
+            return ((Type.ConsType<A, B>) list.type()).tail();
         }
     }
 
@@ -138,7 +138,7 @@ public interface Pass2<A> {
                                              Args<L, R, A>proof,
                                              Function<Pass3.Index<L>, Pass3<R>>f) {
         public Pass3.Lambda<L, R, A> lambda(Type<A> range) {
-            return new Pass3.Lambda<>(type, range, proof, x -> f.apply(new Pass3.LoadZero<>(x)));
+            return new Pass3.Lambda<>(type, range, proof, x -> f.apply(new Pass3.LoadZero<>(x, new Pass3.Ix.Zip<>(x.type()))));
         }
 
     }
@@ -209,7 +209,8 @@ public interface Pass2<A> {
             var tail = bodyTuple.type;
             var proof = bodyTuple.proof;
             var f = bodyTuple.f;
-            return new Results<>(Type.cons(domain, tail), new Args.Add<>(domain, proof), argList -> f.apply(new Pass3.Tail<>(argList)).substitute(v, new Pass3.Head<>(argList)));
+            return new Results<>(Type.cons(domain, tail), new Args.Add<>(domain, proof),
+                    argList -> f.apply(new Pass3.Tail<>(argList)).substitute(v, new Pass3.Head<>(argList)));
         }
 
         public <V> Body<F<A, B>> substitute(Var<V> argument, Pass2<V> replacement) {

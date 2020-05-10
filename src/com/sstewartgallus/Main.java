@@ -73,7 +73,7 @@ public final class Main {
         var ccc = captures.ccc(vars.createArgument(Type.nil()), vars);
         outputT("Ccc", ccc, ccc.domain() + " -> " + ccc.range());
 
-        var generic = Category.generic(ccc);
+        var generic = Category.generic(tupleCcc);
         outputT("Generic", generic, generic.signature());
 
         var main = Generic.compile(lookup(), generic);

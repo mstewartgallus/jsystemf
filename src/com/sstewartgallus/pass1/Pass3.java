@@ -51,7 +51,7 @@ public interface Pass3<A> {
         <V> Index<A> substitute(Var<V> argument, Pass3<V> replacement);
 
         // fixme... remove....
-        <T extends HList<T>> Category<T, A> ccc(Var<T> argument, VarGen vars);
+        <T extends HList<T>> Category.Index<T, A> ccc(Var<T> argument, VarGen vars);
 
         // fixme... remove..
         Type<A> type();
@@ -70,7 +70,7 @@ public interface Pass3<A> {
         @Override
         public <T extends HList<T>> Category<T, A> ccc(Var<T> argument, VarGen vars) {
             var prod = list.ccc(argument, vars);
-            return Category.head(prod);
+            return new Category.HeadIndex<>(argument.type(), prod);
         }
 
         @Override
@@ -89,9 +89,9 @@ public interface Pass3<A> {
         }
 
         @Override
-        public <T extends HList<T>> Category<T, B> ccc(Var<T> argument, VarGen vars) {
+        public <T extends HList<T>> Category.Index<T, B> ccc(Var<T> argument, VarGen vars) {
             var prod = list.ccc(argument, vars);
-            return Category.tail(prod);
+            return new Category.TailIndex<>(prod);
         }
 
         @Override
@@ -126,17 +126,16 @@ public interface Pass3<A> {
         }
     }
 
-
-    record LoadZero<A extends HList<A>>(Var<A>variable) implements Index<A> {
+    record LoadZero<A extends HList<A>, B>(Var<A>variable) implements Index<A> {
 
         @Override
         public Type<A> type() {
             return variable.type();
         }
 
-        public <V extends HList<V>> Category<V, A> ccc(Var<V> argument, VarGen vars) {
+        public <V extends HList<V>> Category.Index<V, A> ccc(Var<V> argument, VarGen vars) {
             if (argument == variable) {
-                return (Category<V, A>) new Category.Identity<>(variable.type());
+                return (Category.Index<V, A>) new Category.IdentityZero<>(variable.type());
             }
             throw new IllegalStateException("mismatching variables " + this);
         }

@@ -1,15 +1,14 @@
 package com.sstewartgallus.ir;
 
 import com.sstewartgallus.pass1.Index;
-import com.sstewartgallus.runtime.*;
+import com.sstewartgallus.runtime.Static;
+import com.sstewartgallus.runtime.Value;
+import com.sstewartgallus.runtime.ValueLinker;
 import com.sstewartgallus.type.*;
-import jdk.dynalink.StandardNamespace;
 import jdk.dynalink.StandardOperation;
 
 import java.lang.constant.ConstantDesc;
-import java.lang.invoke.MethodHandle;
 import java.lang.invoke.MethodHandles;
-import java.lang.invoke.MethodType;
 import java.util.stream.Collectors;
 
 import static java.lang.invoke.MethodHandles.*;
@@ -77,17 +76,6 @@ public interface Generic<A, B> {
             var handle = constant(t, k);
             handle = dropArguments(handle, 0, d);
             return new Chunk<>(handle);
-        }
-    }
-
-    record Identity<V, A>(Signature<V, F<A, A>>signature, Signature<V, A>value) implements Generic<V, F<A, A>> {
-        public Chunk<F<A, A>> compile(MethodHandles.Lookup lookup, Type<V> klass) {
-            var type = value.apply(klass).erase();
-            return new Chunk<>(MethodHandles.identity(type));
-        }
-
-        public String toString() {
-            return "I";
         }
     }
 

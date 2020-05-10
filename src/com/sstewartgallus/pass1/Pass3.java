@@ -48,7 +48,7 @@ public interface Pass3<A> {
     }
 
     // fixme... eventually eliminated
-    record WrapGet<C extends HList<C>, A, B extends HList<B>>(Get<C, HList.Cons<A, B>> list) implements Pass3<A> {
+    record WrapGet<C extends HList<C>, A, B extends HList<B>>(Get<C, HList.Cons<A, B>>list) implements Pass3<A> {
         public String toString() {
             return list.toString();
         }
@@ -79,10 +79,7 @@ public interface Pass3<A> {
         }
 
         public <V extends HList<V>> Category<V, A> ccc(Var<V> argument, VarGen vars) {
-            if (argument == variable) {
-                return (Category<V, A>) new Category.Identity<>(variable.type());
-            }
-            throw new IllegalStateException("mismatching variables " + this);
+            throw new UnsupportedOperationException("unimplemented");
         }
 
         public <V> Pass3<A> substitute(Var<V> argument, Pass3<V> replacement) {
@@ -149,7 +146,7 @@ public interface Pass3<A> {
     }
 
     record Pure<A extends Constable>(Type<A>type, ConstantDesc value) implements Pass3<A> {
-
+        @Override
         public <V> Pass3<A> substitute(Var<V> argument, Pass3<V> replacement) {
             return this;
         }

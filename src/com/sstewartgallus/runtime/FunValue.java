@@ -10,7 +10,6 @@ import java.lang.invoke.MethodHandle;
 import java.util.stream.Collectors;
 
 import static java.lang.invoke.MethodHandles.*;
-import static java.lang.invoke.MethodType.methodType;
 
 // fixme... break out into another class for environment capturing closures...
 public abstract class FunValue<T> extends Value<T> {

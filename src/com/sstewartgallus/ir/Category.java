@@ -46,7 +46,7 @@ public interface Category<A, B> {
 
         public <V> Generic<V, F<A, B>> generic(Type.Var<V> argument, TVarGen vars) {
             var sig = domain.to(range).ccc(argument, vars);
-            return new Generic.Unit<V, A, B>(sig, domain.ccc(argument, vars), range.ccc(argument, vars), value);
+            return new Generic.Unit<>(sig, domain.ccc(argument, vars), range.ccc(argument, vars), value);
         }
 
         public <V> Category<A, B> substitute(Type.Var<V> argument, Type<V> replacement) {
@@ -54,42 +54,16 @@ public interface Category<A, B> {
         }
     }
 
-    record Identity<A>(Type<A>type) implements Category<A, A> {
-
-        public <V> Generic<V, F<A, A>> generic(Type.Var<V> argument, TVarGen vars) {
-            var sig = new Type.FunType<>(domain(), range()).ccc(argument, vars);
-            return new Generic.Identity<>(sig, type.ccc(argument, vars));
-        }
-
-        public <V> Category<A, A> substitute(Type.Var<V> argument, Type<V> replacement) {
-            return new Identity<>(type.substitute(argument, replacement));
-        }
-
-        @Override
-        public Type<A> domain() {
-            return type;
-        }
-
-        @Override
-        public Type<A> range() {
-            return type;
-        }
-
-        public String toString() {
-            return "I";
-        }
-    }
-
     record Get<A extends HList<A>, B extends HList<B>, X>(Type<A>type,
-                                                       com.sstewartgallus.pass1.Index<A, HList.Cons<X, B>>ix) implements Category<A, X> {
+                                                          com.sstewartgallus.pass1.Index<A, HList.Cons<X, B>>ix) implements Category<A, X> {
 
         public <V> Generic<V, F<A, X>> generic(Type.Var<V> argument, TVarGen vars) {
             var sig = new Type.FunType<>(domain(), range()).ccc(argument, vars);
-            return new Generic.Get<V, X, A, B>(sig, type.ccc(argument, vars), ix);
+            return new Generic.Get<>(sig, type.ccc(argument, vars), ix);
         }
 
         public <V> Category<A, X> substitute(Type.Var<V> argument, Type<V> replacement) {
-            return new Get(type.substitute(argument, replacement), ix.substitute(argument, replacement));
+            return new Get<>(type.substitute(argument, replacement), ix.substitute(argument, replacement));
         }
 
         @Override
@@ -99,7 +73,7 @@ public interface Category<A, B> {
 
         @Override
         public Type<X> range() {
-            return ((Type.ConsType<X, B>)ix.range()).head();
+            return ((Type.ConsType<X, B>) ix.range()).head();
         }
 
         public String toString() {

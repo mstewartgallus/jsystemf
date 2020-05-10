@@ -1,6 +1,8 @@
 package com.sstewartgallus.pass1;
 
-import com.sstewartgallus.type.*;
+import com.sstewartgallus.type.F;
+import com.sstewartgallus.type.HList;
+import com.sstewartgallus.type.Type;
 
 public interface Args<A extends HList<A>, B, R> {
 
@@ -10,7 +12,8 @@ public interface Args<A extends HList<A>, B, R> {
         }
     }
 
-    record Add<A, B, L extends HList<L>, R>(Type<A>argument, Args<L, B, R>tail) implements Args<HList.Cons<A, L>, B, F<A, R>> {
+    record Add<A, B, L extends HList<L>, R>(Type<A>argument,
+                                            Args<L, B, R>tail) implements Args<HList.Cons<A, L>, B, F<A, R>> {
         public String toString() {
             var builder = new StringBuilder();
             builder.append("{");

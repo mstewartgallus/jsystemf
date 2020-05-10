@@ -73,7 +73,7 @@ public interface Pass1<L> {
 
     record Load<A>(Var<A>variable) implements Pass1<A> {
         public Results<A> captureEnv(VarGen vars) {
-            return new Results<A>(Set.of(variable), new Pass2.Load<>(variable));
+            return new Results<>(Set.of(variable), new Pass2.Load<>(variable));
         }
 
         @Override
@@ -145,7 +145,7 @@ public interface Pass1<L> {
             List<Var<?>> free = captured.stream().sorted().collect(Collectors.toUnmodifiableList());
 
             var chunk = results.value;
-            return new Results<A>(captured, helper(free, 0, chunk));
+            return new Results<>(captured, helper(free, 0, chunk));
         }
 
         @Override
@@ -193,7 +193,7 @@ public interface Pass1<L> {
         }
 
         public Type<F<A, B>> type() {
-            var range = f.apply(new Pass1.Load<>(new Var<A>(domain, 0))).type();
+            var range = f.apply(new Pass1.Load<>(new Var<>(domain, 0))).type();
             return new Type.FunType<>(domain, range);
         }
 
@@ -206,7 +206,7 @@ public interface Pass1<L> {
             captures.remove(v);
 
             var chunk = results.value;
-            return new BodyResults<F<A, B>>(captures, new Pass2.Lambda<A, B>(domain, x -> chunk.substitute(v, x)));
+            return new BodyResults<>(captures, new Pass2.Lambda<>(domain, x -> chunk.substitute(v, x)));
         }
 
         public String toString() {

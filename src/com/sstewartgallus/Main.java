@@ -28,12 +28,12 @@ import static java.io.StreamTokenizer.TT_WORD;
 import static java.lang.invoke.MethodHandles.lookup;
 
 public final class Main {
+    public static final int INDENT = 26;
+    public static final int INDENT_2 = 50;
     static final Supplier<Object> TO_EXEC;
     private static final TypeApply TP = ValueInvoker.newInstance(lookup(), TypeApply.class);
     private static final Apply AP = ValueInvoker.newInstance(lookup(), Apply.class);
     private static final ApplyInt API = ValueInvoker.newInstance(lookup(), ApplyInt.class);
-    public static final int INDENT = 26;
-    public static final int INDENT_2 = 50;
 
     static {
         // fixme plan: Source File -> AST -> System F IR -> Category IR -> CPS? -> SSA? -> MethodHandle (or ConstantDesc?)
@@ -110,7 +110,7 @@ public final class Main {
         if (y < 0) {
             y = INDENT_2;
         }
-        System.err.println(stage + " ".repeat(x)  + "\t" + resultsStr + " ".repeat(y) + ":" + "\t" + type);
+        System.err.println(stage + " ".repeat(x) + "\t" + resultsStr + " ".repeat(y) + ":" + "\t" + type);
     }
 
     private static Node.Array parse(Reader reader) throws IOException {

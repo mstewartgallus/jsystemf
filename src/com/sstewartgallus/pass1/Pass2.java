@@ -1,6 +1,5 @@
 package com.sstewartgallus.pass1;
 
-import com.sstewartgallus.ir.Category;
 import com.sstewartgallus.ir.VarGen;
 import com.sstewartgallus.term.Var;
 import com.sstewartgallus.type.F;
@@ -51,36 +50,6 @@ public interface Pass2<A> {
 
         public String toString() {
             return "{" + f + " " + x + "}";
-        }
-    }
-
-    record Head<A, B extends HList<B>>(Pass2<HList.Cons<A, B>>list) implements Pass2<A> {
-        public String toString() {
-            return "(head " + list + ")";
-        }
-
-        public <V> Pass2<A> substitute(Var<V> argument, Pass2<V> replacement) {
-            return new Head<>(list.substitute(argument, replacement));
-        }
-
-        @Override
-        public Type<A> type() {
-            return ((Type.ConsType<A, B>) list.type()).head();
-        }
-    }
-
-    record Tail<A, B extends HList<B>>(Pass2<HList.Cons<A, B>>list) implements Pass2<B> {
-        public String toString() {
-            return "(tail " + list + ")";
-        }
-
-        public <V> Pass2<B> substitute(Var<V> argument, Pass2<V> replacement) {
-            return new Tail<>(list.substitute(argument, replacement));
-        }
-
-        @Override
-        public Type<B> type() {
-            return ((Type.ConsType<A, B>) list.type()).tail();
         }
     }
 
@@ -177,8 +146,8 @@ public interface Pass2<A> {
         }
 
         public <Q extends HList<Q>, L extends HList<L>, R> Pass3<R> helper(Var<A> v, Function<Pass3.Get<?, L>, Pass3<R>> f, Pass3.Get<Q, HList.Cons<A, L>> argList) {
-            Index<Q, L> next = new Index.Next<A, Q, L>(argList.ix());
-            return f.apply(new Pass3.Get<Q, L>(argList.variable(), next)).substitute(v, new Pass3.WrapGet<>(argList));
+            Index<Q, L> next = new Index.Next<>(argList.ix());
+            return f.apply(new Pass3.Get<>(argList.variable(), next)).substitute(v, new Pass3.WrapGet<>(argList));
         }
 
         public <V> Body<F<A, B>> substitute(Var<V> argument, Pass2<V> replacement) {
@@ -186,7 +155,7 @@ public interface Pass2<A> {
         }
 
         public Type<F<A, B>> type() {
-            var range = f.apply(new Load<>(new Var<A>(domain, 0))).type();
+            var range = f.apply(new Load<>(new Var<>(domain, 0))).type();
             return new Type.FunType<>(domain, range);
         }
 

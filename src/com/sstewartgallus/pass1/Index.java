@@ -8,7 +8,6 @@ public interface Index<A extends HList<A>, B extends HList<B>> {
         throw null;
     }
 
-
     Type<B> range();
 
     default int reify() {

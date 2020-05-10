@@ -1,13 +1,17 @@
 package com.sstewartgallus.ir;
 
 import com.sstewartgallus.pass1.Index;
+import com.sstewartgallus.runtime.LdcStub;
 import com.sstewartgallus.runtime.Static;
 import com.sstewartgallus.runtime.Value;
 import com.sstewartgallus.runtime.ValueLinker;
 import com.sstewartgallus.type.*;
 import jdk.dynalink.StandardOperation;
 
+import java.lang.constant.ClassDesc;
 import java.lang.constant.ConstantDesc;
+import java.lang.constant.DynamicConstantDesc;
+import java.lang.invoke.MethodHandle;
 import java.lang.invoke.MethodHandles;
 import java.util.stream.Collectors;
 
@@ -66,14 +70,18 @@ public interface Generic<A, B> {
             var d = domain.apply(klass).flatten();
             var t = range.apply(klass).erase();
 
-            // fixme... do this lazily..
-            Object k;
-            try {
-                k = value.resolveConstantDesc(lookup);
-            } catch (ReflectiveOperationException e) {
-                throw new RuntimeException(e);
+            MethodHandle handle;
+            if (value instanceof String || value instanceof Float || value instanceof Double || value instanceof Integer || value instanceof Long) {
+                handle = constant(t, value);
+            } else if (value instanceof ClassDesc desc) {
+                throw new RuntimeException("unimplemented " + desc);
+            } else if (value instanceof DynamicConstantDesc<?> dyn) {
+                // fixme... use proper lookup scope..
+                handle = LdcStub.spin(t, dyn);
+            } else {
+                throw new RuntimeException("unimplemented");
             }
-            var handle = constant(t, k);
+
             handle = dropArguments(handle, 0, d);
             return new Chunk<>(handle);
         }

@@ -1,10 +1,5 @@
 package com.sstewartgallus.runtime;
 
-import jdk.dynalink.*;
-import jdk.dynalink.linker.GuardedInvocation;
-import jdk.dynalink.linker.LinkRequest;
-import jdk.dynalink.linker.LinkerServices;
-import jdk.dynalink.linker.support.Guards;
 import org.objectweb.asm.ClassWriter;
 import org.objectweb.asm.ConstantDynamic;
 import org.objectweb.asm.Handle;
@@ -18,7 +13,8 @@ import java.util.Comparator;
 import java.util.List;
 import java.util.stream.Collectors;
 
-import static java.lang.invoke.MethodHandles.*;
+import static java.lang.invoke.MethodHandles.Lookup;
+import static java.lang.invoke.MethodHandles.lookup;
 import static java.lang.invoke.MethodType.methodType;
 import static org.objectweb.asm.Opcodes.*;
 
@@ -36,6 +32,10 @@ public abstract class Closure<T> extends FunValue<T> {
     }
 
     // fixme... cache comon frames?
+    public static MethodHandle spinFactory(List<Class<?>> environment, List<Class<?>> arguments, MethodHandle entryPoint) {
+        throw new UnsupportedOperationException("not yet implemented");
+    }
+
     public static MethodHandle spinFactory(Class<?> environment, Class<?> argument, MethodHandle entryPoint) {
         var myname = Type.getInternalName(Closure.class);
         var newclassname = myname + "Impl";

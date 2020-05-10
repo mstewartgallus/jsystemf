@@ -15,9 +15,9 @@ import java.util.Objects;
 import java.util.function.Function;
 
 // https://gitlab.haskell.org/ghc/ghc/-/wikis/commentary/compiler/core-syn-type
-// argument CoreExpr = Expr Var
+// arguments CoreExpr = Expr Var
 
-// data Expr b	-- "b" for the argument of binders,
+// data Expr b	-- "b" for the arguments of binders,
 //   = Var	  Id
 //   | Lit   Literal
 //   | App   (Expr b) (Arg b)
@@ -28,8 +28,8 @@ import java.util.function.Function;
 //   | Tick  (Tickish Id) (Expr b)
 //   | Type  Type
 
-// argument Arg b = Expr b
-// argument Alt b = (AltCon, [b], Expr b)
+// arguments Arg b = Expr b
+// arguments Alt b = (AltCon, [b], Expr b)
 
 // data AltCon = DataAlt DataCon | LitAlt  Literal | DEFAULT
 

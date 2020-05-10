@@ -281,7 +281,9 @@ public interface Category<A, B> {
                                                    Category<A, B>body) implements Category<Z, R> {
         @Override
         public <X> Generic<X, F<Z, R>> generic(Type.Var<X> argument, TVarGen vars) {
-            return new Generic.MakeLambda<>(domain.ccc(argument, vars), range.ccc(argument, vars),
+            return new Generic.MakeLambda<>(
+                    domain.to(range).ccc(argument, vars),
+                    domain.ccc(argument, vars), range.ccc(argument, vars),
                     body.domain().ccc(argument, vars), body.range().ccc(argument, vars),
                     body.generic(argument, vars));
         }

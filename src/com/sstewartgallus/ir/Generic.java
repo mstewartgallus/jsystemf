@@ -141,7 +141,7 @@ public interface Generic<A, B> {
         }
 
         public Chunk<F<X, V<A, B>>> compile(MethodHandles.Lookup lookup, Type<Z> klass) {
-            // fixme... need to accept a klass argument at runtime I think...
+            // fixme... need to accept a klass arguments at runtime I think...
             // fixme... createa  E<Z,A> from Z ?
             throw new UnsupportedOperationException("unimplemented");
             //  return f.compile(lookup, klass);
@@ -181,7 +181,7 @@ public interface Generic<A, B> {
             // fixme... probably no need to spin a class for each methodhandle....
             // fixme... maybe only specialize for int...
             // fixme.. otoh we might want to inline large environments in the future ....
-            // fixme... I could link to the closure above to get it's argument, or... explicitly track state.
+            // fixme... I could link to the closure above to get it's arguments, or... explicitly track state.
             var intro = Closure.spinFactory(tail, head, fEmit);
 
             return new Chunk<>(intro);
@@ -245,9 +245,11 @@ public interface Generic<A, B> {
         }
     }
 
-    record MakeLambda<X, A extends HList<A>, B, Z, R>(Signature<X, Z>domain, Signature<X, R>range,
-                                                      Signature<X, A>funDomain, Signature<X, B>funRange,
-                                                      Generic<X, F<A, B>>body) implements Generic<X, F<Z, R>> {
+    record MakeLambda<X, A extends HList<A>, B, Z, R>(
+            Signature<X, F<Z, R>>signature,
+            Signature<X, Z>domain, Signature<X, R>range,
+            Signature<X, A>funDomain, Signature<X, B>funRange,
+            Generic<X, F<A, B>>body) implements Generic<X, F<Z, R>> {
         public String toString() {
             return "(λ " + body + ")";
         }

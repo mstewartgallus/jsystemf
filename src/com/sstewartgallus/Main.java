@@ -53,7 +53,7 @@ public final class Main {
         output("System F", term);
 
         // hack to work around Java's lack of proper generics
-        var expr = Term.apply(Type.INT.l(x -> Type.INT.l(y -> x)), Prims.of(4));
+        var expr = Type.INT.l(x -> Type.INT.l(y -> x));
         outputT("System F", expr, expr.type());
 
         var vars = new VarGen();
@@ -79,13 +79,13 @@ public final class Main {
         var main = Generic.compile(lookup(), generic);
         output("Main", main);
 
-        var bar = API.apply(main, 3);
+        var bar = API.apply(main, 3, 6);
         output("Result", bar);
 
-        TO_EXEC = () -> API.apply(main, 3);
+        TO_EXEC = () -> API.apply(main, 3, 5);
     }
 
-    // fixme.. argument check more safely...
+    // fixme.. arguments check more safely...
     static <A> Term<?> apply(Term<?> f, Term<A> x) {
         if (f.type() instanceof Type.FunType<?, ?> funType) {
             if (!Objects.equals(funType.domain(), x.type())) {
@@ -143,7 +143,7 @@ public final class Main {
     }
 
     private static Term<?> toTerm(Node.Array source) {
-        // fixme.. doesn'argument work for special forms..
+        // fixme.. doesn'arguments work for special forms..
 
         return source.parse(str -> switch (str) {
             case "+" -> Type.INT.l(x -> Type.INT.l(y -> Prims.add(x, y)));
@@ -194,7 +194,7 @@ public final class Main {
 
     @FunctionalInterface
     public interface ApplyInt {
-        <A, B> int apply(Value<F<A, Integer>> f, int x);
+        int apply(Value<F<Integer, F<Integer, Integer>>> f, int x, int y);
     }
 
 }

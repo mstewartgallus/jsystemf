@@ -5,22 +5,12 @@ import jdk.dynalink.linker.GuardedInvocation;
 import jdk.dynalink.linker.LinkRequest;
 import jdk.dynalink.linker.LinkerServices;
 import jdk.dynalink.linker.support.Guards;
-import org.objectweb.asm.ClassWriter;
-import org.objectweb.asm.ConstantDynamic;
-import org.objectweb.asm.Handle;
-import org.objectweb.asm.Type;
 
 import java.lang.invoke.MethodHandle;
-import java.lang.reflect.Field;
-import java.lang.reflect.Modifier;
-import java.util.Arrays;
-import java.util.Comparator;
-import java.util.List;
 import java.util.stream.Collectors;
 
 import static java.lang.invoke.MethodHandles.*;
 import static java.lang.invoke.MethodType.methodType;
-import static org.objectweb.asm.Opcodes.*;
 
 // fixme... break out into another class for environment capturing closures...
 public abstract class FunValue<T> extends Value<T> {
@@ -56,7 +46,7 @@ public abstract class FunValue<T> extends Value<T> {
         var cs = linkRequest.getCallSiteDescriptor();
         var calledWithParams = cs.getMethodType().parameterCount() - 2;
 
-        var arity = metadata.argument().size();
+        var arity = metadata.arguments().size();
 
         if (calledWithParams < arity) {
             return partialApplication(metadata, calledWithParams, linkRequest, linkerServices);
@@ -74,11 +64,22 @@ public abstract class FunValue<T> extends Value<T> {
     }
 
     private GuardedInvocation partialApplication(Infotable metadata, int calledWith, LinkRequest linkRequest, LinkerServices linkerServices) {
-        throw new UnsupportedOperationException("unimplemented");
+        // fixme... make this work for closures as well... ?
+        var arguments = metadata.arguments();
+        var entryPoint = metadata.entryPoint();
+
+        var calledArgs = arguments.stream().limit(calledWith).collect(Collectors.toUnmodifiableList());
+        var freeArgs = arguments.stream().skip(calledWith + 1).collect(Collectors.toUnmodifiableList());
+
+        var mh = Closure.spinFactory(calledArgs, freeArgs, entryPoint);
+
+        mh = dropArguments(mh, 0, Value.class, Void.class);
+
+        return new GuardedInvocation(mh, Guards.isOfClass(getClass(), mh.type().changeReturnType(boolean.class)));
     }
 
     private GuardedInvocation saturatedApplication(Infotable metadata, LinkRequest linkRequest, LinkerServices linkerServices) throws NoSuchFieldException, IllegalAccessException {
-        var argument = metadata.argument();
+        var argument = metadata.arguments();
         var environment = metadata.environment();
         var execute = metadata.entryPoint();
 

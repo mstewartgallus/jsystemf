@@ -1,14 +1,9 @@
 package com.sstewartgallus.type;
 
-public abstract class HList {
-    private HList(Void dummy) {
+public interface HList<H extends HList<H>> {
+    record Nil() implements HList<Nil> {
     }
 
-    protected HList() {
-        this(unreachable());
-    }
-
-    private static Void unreachable() {
-        throw new UnsupportedOperationException("phantom type");
+    record Cons<H, T extends HList<T>>(H head, T tail) implements HList<Cons<H, T>> {
     }
 }

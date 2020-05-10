@@ -27,11 +27,11 @@ public interface Type<X> {
         return new Forall<>(f);
     }
 
-    static Type<Nil> nil() {
+    static Type<HList.Nil> nil() {
         return NilType.NIL;
     }
 
-    static <H, T extends HList> Type<Cons<H, T>> cons(Type<H> head, Type<T> tail) {
+    static <H, T extends HList<T>> Type<HList.Cons<H, T>> cons(Type<H> head, Type<T> tail) {
         return new ConsType<>(head, tail);
     }
 
@@ -64,14 +64,14 @@ public interface Type<X> {
         throw new UnsupportedOperationException(getClass().toString());
     }
 
-    enum NilType implements Type<Nil> {
+    enum NilType implements Type<HList.Nil> {
         NIL;
 
         public List<Class<?>> flatten() {
             return List.of();
         }
 
-        public <X> Signature<X, Nil> ccc(Var<X> v, TVarGen vars) {
+        public <X> Signature<X, HList.Nil> ccc(Var<X> v, TVarGen vars) {
             return new Signature.NilType<>();
         }
 
@@ -205,7 +205,7 @@ public interface Type<X> {
         }
     }
 
-    record ConsType<H, T extends HList>(Type<H>head, Type<T>tail) implements Type<Cons<H, T>> {
+    record ConsType<H, T extends HList<T>>(Type<H>head, Type<T>tail) implements Type<HList.Cons<H, T>> {
         public Class<?> erase() {
             // fixme... should be possible to flatten
             return ConsValue.class;
@@ -217,7 +217,7 @@ public interface Type<X> {
             return l;
         }
 
-        public <X> Signature<X, Cons<H, T>> ccc(Var<X> v, TVarGen vars) {
+        public <X> Signature<X, HList.Cons<H, T>> ccc(Var<X> v, TVarGen vars) {
             return new Signature.ConsType<>(head.ccc(v, vars), tail.ccc(v, vars));
         }
 
@@ -226,7 +226,7 @@ public interface Type<X> {
             builder.append("(");
             builder.append(head);
 
-            Type<? extends HList> current = tail;
+            Type<? extends HList<?>> current = tail;
             while (current instanceof ConsType<?, ?> cons) {
                 builder.append(" Δ ");
                 builder.append(cons.head);

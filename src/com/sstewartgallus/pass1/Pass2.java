@@ -3,7 +3,6 @@ package com.sstewartgallus.pass1;
 import com.sstewartgallus.ir.Category;
 import com.sstewartgallus.ir.VarGen;
 import com.sstewartgallus.term.Var;
-import com.sstewartgallus.type.Cons;
 import com.sstewartgallus.type.F;
 import com.sstewartgallus.type.HList;
 import com.sstewartgallus.type.Type;
@@ -20,7 +19,7 @@ public interface Pass2<A> {
         throw null;
     }
 
-    <T extends HList> Category<T, A> ccc(Var<T> argument, VarGen vars);
+    <T extends HList<T>> Category<T, A> ccc(Var<T> argument, VarGen vars);
 
     default Pass3<A> tuple(VarGen vars) {
         throw new UnsupportedOperationException(getClass().toString());
@@ -31,9 +30,9 @@ public interface Pass2<A> {
 
         Type<A> type();
 
-        <T extends HList> Category<T, A> ccc(Var<T> argument, VarGen vars);
+        <T extends HList<T>> Category<T, A> ccc(Var<T> argument, VarGen vars);
 
-        Results<? extends HList, ?, A> tuple(VarGen vars);
+        Results<? extends HList<?>, ?, A> tuple(VarGen vars);
     }
 
     record Apply<A, B>(Pass2<F<A, B>>f, Pass2<A>x) implements Pass2<B> {
@@ -46,7 +45,7 @@ public interface Pass2<A> {
         }
 
         @Override
-        public <T extends HList> Category<T, B> ccc(Var<T> argument, VarGen vars) {
+        public <T extends HList<T>> Category<T, B> ccc(Var<T> argument, VarGen vars) {
             var fCcc = f.ccc(argument, vars);
             var xCcc = x.ccc(argument, vars);
             return Category.call(fCcc, xCcc);
@@ -66,7 +65,7 @@ public interface Pass2<A> {
         }
     }
 
-    record Head<A, B extends HList>(Pass2<Cons<A, B>>list) implements Pass2<A> {
+    record Head<A, B extends HList<B>>(Pass2<HList.Cons<A, B>>list) implements Pass2<A> {
         public String toString() {
             return "(head " + list + ")";
         }
@@ -76,7 +75,7 @@ public interface Pass2<A> {
         }
 
         @Override
-        public <T extends HList> Category<T, A> ccc(Var<T> argument, VarGen vars) {
+        public <T extends HList<T>> Category<T, A> ccc(Var<T> argument, VarGen vars) {
             return Category.head(list.ccc(argument, vars));
         }
 
@@ -86,7 +85,7 @@ public interface Pass2<A> {
         }
     }
 
-    record Tail<A, B extends HList>(Pass2<Cons<A, B>>list) implements Pass2<B> {
+    record Tail<A, B extends HList<B>>(Pass2<HList.Cons<A, B>>list) implements Pass2<B> {
         public String toString() {
             return "(tail " + list + ")";
         }
@@ -96,7 +95,7 @@ public interface Pass2<A> {
         }
 
         @Override
-        public <T extends HList> Category<T, B> ccc(Var<T> argument, VarGen vars) {
+        public <T extends HList<T>> Category<T, B> ccc(Var<T> argument, VarGen vars) {
             return Category.tail(list.ccc(argument, vars));
         }
 
@@ -116,7 +115,7 @@ public interface Pass2<A> {
             return variable.type();
         }
 
-        public <V extends HList> Category<V, A> ccc(Var<V> argument, VarGen vars) {
+        public <V extends HList<V>> Category<V, A> ccc(Var<V> argument, VarGen vars) {
             if (argument == variable) {
                 return (Category<V, A>) new Category.Identity<>(variable.type());
             }
@@ -135,9 +134,9 @@ public interface Pass2<A> {
         }
     }
 
-    record Results<L extends HList, R, A>(Type<L>type,
-                                          Args<L, R, A>proof,
-                                          Function<Pass3.Index<L>, Pass3<R>>f) {
+    record Results<L extends HList<L>, R, A>(Type<L>type,
+                                             Args<L, R, A>proof,
+                                             Function<Pass3.Index<L>, Pass3<R>>f) {
         public Pass3.Lambda<L, R, A> lambda(Type<A> range) {
             return new Pass3.Lambda<>(type, range, proof, x -> f.apply(new Pass3.LoadZero<>(x)));
         }
@@ -160,7 +159,7 @@ public interface Pass2<A> {
         }
 
         @Override
-        public <T extends HList> Category<T, A> ccc(Var<T> argument, VarGen vars) {
+        public <T extends HList<T>> Category<T, A> ccc(Var<T> argument, VarGen vars) {
             return body.ccc(argument, vars);
         }
 
@@ -170,7 +169,7 @@ public interface Pass2<A> {
     }
 
     record Expr<A>(Pass2<A>body) implements Body<A> {
-        public Results<? extends HList, ?, A> tuple(VarGen vars) {
+        public Results<? extends HList<?>, ?, A> tuple(VarGen vars) {
             var bodyTuple = body.tuple(vars);
             return new Results<>(Type.nil(), new Args.Zero<>(), nil -> bodyTuple);
         }
@@ -186,7 +185,7 @@ public interface Pass2<A> {
         }
 
         @Override
-        public <T extends HList> Category<T, A> ccc(Var<T> argument, VarGen vars) {
+        public <T extends HList<T>> Category<T, A> ccc(Var<T> argument, VarGen vars) {
             return body.ccc(argument, vars);
         }
 
@@ -199,14 +198,14 @@ public interface Pass2<A> {
                         Function<Pass2<A>, Body<B>>f) implements Body<F<A, B>> {
         private static final ThreadLocal<Integer> DEPTH = ThreadLocal.withInitial(() -> 0);
 
-        public Results<? extends HList, ?, F<A, B>> tuple(VarGen vars) {
+        public Results<? extends HList<?>, ?, F<A, B>> tuple(VarGen vars) {
             var v = vars.createArgument(domain);
             var body = f.apply(new Load<>(v));
             var bodyTuple = body.tuple(vars);
             return consArgument(v, bodyTuple);
         }
 
-        public <L extends HList, R> Results<Cons<A, L>, R, F<A, B>> consArgument(Var<A> v, Results<L, R, B> bodyTuple) {
+        public <L extends HList<L>, R> Results<HList.Cons<A, L>, R, F<A, B>> consArgument(Var<A> v, Results<L, R, B> bodyTuple) {
             var tail = bodyTuple.type;
             var proof = bodyTuple.proof;
             var f = bodyTuple.f;
@@ -223,7 +222,7 @@ public interface Pass2<A> {
         }
 
         @Override
-        public <T extends HList> Category<T, F<A, B>> ccc(Var<T> argument, VarGen vars) {
+        public <T extends HList<T>> Category<T, F<A, B>> ccc(Var<T> argument, VarGen vars) {
             var tail = argument.type();
 
             var newArg = vars.createArgument(domain);
@@ -269,7 +268,7 @@ public interface Pass2<A> {
         }
 
         @Override
-        public <T extends HList> Category<T, A> ccc(Var<T> argument, VarGen vars) {
+        public <T extends HList<T>> Category<T, A> ccc(Var<T> argument, VarGen vars) {
             return Category.constant(argument.type(), type, value);
         }
 

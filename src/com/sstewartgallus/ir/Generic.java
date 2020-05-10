@@ -28,7 +28,7 @@ public interface Generic<A, B> {
 
     // for Category we use Void the class that has only one inhabitant
     // fixme... I believe what we want for Generic is the T such that Class<T> has only one inhabitant... null!
-    static <B> Value<B> compile(MethodHandles.Lookup lookup, Generic<Void, F<Nil, B>> generic) {
+    static <B> Value<B> compile(MethodHandles.Lookup lookup, Generic<Void, F<HList.Nil, B>> generic) {
         var chunk = generic.compile(lookup, Type.VOID);
 
         var handle = chunk.intro();
@@ -89,9 +89,9 @@ public interface Generic<A, B> {
         }
     }
 
-    record Head<V, X, A, B extends HList>(Signature<V, F<X, A>>signature,
-                                       Signature<V, A>first,
-                                       Generic<V, F<X, Cons<A, B>>>product) implements Generic<V, F<X, A>> {
+    record Head<V, X, A, B extends HList<B>>(Signature<V, F<X, A>>signature,
+                                             Signature<V, A>first,
+                                             Generic<V, F<X, HList.Cons<A, B>>>product) implements Generic<V, F<X, A>> {
         public Chunk<F<X, A>> compile(Lookup lookup, Type<V> klass) {
             var productC = product.compile(lookup, klass).intro();
 
@@ -111,9 +111,9 @@ public interface Generic<A, B> {
         }
     }
 
-    record Tail<V, X, A, B extends HList>(Signature<V, F<X, B>>signature,
-                                          Signature<V, B>second,
-                                          Generic<V, F<X, Cons<A, B>>>product) implements Generic<V, F<X, B>> {
+    record Tail<V, X, A, B extends HList<B>>(Signature<V, F<X, B>>signature,
+                                             Signature<V, B>second,
+                                             Generic<V, F<X, HList.Cons<A, B>>>product) implements Generic<V, F<X, B>> {
         public Chunk<F<X, B>> compile(Lookup lookup, Type<V> klass) {
             var productC = product.compile(lookup, klass).intro();
 
@@ -146,10 +146,10 @@ public interface Generic<A, B> {
         }
     }
 
-    record Curry<V, A, B extends HList, C>(Signature<V, F<B, F<A, C>>>signature,
-                                           Signature<V, A>head,
-                                           Signature<V, B>tail,
-                                           Generic<V, F<Cons<A, B>, C>>f) implements Generic<V, F<B, F<A, C>>> {
+    record Curry<V, A, B extends HList<B>, C>(Signature<V, F<B, F<A, C>>>signature,
+                                              Signature<V, A>head,
+                                              Signature<V, B>tail,
+                                              Generic<V, F<HList.Cons<A, B>, C>>f) implements Generic<V, F<B, F<A, C>>> {
 
         static final MethodHandle PAIR_MH;
 
@@ -218,9 +218,9 @@ public interface Generic<A, B> {
         }
     }
 
-    record MakeLambda<X, A extends HList, B, Z, R>(Signature<X, Z>domain, Signature<X, R>range,
-                                                   Signature<X, A>funDomain, Signature<X, B>funRange,
-                                                   Generic<X, F<A, B>>body) implements Generic<X, F<Z, R>> {
+    record MakeLambda<X, A extends HList<A>, B, Z, R>(Signature<X, Z>domain, Signature<X, R>range,
+                                                      Signature<X, A>funDomain, Signature<X, B>funRange,
+                                                      Generic<X, F<A, B>>body) implements Generic<X, F<Z, R>> {
         public String toString() {
             return "(λ " + body + ")";
         }

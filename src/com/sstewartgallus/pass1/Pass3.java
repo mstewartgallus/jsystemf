@@ -3,7 +3,6 @@ package com.sstewartgallus.pass1;
 import com.sstewartgallus.ir.Category;
 import com.sstewartgallus.ir.VarGen;
 import com.sstewartgallus.term.Var;
-import com.sstewartgallus.type.Cons;
 import com.sstewartgallus.type.F;
 import com.sstewartgallus.type.HList;
 import com.sstewartgallus.type.Type;
@@ -20,7 +19,7 @@ public interface Pass3<A> {
         throw null;
     }
 
-    <T extends HList> Category<T, A> ccc(Var<T> argument, VarGen vars);
+    <T extends HList<T>> Category<T, A> ccc(Var<T> argument, VarGen vars);
 
     record Apply<A, B>(Pass3<F<A, B>>f, Pass3<A>x) implements Pass3<B> {
         public <V> Pass3<B> substitute(Var<V> argument, Pass3<V> replacement) {
@@ -28,7 +27,7 @@ public interface Pass3<A> {
         }
 
         @Override
-        public <T extends HList> Category<T, B> ccc(Var<T> argument, VarGen vars) {
+        public <T extends HList<T>> Category<T, B> ccc(Var<T> argument, VarGen vars) {
             var fCcc = f.ccc(argument, vars);
             var xCcc = x.ccc(argument, vars);
             return Category.call(fCcc, xCcc);
@@ -52,13 +51,14 @@ public interface Pass3<A> {
         <V> Index<A> substitute(Var<V> argument, Pass3<V> replacement);
 
         // fixme... remove....
-        <T extends HList> Category<T, A> ccc(Var<T> argument, VarGen vars);
+        <T extends HList<T>> Category<T, A> ccc(Var<T> argument, VarGen vars);
 
         // fixme... remove..
         Type<A> type();
     }
 
-    record Head<A, B extends HList>(Index<Cons<A, B>>list) implements Pass3<A> {
+    // fixme... use an hlist of args instead...
+    record Head<A, B extends HList<B>>(Index<HList.Cons<A, B>>list) implements Pass3<A> {
         public String toString() {
             return "(head " + list + ")";
         }
@@ -68,7 +68,7 @@ public interface Pass3<A> {
         }
 
         @Override
-        public <T extends HList> Category<T, A> ccc(Var<T> argument, VarGen vars) {
+        public <T extends HList<T>> Category<T, A> ccc(Var<T> argument, VarGen vars) {
             var prod = list.ccc(argument, vars);
             return Category.head(prod);
         }
@@ -79,7 +79,7 @@ public interface Pass3<A> {
         }
     }
 
-    record Tail<A, B extends HList>(Index<Cons<A, B>>list) implements Index<B> {
+    record Tail<A, B extends HList<B>>(Index<HList.Cons<A, B>>list) implements Index<B> {
         public String toString() {
             return "(tail " + list + ")";
         }
@@ -89,7 +89,7 @@ public interface Pass3<A> {
         }
 
         @Override
-        public <T extends HList> Category<T, B> ccc(Var<T> argument, VarGen vars) {
+        public <T extends HList<T>> Category<T, B> ccc(Var<T> argument, VarGen vars) {
             var prod = list.ccc(argument, vars);
             return Category.tail(prod);
         }
@@ -107,7 +107,7 @@ public interface Pass3<A> {
             return variable.type();
         }
 
-        public <V extends HList> Category<V, A> ccc(Var<V> argument, VarGen vars) {
+        public <V extends HList<V>> Category<V, A> ccc(Var<V> argument, VarGen vars) {
             if (argument == variable) {
                 return (Category<V, A>) new Category.Identity<>(variable.type());
             }
@@ -127,14 +127,14 @@ public interface Pass3<A> {
     }
 
 
-    record LoadZero<A extends HList>(Var<A>variable) implements Index<A> {
+    record LoadZero<A extends HList<A>>(Var<A>variable) implements Index<A> {
 
         @Override
         public Type<A> type() {
             return variable.type();
         }
 
-        public <V extends HList> Category<V, A> ccc(Var<V> argument, VarGen vars) {
+        public <V extends HList<V>> Category<V, A> ccc(Var<V> argument, VarGen vars) {
             if (argument == variable) {
                 return (Category<V, A>) new Category.Identity<>(variable.type());
             }
@@ -150,8 +150,8 @@ public interface Pass3<A> {
         }
     }
 
-    record Lambda<A extends HList, B, R>(Type<A>domain, Type<R>range, Args<A, B, R>arguments,
-                                         Function<Var<A>, Pass3<B>>f) implements Pass3<R> {
+    record Lambda<A extends HList<A>, B, R>(Type<A>domain, Type<R>range, Args<A, B, R>arguments,
+                                            Function<Var<A>, Pass3<B>>f) implements Pass3<R> {
         private static final ThreadLocal<Integer> DEPTH = ThreadLocal.withInitial(() -> 0);
 
         public <V> Pass3<R> substitute(Var<V> argument, Pass3<V> replacement) {
@@ -163,7 +163,7 @@ public interface Pass3<A> {
         }
 
         @Override
-        public <T extends HList> Category<T, R> ccc(Var<T> argument, VarGen vars) {
+        public <T extends HList<T>> Category<T, R> ccc(Var<T> argument, VarGen vars) {
             var arg = vars.createArgument(domain);
             var body = f.apply(arg);
             var ccc = body.ccc(arg, vars);
@@ -198,7 +198,7 @@ public interface Pass3<A> {
         }
 
         @Override
-        public <T extends HList> Category<T, A> ccc(Var<T> argument, VarGen vars) {
+        public <T extends HList<T>> Category<T, A> ccc(Var<T> argument, VarGen vars) {
             return Category.constant(argument.type(), type, value);
         }
 

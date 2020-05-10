@@ -76,8 +76,8 @@ public interface Signature<A, B> {
         }
     }
 
-    record NilType<X>() implements Signature<X, Nil> {
-        public Type<Nil> apply(Type<X> input) {
+    record NilType<X>() implements Signature<X, HList.Nil> {
+        public Type<HList.Nil> apply(Type<X> input) {
             return Type.nil();
         }
 
@@ -87,9 +87,9 @@ public interface Signature<A, B> {
 
     }
 
-    record ConsType<X, H, T extends HList>(Signature<X, H>head,
-                                           Signature<X, T>tail) implements Signature<X, Cons<H, T>> {
-        public Type<Cons<H, T>> apply(Type<X> input) {
+    record ConsType<X, H, T extends HList<T>>(Signature<X, H>head,
+                                              Signature<X, T>tail) implements Signature<X, HList.Cons<H, T>> {
+        public Type<HList.Cons<H, T>> apply(Type<X> input) {
             return Type.cons(head.apply(input), tail.apply(input));
         }
 

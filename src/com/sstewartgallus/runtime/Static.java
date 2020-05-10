@@ -30,9 +30,9 @@ public abstract class Static<T> extends FunValue<T> {
         var newclassname = myname + "Impl";
 
         var cw = new ClassWriter(ClassWriter.COMPUTE_FRAMES | ClassWriter.COMPUTE_MAXS);
-        cw.visit(V14, ACC_FINAL | ACC_PRIVATE, newclassname, null, myname, null);
+        cw.visit(V14, ACC_FINAL | ACC_PUBLIC, newclassname, null, myname, null);
 
-        cw.visitField(ACC_PUBLIC | ACC_FINAL | ACC_STATIC, "SINGLE", Type.getObjectType(newclassname).getDescriptor(), null, null)
+        cw.visitField(ACC_PUBLIC | ACC_FINAL | ACC_STATIC, "SINGLE", Type.getObjectType(myname).getDescriptor(), null, null)
                 .visitEnd();
 
         {
@@ -41,7 +41,7 @@ public abstract class Static<T> extends FunValue<T> {
             mw.visitTypeInsn(NEW, newclassname);
             mw.visitInsn(DUP);
             mw.visitMethodInsn(INVOKESPECIAL, newclassname, "<init>", methodType(void.class).descriptorString(), false);
-            mw.visitFieldInsn(PUTSTATIC, newclassname, "SINGLE", Type.getObjectType(newclassname).getDescriptor());
+            mw.visitFieldInsn(PUTSTATIC, newclassname, "SINGLE", Type.getObjectType(myname).getDescriptor());
             mw.visitInsn(RETURN);
             mw.visitMaxs(0, 0);
             mw.visitEnd();
@@ -76,7 +76,7 @@ public abstract class Static<T> extends FunValue<T> {
 
         MethodHandle singleGetter;
         try {
-            singleGetter = lookup().findStaticGetter(klass, "SINGLE", klass);
+            singleGetter = lookup().findStaticGetter(klass, "SINGLE", Static.class);
         } catch (IllegalAccessException | NoSuchFieldException e) {
             throw new RuntimeException(e);
         }

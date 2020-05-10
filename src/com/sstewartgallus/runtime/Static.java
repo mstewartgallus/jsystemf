@@ -6,7 +6,12 @@ import org.objectweb.asm.Handle;
 import org.objectweb.asm.Type;
 
 import java.lang.invoke.MethodHandle;
+import java.lang.reflect.Field;
+import java.lang.reflect.Modifier;
+import java.util.Arrays;
+import java.util.Comparator;
 import java.util.List;
+import java.util.stream.Collectors;
 
 import static java.lang.invoke.MethodHandles.Lookup;
 import static java.lang.invoke.MethodHandles.lookup;
@@ -58,7 +63,7 @@ public abstract class Static<T> extends FunValue<T> {
             mw.visitEnd();
         }
 
-        // fixme... no need for dynamically spinning this in the singleton static case...
+        // fixme... not really a need for dynamically spinning this in the singleton static case...
         {
             var mw = cw.visitMethod(ACC_PUBLIC, "infoTable", methodType(Infotable.class).descriptorString(), null, null);
             mw.visitCode();
@@ -86,5 +91,9 @@ public abstract class Static<T> extends FunValue<T> {
         } catch (Throwable throwable) {
             throw new RuntimeException(throwable);
         }
+    }
+
+    public final String toString() {
+        return Static.class.getSimpleName() + ":" + infoTable();
     }
 }

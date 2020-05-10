@@ -19,8 +19,6 @@ public interface Pass2<A> {
         throw null;
     }
 
-    <T extends HList<T>> Category<T, A> ccc(Var<T> argument, VarGen vars);
-
     default Pass3<A> tuple(VarGen vars) {
         throw new UnsupportedOperationException(getClass().toString());
     }
@@ -29,8 +27,6 @@ public interface Pass2<A> {
         <V> Body<A> substitute(Var<V> argument, Pass2<V> replacement);
 
         Type<A> type();
-
-        <T extends HList<T>> Category<T, A> ccc(Var<T> argument, VarGen vars);
 
         Results<? extends HList<?>, ?, A> tuple(VarGen vars);
     }
@@ -42,13 +38,6 @@ public interface Pass2<A> {
 
         public <V> Pass2<B> substitute(Var<V> argument, Pass2<V> replacement) {
             return new Apply<>(f.substitute(argument, replacement), x.substitute(argument, replacement));
-        }
-
-        @Override
-        public <T extends HList<T>> Category<T, B> ccc(Var<T> argument, VarGen vars) {
-            var fCcc = f.ccc(argument, vars);
-            var xCcc = x.ccc(argument, vars);
-            return Category.call(fCcc, xCcc);
         }
 
         public Type<B> type() {
@@ -75,11 +64,6 @@ public interface Pass2<A> {
         }
 
         @Override
-        public <T extends HList<T>> Category<T, A> ccc(Var<T> argument, VarGen vars) {
-            return Category.head(list.ccc(argument, vars));
-        }
-
-        @Override
         public Type<A> type() {
             return ((Type.ConsType<A, B>) list.type()).head();
         }
@@ -92,11 +76,6 @@ public interface Pass2<A> {
 
         public <V> Pass2<B> substitute(Var<V> argument, Pass2<V> replacement) {
             return new Tail<>(list.substitute(argument, replacement));
-        }
-
-        @Override
-        public <T extends HList<T>> Category<T, B> ccc(Var<T> argument, VarGen vars) {
-            return Category.tail(list.ccc(argument, vars));
         }
 
         @Override
@@ -113,13 +92,6 @@ public interface Pass2<A> {
         @Override
         public Type<A> type() {
             return variable.type();
-        }
-
-        public <V extends HList<V>> Category<V, A> ccc(Var<V> argument, VarGen vars) {
-            if (argument == variable) {
-                return (Category<V, A>) new Category.Identity<>(variable.type());
-            }
-            throw new IllegalStateException("mismatching variables " + this);
         }
 
         public <V> Pass2<A> substitute(Var<V> argument, Pass2<V> replacement) {
@@ -158,11 +130,6 @@ public interface Pass2<A> {
             return new Thunk<>(body.substitute(argument, replacement));
         }
 
-        @Override
-        public <T extends HList<T>> Category<T, A> ccc(Var<T> argument, VarGen vars) {
-            return body.ccc(argument, vars);
-        }
-
         public String toString() {
             return "(" + body + ")";
         }
@@ -184,10 +151,6 @@ public interface Pass2<A> {
             return body.type();
         }
 
-        @Override
-        public <T extends HList<T>> Category<T, A> ccc(Var<T> argument, VarGen vars) {
-            return body.ccc(argument, vars);
-        }
 
         public String toString() {
             return body.toString();
@@ -227,23 +190,6 @@ public interface Pass2<A> {
             return new Type.FunType<>(domain, range);
         }
 
-        @Override
-        public <T extends HList<T>> Category<T, F<A, B>> ccc(Var<T> argument, VarGen vars) {
-            var tail = argument.type();
-
-            var newArg = vars.createArgument(domain);
-
-            var body = f.apply(new Load<>(newArg));
-
-            var t = Type.cons(domain, tail);
-            var list = vars.createArgument(t);
-
-            body = body.substitute(newArg, new Head<>(new Load<>(list)));
-            body = body.substitute(argument, new Tail<>(new Load<>(list)));
-
-            return Category.curry(body.ccc(list, vars));
-        }
-
         public String toString() {
             var depth = DEPTH.get();
             DEPTH.set(depth + 1);
@@ -271,11 +217,6 @@ public interface Pass2<A> {
 
         public <V> Pass2<A> substitute(Var<V> argument, Pass2<V> replacement) {
             return this;
-        }
-
-        @Override
-        public <T extends HList<T>> Category<T, A> ccc(Var<T> argument, VarGen vars) {
-            return Category.constant(argument.type(), type, value);
         }
 
         public Type<A> type() {

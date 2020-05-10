@@ -32,6 +32,8 @@ public final class Main {
     private static final TypeApply TP = ValueInvoker.newInstance(lookup(), TypeApply.class);
     private static final Apply AP = ValueInvoker.newInstance(lookup(), Apply.class);
     private static final ApplyInt API = ValueInvoker.newInstance(lookup(), ApplyInt.class);
+    public static final int INDENT = 26;
+    public static final int INDENT_2 = 50;
 
     static {
         // fixme plan: Source File -> AST -> System F IR -> Category IR -> CPS? -> SSA? -> MethodHandle (or ConstantDesc?)
@@ -68,10 +70,7 @@ public final class Main {
         outputT("Tuple Args", tupleArgs, tupleArgs.type());
 
         var tupleCcc = tupleArgs.ccc(vars.createArgument(Type.nil()), vars);
-        outputT("Tuple Ccc", tupleCcc, tupleCcc.domain() + " -> " + tupleCcc.range());
-
-        var ccc = captures.ccc(vars.createArgument(Type.nil()), vars);
-        outputT("Ccc", ccc, ccc.domain() + " -> " + ccc.range());
+        outputT("Ccc", tupleCcc, tupleCcc.domain() + " → " + tupleCcc.range());
 
         var generic = Category.generic(tupleCcc);
         outputT("Generic", generic, generic.signature());
@@ -98,15 +97,20 @@ public final class Main {
     }
 
     static void output(String stage, Object results) {
-        System.err.println(stage + "\t" + results + "\t".repeat(16 - stage.length()));
+        outputT(stage, results, "-");
     }
 
     static void outputT(String stage, Object results, Object type) {
         var resultsStr = results.toString();
-        var x = 1 + (40 - stage.length()) / 8;
-        var y = (80 - resultsStr.length()) / 8;
-        var z = 1;
-        System.err.println(stage + "\t".repeat(x) + resultsStr + "\t".repeat(y) + ":" + "\t".repeat(z) + type);
+        var x = 1 + (INDENT - stage.length());
+        var y = (INDENT_2 - resultsStr.length());
+        if (x < 0) {
+            x = INDENT;
+        }
+        if (y < 0) {
+            y = INDENT_2;
+        }
+        System.err.println(stage + " ".repeat(x)  + "\t" + resultsStr + " ".repeat(y) + ":" + "\t" + type);
     }
 
     private static Node.Array parse(Reader reader) throws IOException {

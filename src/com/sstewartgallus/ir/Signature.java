@@ -32,7 +32,7 @@ public interface Signature<A, B> {
         }
 
         public String toString() {
-            return domain + " -> " + range;
+            return domain + " → " + range;
         }
     }
 

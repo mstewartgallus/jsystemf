@@ -91,49 +91,6 @@ public interface Generic<A, B> {
         }
     }
 
-    record Head<V, X, A, B extends HList<B>>(Signature<V, F<X, A>>signature,
-                                             Signature<V, A>first,
-                                             Generic<V, F<X, HList.Cons<A, B>>>product) implements Generic<V, F<X, A>> {
-        public Chunk<F<X, A>> compile(Lookup lookup, Type<V> klass) {
-            var productC = product.compile(lookup, klass).intro();
-
-            var first = this.first.apply(klass).erase();
-
-            System.err.println("head " + first);
-            var cs = ValueLinker.link(lookup, StandardOperation.GET.withNamespace(StandardNamespace.PROPERTY).named("head"), methodType(first, ConsValue.class));
-            var intro = cs.dynamicInvoker();
-
-            intro = filterReturnValue(productC, intro);
-
-            return new Chunk<>(intro);
-        }
-
-        public String toString() {
-            return "(head " + product + ")";
-        }
-    }
-
-    record Tail<V, X, A, B extends HList<B>>(Signature<V, F<X, B>>signature,
-                                             Signature<V, B>second,
-                                             Generic<V, F<X, HList.Cons<A, B>>>product) implements Generic<V, F<X, B>> {
-        public Chunk<F<X, B>> compile(Lookup lookup, Type<V> klass) {
-            var productC = product.compile(lookup, klass).intro();
-
-            var second = this.second.apply(klass).erase();
-
-            var cs = ValueLinker.link(lookup, StandardOperation.GET.withNamespace(StandardNamespace.PROPERTY).named("tail"), methodType(second, ConsValue.class));
-            var intro = cs.dynamicInvoker();
-
-            intro = filterReturnValue(productC, intro);
-
-            return new Chunk<>(intro);
-        }
-
-        public String toString() {
-            return "(tail " + product + ")";
-        }
-    }
-
     record CurryType<Z, X, A, B, C>(Signature<Z, F<X, V<A, B>>>signature,
                                     Generic<E<Z, A>, F<X, B>>f) implements Generic<Z, F<X, V<A, B>>> {
         public String toString() {
@@ -145,46 +102,6 @@ public interface Generic<A, B> {
             // fixme... createa  E<Z,A> from Z ?
             throw new UnsupportedOperationException("unimplemented");
             //  return f.compile(lookup, klass);
-        }
-    }
-
-    record Curry<V, A, B extends HList<B>, C>(Signature<V, F<B, F<A, C>>>signature,
-                                              Signature<V, A>head,
-                                              Signature<V, B>tail,
-                                              Generic<V, F<HList.Cons<A, B>, C>>f) implements Generic<V, F<B, F<A, C>>> {
-
-        static final MethodHandle PAIR_MH;
-
-        static {
-            try {
-                PAIR_MH = MethodHandles.lookup().findStatic(ConsValue.class, "of", MethodType.methodType(ConsValue.class, Object.class, ConsValue.class));
-            } catch (NoSuchMethodException | IllegalAccessException e) {
-                throw new RuntimeException(e);
-            }
-        }
-
-        public String toString() {
-            return "(curry " + f + ")";
-        }
-
-        public Chunk<F<B, F<A, C>>> compile(Lookup lookup, Type<V> klass) {
-            var head = this.head.apply(klass).erase();
-            var tail = this.tail.apply(klass).erase();
-
-            var fEmit = f.compile(lookup, klass).intro();
-
-            var pair = PAIR_MH.asType(methodType(ConsValue.class, head, tail));
-            pair = permuteArguments(pair, methodType(ConsValue.class, tail, head), 1, 0);
-            fEmit = filterReturnValue(pair, fEmit);
-
-            // fixme... consider making closures implement... ConsValue?
-            // fixme... probably no need to spin a class for each methodhandle....
-            // fixme... maybe only specialize for int...
-            // fixme.. otoh we might want to inline large environments in the future ....
-            // fixme... I could link to the closure above to get it's arguments, or... explicitly track state.
-            var intro = Closure.spinFactory(tail, head, fEmit);
-
-            return new Chunk<>(intro);
         }
     }
 
@@ -202,7 +119,7 @@ public interface Generic<A, B> {
             var cs = ValueLinker.link(lookup, StandardOperation.CALL, methodType(Object.class, fEmit.type().returnType(), Void.class, xEmit.type().returnType()));
             var mh = cs.dynamicInvoker();
             mh = insertArguments(mh, 1, (Object) null);
-            System.err.println("domain " + mh + " " + fEmit + " " + xEmit);
+
             mh = filterArguments(mh, 0, fEmit, xEmit);
             var reorder = new int[mh.type().parameterCount()];
             for (var ii = 0; ii < reorder.length; ++ii) {
@@ -235,8 +152,6 @@ public interface Generic<A, B> {
             mh = dropArguments(mh, 0, before);
             mh = dropArguments(mh, mh.type().parameterCount(), after);
 
-            System.err.println(domain + " " + num + " " + before + " " + after + " " + mh);
-
             return new Chunk<>(mh);
         }
 
@@ -267,7 +182,6 @@ public interface Generic<A, B> {
             var intro = constant(Value.class, staticK);
             intro = dropArguments(intro, 0, toIgnore);
 
-            System.err.println("stati " + intro);
             return new Chunk<>(intro);
         }
     }

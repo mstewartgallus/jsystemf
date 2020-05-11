@@ -66,41 +66,6 @@ public interface Generic<A, B> {
     record Bundle<C extends Arguments<C>, D, B>(TypedMethodHandle<C, D>handle, Proof<C, D, B>proof) {
     }
 
-    record Unit<V, A, B>(Signature<V, F<A, B>>signature,
-                         Signature<V, A>domain,
-                         Signature<V, B>range,
-                         ConstantDesc value) implements Generic<V, F<A, B>> {
-        public String toString() {
-            return "(K " + value + ")";
-        }
-
-        public Bundle<?, ?, F<A, B>> compileToHandle(MethodHandles.Lookup lookup, Type<V> klass) {
-            throw null;
-        }
-
-        public Chunk<F<A, B>> compile(Lookup lookup, Type<V> klass) {
-            var d = domain.apply(klass).flatten();
-            var t = range.apply(klass).erase();
-
-            MethodHandle handle;
-            if (value instanceof String || value instanceof Float || value instanceof Double || value instanceof Integer || value instanceof Long) {
-                handle = constant(t, value);
-            } else if (value instanceof DynamicConstantDesc<?> dyn) {
-                // fixme... use proper lookup scope..
-                handle = LdcStub.spin(lookup, t, dyn);
-            } else {
-                try {
-                    handle = constant(t, value.resolveConstantDesc(lookup));
-                } catch (ReflectiveOperationException e) {
-                    throw new RuntimeException(e);
-                }
-            }
-
-            handle = dropArguments(handle, 0, d);
-            return new Chunk<>(handle);
-        }
-    }
-
     record Con<V, A, B>(Signature<V, B>signature,
                         ConstantDesc value) implements Generic<V, B> {
         public String toString() {
@@ -234,6 +199,7 @@ public interface Generic<A, B> {
 
             var bodyEmit = body.compile(lookup, klass).intro();
 
+            // fixme... attach a name or some other metadata...
             var staticK = Static.spin(d, r, bodyEmit);
 
             var intro = constant(Value.class, staticK);

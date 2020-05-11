@@ -6,32 +6,34 @@ import jdk.dynalink.linker.LinkRequest;
 import jdk.dynalink.linker.LinkerServices;
 import jdk.dynalink.linker.support.Guards;
 import org.objectweb.asm.ClassWriter;
-import org.objectweb.asm.Handle;
 import org.objectweb.asm.Type;
 
 import java.lang.invoke.MethodHandle;
 import java.lang.invoke.MethodHandles;
 import java.lang.invoke.MethodType;
-import java.lang.reflect.Field;
-import java.lang.reflect.Modifier;
 import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Comparator;
 import java.util.List;
+import java.util.Objects;
 import java.util.stream.Collectors;
 
-import static java.lang.invoke.MethodHandles.Lookup;
-import static java.lang.invoke.MethodHandles.lookup;
+import static java.lang.invoke.MethodHandles.*;
 import static java.lang.invoke.MethodType.methodType;
 import static org.objectweb.asm.Opcodes.*;
 
 // fixme... break out into another class for environment capturing closures...
 public abstract class Closure<T> extends FunValue<T> {
-    private static final Handle BOOTSTRAP = new Handle(H_INVOKESTATIC, Type.getInternalName(Closure.class), "bootstrapInfoTable",
-            methodType(Infotable.class, Lookup.class, String.class, Class.class).descriptorString(),
-            false);
     private static final SupplierClassValue<LookupHolder> LOOKUP_MAP = new SupplierClassValue<>(LookupHolder::new);
+    @SuppressWarnings("FieldCanBeLocal")
     private final Object funValue;
+    private static final MethodHandle FUN_VALUE;
+
+    static {
+        try {
+            FUN_VALUE = lookup().findGetter(Closure.class, "funValue", Object.class);
+        } catch (NoSuchFieldException | IllegalAccessException e) {
+            throw new RuntimeException(e);
+        }
+    }
 
     protected Closure(Object value) {
         this.funValue = value;
@@ -50,6 +52,7 @@ public abstract class Closure<T> extends FunValue<T> {
         // fixme....
         var args = new ArrayList<Class<?>>(environment.size() + 1);
         args.add(Object.class);
+        args.add(Void.class);
         args.addAll(environment);
 
         var myname = Type.getInternalName(Closure.class);
@@ -80,7 +83,7 @@ public abstract class Closure<T> extends FunValue<T> {
             mw.visitMethodInsn(INVOKESPECIAL, myname, "<init>", methodType(void.class, Object.class).descriptorString(), false);
             mw.visitVarInsn(ALOAD, 0);
 
-            var ii = 2;
+            var ii = 3;
             var envField = 0;
             for (var env : environment) {
                 if (env.isPrimitive()) {
@@ -130,9 +133,23 @@ public abstract class Closure<T> extends FunValue<T> {
         var definedClass = AnonClassLoader.defineClass(Closure.class.getClassLoader(), bytes);
         var klass = definedClass.asSubclass(Closure.class);
 
-        var privateLookup = LOOKUP_MAP.get(klass).lookup;
         var holder = LOOKUP_MAP.get(klass);
-        holder.info = new Info(environment);
+
+        var privateLookup = holder.lookup;
+        var environmentFields = new ArrayList<MethodHandle>();
+        {
+            var ii = 0;
+            for (var env : environment) {
+                MethodHandle field;
+                try {
+                    field = privateLookup.findGetter(klass, "e" + ii, env);
+                } catch (NoSuchFieldException | IllegalAccessException e) {
+                    throw new RuntimeException(e);
+                }
+                environmentFields.add(field);
+            }
+        }
+        holder.info = new Info(environment, environmentFields);
 
         MethodHandle con;
         try {
@@ -145,57 +162,92 @@ public abstract class Closure<T> extends FunValue<T> {
     }
 
     protected int arity() {
-        return LOOKUP_MAP.get(getClass()).infotable.arguments().size();
+        return LOOKUP_MAP.get(getClass()).info.environment().size();
     }
 
     protected GuardedInvocation saturatedApplication(LinkRequest linkRequest, LinkerServices linkerServices) throws NoSuchFieldException, IllegalAccessException {
-        var info = LOOKUP_MAP.get(getClass()).info;
+        var data = LOOKUP_MAP.get(getClass());
+        var info = data.info;
 
         var environment = info.environment();
-
-        // fixme... handle environment better...
-        var environmentGetter = lookup().findGetter(getClass(), "environment", environment.get(0));
+        var fields = info.fields();
 
         var resultType = linkRequest.getCallSiteDescriptor().getMethodType();
+        var param1 = resultType.parameterType(0);
+        var newArgs = resultType.dropParameterTypes(0, 2).parameterList();
 
         // fixme... add in receiver/null receiver.
-        var args = new ArrayList<>(environment);
-        args.addAll(resultType.parameterList());
+        var args = new ArrayList<Class<?>>();
+        args.add(Object.class);
+        args.add(Void.class);
+        args.addAll(environment);
+        args.addAll(newArgs);
 
         // fixme... user proper lookup...
         var mh = ValueLinker.link(lookup(), StandardOperation.CALL, methodType(resultType.returnType(), args)).dynamicInvoker();
+
+        MethodHandle[] envGets;
+        {
+            var ii = 0;
+            envGets = new MethodHandle[2 + environment.size()];
+            envGets[0] = FUN_VALUE.asType(methodType(Object.class, param1));
+            envGets[1] = empty(methodType(Void.class, param1));
+            for (var getter : fields) {
+                getter = getter.asType(getter.type().changeParameterType(0, param1));
+                envGets[2 + ii] = getter;
+                ++ii;
+            }
+        }
+        mh = filterArguments(mh, 0, envGets);
+
+        var reorder = new int[mh.type().parameterCount()];
+        for (var ii = 0; ii < 2 + environment.size(); ++ii) {
+            reorder[ii] = 0;
+        }
+        for (var ii = 0; ii < newArgs.size(); ++ii) {
+            reorder[2 + environment.size() + ii] = 2 + ii;
+        }
+
+        mh = permuteArguments(mh, resultType, reorder);
 
         // fixme... also guard on thunk being not fully saturated... etc...
         return new GuardedInvocation(mh, Guards.isOfClass(getClass(), mh.type().changeReturnType(boolean.class)));
     }
 
     public final String toString() {
-        // fixme... setup metadata for the originator of the closure
+        var data = LOOKUP_MAP.get(getClass());
+        var lookup = data.lookup;
+        var fields = data.info.fields;
 
-        var str = Closure.class.getSimpleName();
-        // fixme.. extremely slow reflection based toString
-        str += Arrays
-                .stream(getClass().getFields())
-                .filter(f -> !Modifier.isStatic(f.getModifiers()))
-                .sorted(Comparator.comparing(Field::getName))
+        var str = "(";
+        str += funValue;
+        str += " ";
+        str += fields
+                .stream()
                 .map(f -> {
+                    Object result;
                     try {
-                        return f.get(this);
-                    } catch (IllegalAccessException e) {
+                        result = f.invoke(this);
+                    } catch (RuntimeException | Error e) {
+                        throw e;
+                    } catch (Throwable e) {
                         throw new RuntimeException(e);
                     }
+                    return Objects.toString(result);
                 })
-                .collect(Collectors.toList());
+                .collect(Collectors.joining(" "));
+
+        str += ")";
+
         return str;
     }
 
     private final static class LookupHolder {
         Lookup lookup;
-        Infotable infotable;
         Info info;
     }
 
-    private record Info(List<Class<?>>environment) {
+    private record Info(List<Class<?>>environment, List<MethodHandle>fields) {
     }
 
 }

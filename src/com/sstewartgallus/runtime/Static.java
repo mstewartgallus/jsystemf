@@ -23,9 +23,6 @@ public abstract class Static<T> extends FunValue<T> {
     private static final Handle REGISTER_BOOTSTRAP = new Handle(H_INVOKESTATIC, Type.getInternalName(Static.class), "register",
             methodType(Object.class, Lookup.class, String.class, Class.class).descriptorString(),
             false);
-    private static final Handle BOOTSTRAP = new Handle(H_INVOKESTATIC, Type.getInternalName(Static.class), "bootstrapInfoTable",
-            methodType(Infotable.class, Lookup.class, String.class, Class.class).descriptorString(),
-            false);
     private static final SupplierClassValue<LookupHolder> LOOKUP_MAP = new SupplierClassValue<>(LookupHolder::new);
 
     @SuppressWarnings("unused")

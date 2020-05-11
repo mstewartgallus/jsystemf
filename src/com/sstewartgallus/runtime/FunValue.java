@@ -47,6 +47,7 @@ public abstract class FunValue<T> extends Value<T> {
         }
 
         if (calledWithParams > arity) {
+            System.err.println("arity " + arity + " " + linkRequest.getCallSiteDescriptor().getMethodType());
             return superSaturatedApplication(linkRequest, linkerServices);
         }
 
@@ -60,6 +61,7 @@ public abstract class FunValue<T> extends Value<T> {
     private GuardedInvocation partialApplication(int calledWith, LinkRequest linkRequest, LinkerServices linkerServices) {
         // fixme... drop reciever/null receiver arguments....
         var methodType = linkRequest.getCallSiteDescriptor().getMethodType();
+        methodType = methodType.dropParameterTypes(0, 2);
 
         var mh = Closure.spinFactory(methodType);
 

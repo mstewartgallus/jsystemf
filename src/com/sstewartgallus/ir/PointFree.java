@@ -30,26 +30,6 @@ public interface PointFree<A> {
 
     Type<A> type();
 
-    record Unit<A extends HList<A>, B>(Type<A>domain, Type<B>range, ConstantDesc value) implements PointFree<F<A, B>> {
-        public String toString() {
-            return "(K " + value.toString() + ")";
-        }
-
-        public <V> Generic<V, F<A, B>> generic(Type.Var<V> argument, TVarGen vars) {
-            var sig = type().pointFree(argument, vars);
-            return new Generic.Unit<>(sig, domain.pointFree(argument, vars), range.pointFree(argument, vars), value);
-        }
-
-        public <V> PointFree<F<A, B>> substitute(Type.Var<V> argument, Type<V> replacement) {
-            return new Unit<>(domain.substitute(argument, replacement), range.substitute(argument, replacement), value);
-        }
-
-        @Override
-        public Type<F<A, B>> type() {
-            return domain.to(range);
-        }
-    }
-
     record Con<B>(Type<B>type, ConstantDesc value) implements PointFree<B> {
         public String toString() {
             return value.toString();

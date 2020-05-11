@@ -1,16 +1,9 @@
 package com.sstewartgallus.term;
 
-import com.sstewartgallus.ir.VarGen;
-import com.sstewartgallus.pass1.Pass1;
-import com.sstewartgallus.pass1.Pass2;
-import com.sstewartgallus.type.E;
-import com.sstewartgallus.type.F;
-import com.sstewartgallus.type.Type;
-import com.sstewartgallus.type.V;
+import com.sstewartgallus.type.*;
 
 import java.lang.constant.Constable;
 import java.lang.constant.ConstantDesc;
-import java.util.List;
 import java.util.Objects;
 import java.util.function.Function;
 
@@ -38,7 +31,15 @@ import java.util.function.Function;
 
 // https://github.com/DanBurton/Blog/blob/master/Literate%20Haskell/SystemF.lhs
 
-// fixme... move types out of the ir package
+/**
+ * The high level syntax for a System F term in my little language.
+ * <p>
+ * This is intended to be pristine source language untainted by compiler stuff.
+ * <p>
+ * Any processing should happen AFTER this step.
+ *
+ * @param <L>
+ */
 public interface Term<L> {
     static <A, B> Term<B> apply(Term<V<A, B>> f, Type<A> x) {
         return new TypeApply<>(f, x);
@@ -52,29 +53,52 @@ public interface Term<L> {
         return new Forall<>(f);
     }
 
-    static <A> Term<A> ifCond(Type<A> t, Term<Boolean> cond, Term<A> onCond, Term<A> elseCond) {
-        return new IfCond<>(t, cond, onCond, elseCond);
+    static <A> Term<A> ifCond(Type<A> type, Term<Boolean> cond, Term<A> onCond, Term<A> elseCond) {
+        return new IfCond<>(type, cond, onCond, elseCond);
     }
 
     static <T extends Constable> Term<T> pure(Type<T> type, T value) {
         var constant = value.describeConstable();
         if (constant.isEmpty()) {
-            throw new IllegalArgumentException("not a constant value " + value);
+            throw new IllegalArgumentException("not a constable value " + value);
         }
         return new Pure<>(type, constant.get());
     }
 
-    <A> Term<L> substitute(Var<A> argument, Term<A> replacement);
+    <X> X visit(Visitor<X, L> visitor);
 
-    default Pass1<L> aggregateLambdas(VarGen vars) {
-        throw new UnsupportedOperationException(getClass().toString());
+    Type<L> type() throws TypeCheckException;
+
+    interface Visitor<X, L> {
+        X onPure(Type<L> type, ConstantDesc constantDesc);
+
+        X onLoad(Var<L> variable);
+
+        <A> X onApply(Term<F<A, L>> f, Term<A> x);
+
+        <A, B> X onLambda(Equality<L, F<A, B>> equality, Type<A> domain, Function<Term<A>, Term<B>> f);
     }
 
-    Type<L> type();
+    record Pure<A>(Type<A>type, ConstantDesc value) implements Term<A> {
+        public Pure {
+            Objects.requireNonNull(type);
+            Objects.requireNonNull(value);
+        }
+
+        @Override
+        public String toString() {
+            return value.toString();
+        }
+
+        @Override
+        public <X> X visit(Visitor<X, A> visitor) {
+            return visitor.onPure(type, value);
+        }
+    }
 
     record Load<A>(Var<A>variable) implements Term<A> {
-        public Pass1<A> aggregateLambdas(VarGen vars) {
-            return new Pass1.Load<>(variable);
+        public Load {
+            Objects.requireNonNull(variable);
         }
 
         @Override
@@ -82,94 +106,63 @@ public interface Term<L> {
             return variable.type();
         }
 
-        public <V> Term<A> substitute(com.sstewartgallus.term.Var<V> argument, Term<V> replacement) {
-            if (argument == variable) {
-                return (Term<A>) replacement;
-            }
-            return this;
-        }
-
+        @Override
         public String toString() {
             return variable.toString();
+        }
+
+        @Override
+        public <X> X visit(Visitor<X, A> visitor) {
+            return visitor.onLoad(variable);
         }
     }
 
     record Apply<A, B>(Term<F<A, B>>f, Term<A>x) implements Term<B> {
-        public Pass1<B> aggregateLambdas(VarGen vars) {
-            return new Pass1.Apply<>(f.aggregateLambdas(vars), x.aggregateLambdas(vars));
+        public Apply {
+            Objects.requireNonNull(f);
+            Objects.requireNonNull(x);
         }
 
+        @Override
+        public Type<B> type() throws TypeCheckException {
+            var fType = f.type();
 
-        public <V> Term<B> substitute(Var<V> argument, Term<V> replacement) {
-            return new Apply<>(f.substitute(argument, replacement), x.substitute(argument, replacement));
-        }
+            var funType = (Type.FunType<A, B>) fType;
+            var range = funType.range();
 
-        public Type<B> type() {
-            var funType = ((Type.FunType<A, B>) f.type());
-            var t = x.type();
-            if (!Objects.equals(t, funType.domain())) {
-                throw new RuntimeException("type error");
-            }
+            var argType = x.type();
+
+            fType.unify(argType.to(range));
+
             return funType.range();
         }
 
+        @Override
         public String toString() {
             return "(" + f + " " + x + ")";
         }
-    }
-
-    record IfCond<A>(Type<A>t, Term<Boolean>cond, Term<A>onCond, Term<A>elseCond) implements Term<A> {
 
         @Override
-        public <A1> Term<A> substitute(Var<A1> argument, Term<A1> replacement) {
-            throw new UnsupportedOperationException("unimplemented");
-        }
-
-        public Type<A> type() {
-            return t;
-        }
-
-        public String toString() {
-            return "{if " + t + " " + cond + " " + onCond + " " + elseCond + "}";
+        public <X> X visit(Visitor<X, B> visitor) {
+            return visitor.onApply(f, x);
         }
     }
 
     record Lambda<A, B>(Type<A>domain, Function<Term<A>, Term<B>>f) implements Term<F<A, B>> {
         private static final ThreadLocal<Integer> DEPTH = ThreadLocal.withInitial(() -> 0);
 
-        private static <A> Pass2<A> helper(List<Var<?>> free, int ii, Pass2.Body<A> body) {
-            if (ii >= free.size()) {
-                return new Pass2.Thunk<>(body);
-            }
-            return helper(free, ii, free.get(ii), body);
+        public Lambda {
+            Objects.requireNonNull(domain);
+            Objects.requireNonNull(f);
         }
 
-        private static <A, B> Pass2<A> helper(List<Var<?>> free, int ii, Var<B> freeVar, Pass2.Body<A> body) {
-            return new Pass2.Apply<>(helper(free, ii + 1, new Pass2.Lambda<>(freeVar.type(), x -> body.substitute(freeVar, x))),
-                    new Pass2.Load<>(freeVar));
-        }
-
-        public Pass1<F<A, B>> aggregateLambdas(VarGen vars) {
-            var v = vars.createArgument(domain);
-            var body = f.apply(new Load<>(v)).aggregateLambdas(vars);
-
-            if (body instanceof Pass1.Thunk<B> thunk) {
-                var expr = thunk.body();
-                return new Pass1.Thunk<>(new Pass1.Lambda<>(domain, x -> expr.substitute(v, x)));
-            }
-
-            return new Pass1.Thunk<>(new Pass1.Lambda<>(domain, x -> new Pass1.Expr<>(body.substitute(v, x))));
-        }
-
-        public <V> Term<F<A, B>> substitute(Var<V> argument, Term<V> replacement) {
-            return new Lambda<>(domain, arg -> f.apply(arg).substitute(argument, replacement));
-        }
-
-        public Type<F<A, B>> type() {
+        @Override
+        public Type<F<A, B>> type() throws TypeCheckException {
             var range = f.apply(new Load<>(new Var<>(domain, 0))).type();
             return new Type.FunType<>(domain, range);
         }
 
+        @Override
         public String toString() {
             var depth = DEPTH.get();
             DEPTH.set(depth + 1);
@@ -189,35 +182,27 @@ public interface Term<L> {
             }
             return str;
         }
-    }
 
-    record Pure<A>(Type<A>type, ConstantDesc value) implements Term<A> {
-        public Pass1<A> aggregateLambdas(VarGen vars) {
-            return new Pass1.Pure<>(type, value);
-        }
-
-        public <V> Term<A> substitute(Var<V> argument, Term<V> replacement) {
-            return this;
-        }
-
-        public Type<A> type() {
-            return type;
-        }
 
         @Override
-        public String toString() {
-            return String.valueOf(value);
+        public <X> X visit(Visitor<X, F<A, B>> visitor) {
+            return visitor.onLambda(new Equality.Identical<>(), domain, f);
         }
     }
 
     record TypeApply<A, B>(Term<V<A, B>>f, Type<A>x) implements Term<B> {
+        public TypeApply {
+            Objects.requireNonNull(f);
+            Objects.requireNonNull(x);
+        }
 
         @Override
-        public <A> Term<B> substitute(Var<A> argument, Term<A> replacement) {
+        public <X> X visit(Visitor<X, B> visitor) {
             throw new UnsupportedOperationException("unimplemented");
         }
 
-        public Type<B> type() {
+        @Override
+        public Type<B> type() throws TypeCheckException {
             return ((Type.Forall<A, B>) f.type()).f().apply(x);
         }
 
@@ -225,24 +210,27 @@ public interface Term<L> {
         public String toString() {
             return "{" + f + " " + x + "}";
         }
-
     }
 
     record Forall<A, B>(Function<Type<A>, Term<B>>f) implements Term<V<A, B>> {
-        public Type<V<A, B>> type() {
-            return new Type.Forall<>(x -> f.apply(x).type());
+        public Forall {
+            Objects.requireNonNull(f);
         }
 
         @Override
-        public <X> Term<V<A, B>> substitute(Var<X> argument, Term<X> replacement) {
+        public <X> X visit(Visitor<X, V<A, B>> visitor) {
             throw new UnsupportedOperationException("unimplemented");
         }
 
         @Override
-        public int hashCode() {
-            return 0;
+        public Type<V<A, B>> type() throws TypeCheckException {
+            // fixme... pass in the variable generator?
+            var v = new Type.Var<A>(0);
+            var body = f.apply(v).type();
+            return Type.v(x -> body.substitute(v, x));
         }
 
+        @Override
         public String toString() {
             var dummy = new Type.Var<A>(0);
             return "{forall " + dummy + ". " + f.apply(dummy) + "}";
@@ -250,17 +238,36 @@ public interface Term<L> {
     }
 
     record Exists<A, B>(Type<A>x, Term<B>y) implements Term<E<A, B>> {
-        public Type<E<A, B>> type() {
+        public Exists {
+            Objects.requireNonNull(x);
+            Objects.requireNonNull(y);
+        }
+
+        @Override
+        public <X> X visit(Visitor<X, E<A, B>> visitor) {
+            throw new UnsupportedOperationException("unimplemented");
+        }
+
+        @Override
+        public Type<E<A, B>> type() throws TypeCheckException {
             return new Type.Exists<>(x, y.type());
         }
 
         @Override
-        public <X> Term<E<A, B>> substitute(Var<X> argument, Term<X> replacement) {
-            throw new UnsupportedOperationException("unimplemented");
-        }
-
         public String toString() {
             return "{exists " + x + ". " + y + "}";
+        }
+    }
+
+    record IfCond<A>(Type<A>type, Term<Boolean>cond, Term<A>onCond, Term<A>elseCond) implements Term<A> {
+        @Override
+        public String toString() {
+            return "{if " + type + " " + cond + " " + onCond + " " + elseCond + "}";
+        }
+
+        @Override
+        public <X> X visit(Visitor<X, A> visitor) {
+            throw new UnsupportedOperationException("unimplemented");
         }
     }
 }

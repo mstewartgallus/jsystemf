@@ -5,12 +5,14 @@ import com.sstewartgallus.ast.Node;
 import com.sstewartgallus.ir.Generic;
 import com.sstewartgallus.ir.PointFree;
 import com.sstewartgallus.ir.VarGen;
+import com.sstewartgallus.pass1.Pass0;
 import com.sstewartgallus.runtime.Value;
 import com.sstewartgallus.runtime.ValueInvoker;
 import com.sstewartgallus.term.Prims;
 import com.sstewartgallus.term.Term;
 import com.sstewartgallus.type.F;
 import com.sstewartgallus.type.Type;
+import com.sstewartgallus.type.TypeCheckException;
 import com.sstewartgallus.type.V;
 
 import java.io.IOException;
@@ -56,11 +58,18 @@ public final class Main {
 
         // hack to work around Java's lack of proper generics
         var expr = Term.apply(Type.INT.l(x -> Type.INT.l(y -> x)), Prims.of(4));
-        outputT("System F", expr, expr.type());
+        try {
+            outputT("System F", expr, expr.type());
+        } catch (TypeCheckException e) {
+            throw new RuntimeException(e);
+        }
 
         var vars = new VarGen();
 
-        var pass1 = expr.aggregateLambdas(vars);
+        var pass0 = Pass0.from(expr, vars);
+        outputT("Pass 0", pass0, pass0.type());
+
+        var pass1 = pass0.aggregateLambdas(vars);
         outputT("Aggregate Lambdas", pass1, pass1.type());
 
         var captures = pass1.captureEnv(vars).value();
@@ -85,7 +94,7 @@ public final class Main {
     }
 
     // fixme.. arguments check more safely...
-    static <A> Term<?> apply(Term<?> f, Term<A> x) {
+    static <A> Term<?> apply(Term<?> f, Term<A> x) throws TypeCheckException {
         if (f.type() instanceof Type.FunType<?, ?> funType) {
             if (!Objects.equals(funType.domain(), x.type())) {
                 throw new UnsupportedOperationException("type error");
@@ -170,7 +179,11 @@ public final class Main {
         }, (Term<?>[] terms) -> {
             Term<?> head = terms[0];
             for (var ii = 1; ii < terms.length; ++ii) {
-                head = apply(head, terms[ii]);
+                try {
+                    head = apply(head, terms[ii]);
+                } catch (TypeCheckException e) {
+                    throw new RuntimeException(e);
+                }
             }
             return head;
         }, Term[]::new);

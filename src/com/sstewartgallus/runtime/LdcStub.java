@@ -20,7 +20,7 @@ public abstract class LdcStub<T> {
     }
 
     private static ConstantDynamic toObjectWeb(DynamicConstantDesc<?> k) {
-        return new ConstantDynamic(k.constantName(), k.constantType().descriptorString(), toObjectWeb(k.bootstrapMethod()), (Object[]) k.bootstrapArgs());
+        return new ConstantDynamic(k.constantName(), k.constantType().descriptorString(), toObjectWeb(k.bootstrapMethod()), k.bootstrapArgs());
     }
 
     private static Handle toObjectWeb(DirectMethodHandleDesc k) {

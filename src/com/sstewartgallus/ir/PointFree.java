@@ -17,11 +17,11 @@ public interface PointFree<A> {
     }
 
     static <B extends HList<B>, A> PointFree<F<B, A>> constant(Type<B> domain, Type<A> range, ConstantDesc value) {
-        return new Unit<>(domain, range, value);
+        return new K<>(domain, new Con<>(range, value));
     }
 
     static <A extends HList<A>, R, B, Z extends HList<Z>> PointFree<F<Z, R>> lambda(Type<Z> domain, Type<R> range, Args<A, B, R> arguments, PointFree<F<A, B>> ccc) {
-        return new Lambda<>(domain, range, arguments, ccc);
+        return new K<>(domain, new Lambda<>(range, arguments, ccc));
     }
 
     <Z> Generic<Z, A> generic(Type.Var<Z> argument, TVarGen vars);
@@ -47,6 +47,41 @@ public interface PointFree<A> {
         @Override
         public Type<F<A, B>> type() {
             return domain.to(range);
+        }
+    }
+
+    record Con<B>(Type<B>type, ConstantDesc value) implements PointFree<B> {
+        public String toString() {
+            return value.toString();
+        }
+
+        public <V> Generic<V, B> generic(Type.Var<V> argument, TVarGen vars) {
+            var sig = type().pointFree(argument, vars);
+            return new Generic.Con<>(sig, value);
+        }
+
+        public <V> PointFree<B> substitute(Type.Var<V> argument, Type<V> replacement) {
+            return new Con<>(type.substitute(argument, replacement), value);
+        }
+    }
+
+    record K<A extends HList<A>, B>(Type<A>domain, PointFree<B>value) implements PointFree<F<A, B>> {
+        public String toString() {
+            return "(K " + value.toString() + ")";
+        }
+
+        public <V> Generic<V, F<A, B>> generic(Type.Var<V> argument, TVarGen vars) {
+            var sig = type().pointFree(argument, vars);
+            return new Generic.K<>(sig, domain.pointFree(argument, vars), value.generic(argument, vars));
+        }
+
+        public <V> PointFree<F<A, B>> substitute(Type.Var<V> argument, Type<V> replacement) {
+            return new K<>(domain.substitute(argument, replacement), value);
+        }
+
+        @Override
+        public Type<F<A, B>> type() {
+            return domain.to(value.type());
         }
     }
 
@@ -110,7 +145,8 @@ public interface PointFree<A> {
         }
     }
 
-    record Call<Z extends HList<Z>, A, B>(PointFree<F<Z, F<A, B>>>f, PointFree<F<Z, A>>x) implements PointFree<F<Z, B>> {
+    record Call<Z extends HList<Z>, A, B>(PointFree<F<Z, F<A, B>>>f,
+                                          PointFree<F<Z, A>>x) implements PointFree<F<Z, B>> {
         @Override
         public <V> Generic<V, F<Z, B>> generic(Type.Var<V> argument, TVarGen vars) {
             var sig = type().pointFree(argument, vars);
@@ -135,26 +171,20 @@ public interface PointFree<A> {
         }
     }
 
-    record Lambda<Z extends HList<Z>, A extends HList<A>, B, R>(Type<Z>domain, Type<R>range, Args<A, B, R>arguments,
-                                                                PointFree<F<A, B>>body) implements PointFree<F<Z, R>> {
+    record Lambda<A extends HList<A>, B, R>(Type<R>type, Args<A, B, R>arguments,
+                                            PointFree<F<A, B>>body) implements PointFree<R> {
         @Override
-        public <X> Generic<X, F<Z, R>> generic(Type.Var<X> argument, TVarGen vars) {
+        public <X> Generic<X, R> generic(Type.Var<X> argument, TVarGen vars) {
             var bodyT = (Type.FunType<A, B>) body.type();
-            return new Generic.Lambda<>(
+            return new Generic.Lambda<X, A, B, R>(
                     type().pointFree(argument, vars),
-                    domain.pointFree(argument, vars), range.pointFree(argument, vars),
                     bodyT.domain().pointFree(argument, vars), bodyT.range().pointFree(argument, vars),
                     body.generic(argument, vars));
         }
 
         @Override
-        public <X> PointFree<F<Z, R>> substitute(Type.Var<X> argument, Type<X> replacement) {
+        public <X> PointFree<R> substitute(Type.Var<X> argument, Type<X> replacement) {
             throw null;
-        }
-
-        @Override
-        public Type<F<Z, R>> type() {
-            return domain.to(range);
         }
 
         public String toString() {

@@ -55,7 +55,7 @@ public final class Main {
         output("System F", term);
 
         // hack to work around Java's lack of proper generics
-        var expr = Type.INT.l(x -> Type.INT.l(y -> x));
+        var expr = Term.apply(Type.INT.l(x -> Type.INT.l(y -> x)), Prims.of(4));
         outputT("System F", expr, expr.type());
 
         var vars = new VarGen();
@@ -78,10 +78,10 @@ public final class Main {
         var main = Generic.compile(lookup(), generic);
         output("Main", main);
 
-        var bar = API.apply(main, 3, 6);
+        var bar = API.apply(main, 3);
         output("Result", bar);
 
-        TO_EXEC = () -> API.apply(main, 3, 5);
+        TO_EXEC = () -> API.apply(main, 3);
     }
 
     // fixme.. arguments check more safely...
@@ -198,7 +198,7 @@ public final class Main {
 
     @FunctionalInterface
     public interface ApplyInt {
-        int apply(Value<F<Integer, F<Integer, Integer>>> f, int x, int y);
+        int apply(Value<F<Integer, Integer>> f, int y);
     }
 
 }

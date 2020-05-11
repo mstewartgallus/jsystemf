@@ -101,6 +101,56 @@ public interface Generic<A, B> {
         }
     }
 
+    record Con<V, A, B>(Signature<V, B>signature,
+                        ConstantDesc value) implements Generic<V, B> {
+        public String toString() {
+            return value.toString();
+        }
+
+        public Bundle<?, ?, B> compileToHandle(Lookup lookup, Type<V> klass) {
+            throw null;
+        }
+
+        public Chunk<B> compile(Lookup lookup, Type<V> klass) {
+            var t = signature.apply(klass).erase();
+
+            MethodHandle handle;
+            if (value instanceof String || value instanceof Float || value instanceof Double || value instanceof Integer || value instanceof Long) {
+                handle = constant(t, value);
+            } else if (value instanceof DynamicConstantDesc<?> dyn) {
+                // fixme... use proper lookup scope..
+                handle = LdcStub.spin(lookup, t, dyn);
+            } else {
+                try {
+                    handle = constant(t, value.resolveConstantDesc(lookup));
+                } catch (ReflectiveOperationException e) {
+                    throw new RuntimeException(e);
+                }
+            }
+
+            return new Chunk<>(handle);
+        }
+    }
+
+    record K<V, A, B>(Signature<V, F<A, B>>signature,
+                      Signature<V, A>domain,
+                      Generic<V, B>value) implements Generic<V, F<A, B>> {
+        public String toString() {
+            return "(K " + value + ")";
+        }
+
+        public Bundle<?, ?, F<A, B>> compileToHandle(MethodHandles.Lookup lookup, Type<V> klass) {
+            throw null;
+        }
+
+        public Chunk<F<A, B>> compile(Lookup lookup, Type<V> klass) {
+            var d = domain.apply(klass).flatten();
+            var handle = value.compile(lookup, klass).intro();
+            handle = dropArguments(handle, 0, d);
+            return new Chunk<>(handle);
+        }
+    }
+
     record CurryType<Z, X, A, B, C>(Signature<Z, F<X, V<A, B>>>signature,
                                     Generic<E<Z, A>, F<X, B>>f) implements Generic<Z, F<X, V<A, B>>> {
         public String toString() {
@@ -170,18 +220,15 @@ public interface Generic<A, B> {
         }
     }
 
-    record Lambda<X, A extends HList<A>, B, Z, R>(
-            Signature<X, F<Z, R>>signature,
-            Signature<X, Z>domain, Signature<X, R>range,
+    record Lambda<X, A extends HList<A>, B, R>(
+            Signature<X, R>signature,
             Signature<X, A>funDomain, Signature<X, B>funRange,
-            Generic<X, F<A, B>>body) implements Generic<X, F<Z, R>> {
+            Generic<X, F<A, B>>body) implements Generic<X, R> {
         public String toString() {
             return "(λ " + body + ")";
         }
 
-        public Chunk<F<Z, R>> compile(Lookup lookup, Type<X> klass) {
-            var toIgnore = domain.apply(klass).flatten();
-
+        public Chunk<R> compile(Lookup lookup, Type<X> klass) {
             var d = funDomain.apply(klass).flatten();
             var r = funRange.apply(klass).erase();
 
@@ -190,7 +237,6 @@ public interface Generic<A, B> {
             var staticK = Static.spin(d, r, bodyEmit);
 
             var intro = constant(Value.class, staticK);
-            intro = dropArguments(intro, 0, toIgnore);
 
             return new Chunk<>(intro);
         }

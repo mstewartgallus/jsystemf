@@ -23,8 +23,6 @@ import static org.objectweb.asm.Opcodes.*;
 // fixme... break out into another class for environment capturing closures...
 public abstract class Closure<T> extends FunValue<T> {
     private static final SupplierClassValue<LookupHolder> LOOKUP_MAP = new SupplierClassValue<>(LookupHolder::new);
-    @SuppressWarnings("FieldCanBeLocal")
-    private final Object funValue;
     private static final MethodHandle FUN_VALUE;
 
     static {
@@ -34,6 +32,9 @@ public abstract class Closure<T> extends FunValue<T> {
             throw new RuntimeException(e);
         }
     }
+
+    @SuppressWarnings("FieldCanBeLocal")
+    private final Object funValue;
 
     protected Closure(Object value) {
         this.funValue = value;

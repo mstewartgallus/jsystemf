@@ -190,7 +190,7 @@ public interface Generic<A, B> {
             Signature<X, A>funDomain, Signature<X, B>funRange,
             Generic<X, F<A, B>>body) implements Generic<X, R> {
         public String toString() {
-            return "(λ " + body + ")";
+            return "(λ" + funDomain + " " + body + ")";
         }
 
         public Chunk<R> compile(Lookup lookup, Type<X> klass) {

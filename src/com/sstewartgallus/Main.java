@@ -61,18 +61,18 @@ public final class Main {
         var vars = new VarGen();
 
         var pass1 = expr.aggregateLambdas(vars);
-        outputT("Aggregate", pass1, pass1.type());
+        outputT("Aggregate Lambdas", pass1, pass1.type());
 
         var captures = pass1.captureEnv(vars).value();
-        outputT("Capture Env", captures, captures.type());
+        outputT("Explicit Environment", captures, captures.type());
 
-        var tupleArgs = captures.tuple(vars);
-        outputT("Tuple Args", tupleArgs, tupleArgs.type());
+        var uncurried = captures.uncurry(vars);
+        outputT("Uncurried", uncurried, uncurried.type());
 
-        var tupleCcc = tupleArgs.pointFree(vars.createArgument(Type.nil()), vars);
-        outputT("Ccc", tupleCcc, tupleCcc.type());
+        var pointFree = uncurried.pointFree(vars.createArgument(Type.nil()), vars);
+        outputT("Point Free", pointFree, pointFree.type());
 
-        var generic = PointFree.generic(tupleCcc);
+        var generic = PointFree.generic(pointFree);
         outputT("Generic", generic, generic.signature());
 
         var main = Generic.compile(lookup(), generic);

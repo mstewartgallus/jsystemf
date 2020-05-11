@@ -2,6 +2,7 @@ package com.sstewartgallus.ir;
 
 import com.sstewartgallus.type.*;
 
+// fixme... simplify point-free type representation...
 public interface Signature<A, B> {
     static <B, A, T> Signature<T, V<A, B>> curry(Signature<E<A, T>, B> body) {
         return new Signature.Curry<>(body);
@@ -10,10 +11,6 @@ public interface Signature<A, B> {
     // fixme... probably going to need my own runtime of type values... my current type is more like ClassDesc than class
     default Type<B> apply(Type<A> input) {
         throw new UnsupportedOperationException(getClass().toString());
-    }
-
-    default <C> Signature<A, F<A, C>> compose(Signature<A, F<A, B>> signature) {
-        throw new UnsupportedOperationException("unimplemented");
     }
 
     record Pure<T, A>(Class<A>clazz) implements Signature<T, A> {
@@ -93,8 +90,20 @@ public interface Signature<A, B> {
             return Type.cons(head.apply(input), tail.apply(input));
         }
 
+
         public String toString() {
-            return "(" + head + " : " + tail + ")";
+            var builder = new StringBuilder();
+            builder.append("(");
+            builder.append(head);
+
+            Signature<?, ? extends HList<?>> current = tail;
+            while (current instanceof ConsType<?, ?, ?> cons) {
+                builder.append(" Δ ");
+                builder.append(cons.head);
+                current = cons.tail;
+            }
+            builder.append(" Δ .)");
+            return builder.toString();
         }
     }
 }

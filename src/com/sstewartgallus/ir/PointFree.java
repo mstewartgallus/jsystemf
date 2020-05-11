@@ -156,7 +156,7 @@ public interface PointFree<A> {
         @Override
         public <X> Generic<X, R> generic(Type.Var<X> argument, TVarGen vars) {
             var bodyT = (Type.FunType<A, B>) body.type();
-            return new Generic.Lambda<X, A, B, R>(
+            return new Generic.Lambda<>(
                     type().pointFree(argument, vars),
                     bodyT.domain().pointFree(argument, vars), bodyT.range().pointFree(argument, vars),
                     body.generic(argument, vars));

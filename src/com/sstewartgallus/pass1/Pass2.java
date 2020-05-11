@@ -17,7 +17,7 @@ public interface Pass2<A> {
         throw null;
     }
 
-    default Pass3<A> tuple(VarGen vars) {
+    default Pass3<A> uncurry(VarGen vars) {
         throw new UnsupportedOperationException(getClass().toString());
     }
 
@@ -30,8 +30,8 @@ public interface Pass2<A> {
     }
 
     record Apply<A, B>(Pass2<F<A, B>>f, Pass2<A>x) implements Pass2<B> {
-        public Pass3<B> tuple(VarGen vars) {
-            return new Pass3.Apply<>(f.tuple(vars), x.tuple(vars));
+        public Pass3<B> uncurry(VarGen vars) {
+            return new Pass3.Apply<>(f.uncurry(vars), x.uncurry(vars));
         }
 
         public <V> Pass2<B> substitute(Var<V> argument, Pass2<V> replacement) {
@@ -53,7 +53,7 @@ public interface Pass2<A> {
     }
 
     record Load<A>(Var<A>variable) implements Pass2<A> {
-        public Pass3<A> tuple(VarGen vars) {
+        public Pass3<A> uncurry(VarGen vars) {
             return new Pass3.Load<>(variable);
         }
 
@@ -84,7 +84,7 @@ public interface Pass2<A> {
     }
 
     record Thunk<A>(Body<A>body) implements Pass2<A> {
-        public Pass3<A> tuple(VarGen vars) {
+        public Pass3<A> uncurry(VarGen vars) {
             return body.tuple(vars).lambda(body.type());
         }
 
@@ -105,7 +105,7 @@ public interface Pass2<A> {
 
     record Expr<A>(Pass2<A>body) implements Body<A> {
         public Results<? extends HList<?>, ?, A> tuple(VarGen vars) {
-            var bodyTuple = body.tuple(vars);
+            var bodyTuple = body.uncurry(vars);
             return new Results<>(Type.nil(), new Args.Zero<>(), nil -> bodyTuple);
         }
 
@@ -179,7 +179,7 @@ public interface Pass2<A> {
     }
 
     record Pure<A>(Type<A>type, ConstantDesc value) implements Pass2<A> {
-        public Pass3<A> tuple(VarGen vars) {
+        public Pass3<A> uncurry(VarGen vars) {
             return new Pass3.Pure<>(type, value);
         }
 

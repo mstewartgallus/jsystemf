@@ -69,7 +69,7 @@ public final class Main {
         var tupleArgs = captures.tuple(vars);
         outputT("Tuple Args", tupleArgs, tupleArgs.type());
 
-        var tupleCcc = tupleArgs.ccc(vars.createArgument(Type.nil()), vars);
+        var tupleCcc = tupleArgs.pointFree(vars.createArgument(Type.nil()), vars);
         outputT("Ccc", tupleCcc, tupleCcc.domain() + " → " + tupleCcc.range());
 
         var generic = Category.generic(tupleCcc);

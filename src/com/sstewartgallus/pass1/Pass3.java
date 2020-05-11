@@ -18,7 +18,7 @@ public interface Pass3<A> {
         throw null;
     }
 
-    <T extends HList<T>> Category<T, A> ccc(Var<T> argument, VarGen vars);
+    <T extends HList<T>> Category<T, A> pointFree(Var<T> argument, VarGen vars);
 
     record Apply<A, B>(Pass3<F<A, B>>f, Pass3<A>x) implements Pass3<B> {
         public <V> Pass3<B> substitute(Var<V> argument, Pass3<V> replacement) {
@@ -26,9 +26,9 @@ public interface Pass3<A> {
         }
 
         @Override
-        public <T extends HList<T>> Category<T, B> ccc(Var<T> argument, VarGen vars) {
-            var fCcc = f.ccc(argument, vars);
-            var xCcc = x.ccc(argument, vars);
+        public <T extends HList<T>> Category<T, B> pointFree(Var<T> argument, VarGen vars) {
+            var fCcc = f.pointFree(argument, vars);
+            var xCcc = x.pointFree(argument, vars);
             return Category.call(fCcc, xCcc);
         }
 
@@ -57,7 +57,7 @@ public interface Pass3<A> {
         }
 
         @Override
-        public <T extends HList<T>> Category<T, A> ccc(Var<T> argument, VarGen vars) {
+        public <T extends HList<T>> Category<T, A> pointFree(Var<T> argument, VarGen vars) {
             if (argument == list.variable) {
                 return (Category<T, A>) new Category.Get<>(list.variable.type(), list.ix);
             }
@@ -77,7 +77,7 @@ public interface Pass3<A> {
             return variable.type();
         }
 
-        public <V extends HList<V>> Category<V, A> ccc(Var<V> argument, VarGen vars) {
+        public <V extends HList<V>> Category<V, A> pointFree(Var<V> argument, VarGen vars) {
             throw new UnsupportedOperationException("unimplemented");
         }
 
@@ -116,10 +116,10 @@ public interface Pass3<A> {
         }
 
         @Override
-        public <T extends HList<T>> Category<T, R> ccc(Var<T> argument, VarGen vars) {
+        public <T extends HList<T>> Category<T, R> pointFree(Var<T> argument, VarGen vars) {
             var arg = vars.createArgument(domain);
             var body = f.apply(arg);
-            var ccc = body.ccc(arg, vars);
+            var ccc = body.pointFree(arg, vars);
 
             return Category.makeLambda(argument.type(), range, arguments, ccc);
         }
@@ -151,7 +151,7 @@ public interface Pass3<A> {
         }
 
         @Override
-        public <T extends HList<T>> Category<T, A> ccc(Var<T> argument, VarGen vars) {
+        public <T extends HList<T>> Category<T, A> pointFree(Var<T> argument, VarGen vars) {
             return Category.constant(argument.type(), type, value);
         }
 

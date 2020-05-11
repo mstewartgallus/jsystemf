@@ -13,7 +13,7 @@ import java.util.function.Function;
  * <p>
  * Fixme... not really a category anymore is it?
  */
-public interface Category<A extends HList<A>, B> {
+public interface Category<A extends HList<A>, B> extends PointFree<F<A, B>> {
 
     static <A> Generic<Void, F<HList.Nil, A>> generic(Category<HList.Nil, A> category) {
         var vars = new TVarGen();

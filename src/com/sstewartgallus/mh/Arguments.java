@@ -1,6 +1,6 @@
 package com.sstewartgallus.mh;
 
-interface Arguments<A extends Arguments<A>> {
+public interface Arguments<A extends Arguments<A>> {
     static Arguments<None> none() {
         return None.NONE;
     }

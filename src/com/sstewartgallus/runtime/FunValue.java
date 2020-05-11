@@ -6,10 +6,6 @@ import jdk.dynalink.linker.LinkRequest;
 import jdk.dynalink.linker.LinkerServices;
 import jdk.dynalink.linker.support.Guards;
 
-import java.util.stream.Collectors;
-
-import static java.lang.invoke.MethodHandles.dropArguments;
-
 // fixme... break out into another class for environment capturing closures...
 public abstract class FunValue<T> extends Value<T> {
     protected abstract int arity();

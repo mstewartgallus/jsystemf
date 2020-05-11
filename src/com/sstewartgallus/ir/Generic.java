@@ -1,5 +1,7 @@
 package com.sstewartgallus.ir;
 
+import com.sstewartgallus.mh.Arguments;
+import com.sstewartgallus.mh.TypedMethodHandle;
 import com.sstewartgallus.pass1.Index;
 import com.sstewartgallus.runtime.LdcStub;
 import com.sstewartgallus.runtime.Static;
@@ -49,6 +51,10 @@ public interface Generic<A, B> {
         return (Value) obj;
     }
 
+    default Bundle<?, ?, B> compileToHandle(MethodHandles.Lookup lookup, Type<A> klass) {
+        throw new UnsupportedOperationException(getClass().toString());
+    }
+
     default Chunk<B> compile(MethodHandles.Lookup lookup, Type<A> klass) {
         throw new UnsupportedOperationException(getClass().toString());
     }
@@ -57,12 +63,19 @@ public interface Generic<A, B> {
         throw new UnsupportedOperationException(getClass().toString());
     }
 
+    record Bundle<C extends Arguments<C>, D, B>(TypedMethodHandle<C, D>handle, Proof<C, D, B>proof) {
+    }
+
     record Unit<V, A, B>(Signature<V, F<A, B>>signature,
                          Signature<V, A>domain,
                          Signature<V, B>range,
                          ConstantDesc value) implements Generic<V, F<A, B>> {
         public String toString() {
             return "(K " + value + ")";
+        }
+
+        public Bundle<?, ?, F<A, B>> compileToHandle(MethodHandles.Lookup lookup, Type<V> klass) {
+            throw null;
         }
 
         public Chunk<F<A, B>> compile(Lookup lookup, Type<V> klass) {

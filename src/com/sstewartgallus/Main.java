@@ -2,8 +2,8 @@ package com.sstewartgallus;
 
 
 import com.sstewartgallus.ast.Node;
-import com.sstewartgallus.ir.Category;
 import com.sstewartgallus.ir.Generic;
+import com.sstewartgallus.ir.PointFree;
 import com.sstewartgallus.ir.VarGen;
 import com.sstewartgallus.runtime.Value;
 import com.sstewartgallus.runtime.ValueInvoker;
@@ -70,9 +70,9 @@ public final class Main {
         outputT("Tuple Args", tupleArgs, tupleArgs.type());
 
         var tupleCcc = tupleArgs.pointFree(vars.createArgument(Type.nil()), vars);
-        outputT("Ccc", tupleCcc, tupleCcc.domain() + " → " + tupleCcc.range());
+        outputT("Ccc", tupleCcc, tupleCcc.type());
 
-        var generic = Category.generic(tupleCcc);
+        var generic = PointFree.generic(tupleCcc);
         outputT("Generic", generic, generic.signature());
 
         var main = Generic.compile(lookup(), generic);

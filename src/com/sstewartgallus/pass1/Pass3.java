@@ -1,6 +1,6 @@
 package com.sstewartgallus.pass1;
 
-import com.sstewartgallus.ir.Category;
+import com.sstewartgallus.ir.PointFree;
 import com.sstewartgallus.ir.VarGen;
 import com.sstewartgallus.term.Var;
 import com.sstewartgallus.type.F;
@@ -18,7 +18,7 @@ public interface Pass3<A> {
         throw null;
     }
 
-    <T extends HList<T>> Category<T, A> pointFree(Var<T> argument, VarGen vars);
+    <T extends HList<T>> PointFree<F<T, A>> pointFree(Var<T> argument, VarGen vars);
 
     record Apply<A, B>(Pass3<F<A, B>>f, Pass3<A>x) implements Pass3<B> {
         public <V> Pass3<B> substitute(Var<V> argument, Pass3<V> replacement) {
@@ -26,10 +26,10 @@ public interface Pass3<A> {
         }
 
         @Override
-        public <T extends HList<T>> Category<T, B> pointFree(Var<T> argument, VarGen vars) {
+        public <T extends HList<T>> PointFree<F<T, B>> pointFree(Var<T> argument, VarGen vars) {
             var fCcc = f.pointFree(argument, vars);
             var xCcc = x.pointFree(argument, vars);
-            return Category.call(fCcc, xCcc);
+            return PointFree.call(fCcc, xCcc);
         }
 
         public Type<B> type() {
@@ -57,9 +57,9 @@ public interface Pass3<A> {
         }
 
         @Override
-        public <T extends HList<T>> Category<T, A> pointFree(Var<T> argument, VarGen vars) {
+        public <T extends HList<T>> PointFree<F<T, A>> pointFree(Var<T> argument, VarGen vars) {
             if (argument == list.variable) {
-                return (Category<T, A>) new Category.Get<>(list.variable.type(), list.ix);
+                return (PointFree) new PointFree.Get<>(list.variable.type(), list.ix);
             }
             throw new IllegalStateException("mismatching variables " + list);
         }
@@ -77,7 +77,7 @@ public interface Pass3<A> {
             return variable.type();
         }
 
-        public <V extends HList<V>> Category<V, A> pointFree(Var<V> argument, VarGen vars) {
+        public <V extends HList<V>> PointFree<F<V, A>> pointFree(Var<V> argument, VarGen vars) {
             throw new UnsupportedOperationException("unimplemented");
         }
 
@@ -116,12 +116,12 @@ public interface Pass3<A> {
         }
 
         @Override
-        public <T extends HList<T>> Category<T, R> pointFree(Var<T> argument, VarGen vars) {
+        public <T extends HList<T>> PointFree<F<T, R>> pointFree(Var<T> argument, VarGen vars) {
             var arg = vars.createArgument(domain);
             var body = f.apply(arg);
             var ccc = body.pointFree(arg, vars);
 
-            return Category.makeLambda(argument.type(), range, arguments, ccc);
+            return PointFree.lambda(argument.type(), range, arguments, ccc);
         }
 
         public String toString() {
@@ -151,8 +151,8 @@ public interface Pass3<A> {
         }
 
         @Override
-        public <T extends HList<T>> Category<T, A> pointFree(Var<T> argument, VarGen vars) {
-            return Category.constant(argument.type(), type, value);
+        public <T extends HList<T>> PointFree<F<T, A>> pointFree(Var<T> argument, VarGen vars) {
+            return PointFree.constant(argument.type(), type, value);
         }
 
         public Type<A> type() {

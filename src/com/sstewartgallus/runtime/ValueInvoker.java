@@ -152,7 +152,7 @@ public abstract class ValueInvoker<T> extends Value<T> {
     }
 
     public static <I> I newInstance(MethodHandles.Lookup lookup, Class<I> iface) {
-        // fixme... cache these with ClassValue? can't really do that if you pass in the lookup though!
+        // fixme... cache these with ClassValue? can'domain really do that if you pass in the lookup though!
         // fixme... get a better functional interface check..
         var maybeMethod = Arrays.stream(iface.getMethods()).filter(m -> !m.isSynthetic() && !m.isBridge() && !m.isDefault()).findFirst();
         if (maybeMethod.isEmpty()) {

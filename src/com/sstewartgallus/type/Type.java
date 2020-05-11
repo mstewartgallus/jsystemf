@@ -50,12 +50,12 @@ public interface Type<X> {
         throw new UnsupportedOperationException(getClass().toString());
     }
 
-    default <A> Signature<A, X> ccc() {
+    default <A> Signature<A, X> pointFree() {
         var vars = new TVarGen();
-        return ccc(vars.createTypeVar(), vars);
+        return pointFree(vars.createTypeVar(), vars);
     }
 
-    default <A> Signature<A, X> ccc(Var<A> v, TVarGen vars) {
+    default <A> Signature<A, X> pointFree(Var<A> v, TVarGen vars) {
         throw new UnsupportedOperationException(getClass().toString());
     }
 
@@ -70,7 +70,7 @@ public interface Type<X> {
             return List.of(Void.class);
         }
 
-        public <X> Signature<X, HList.Nil> ccc(Var<X> v, TVarGen vars) {
+        public <X> Signature<X, HList.Nil> pointFree(Var<X> v, TVarGen vars) {
             return new Signature.NilType<>();
         }
 
@@ -80,8 +80,8 @@ public interface Type<X> {
     }
 
     record FunType<A, B>(Type<A>domain, Type<B>range) implements Type<F<A, B>> {
-        public <X> Signature<X, F<A, B>> ccc(Var<X> v, TVarGen vars) {
-            return new Signature.Function<>(domain.ccc(v, vars), range.ccc(v, vars));
+        public <X> Signature<X, F<A, B>> pointFree(Var<X> v, TVarGen vars) {
+            return new Signature.Function<>(domain.pointFree(v, vars), range.pointFree(v, vars));
         }
 
         public <Z> Type<F<A, B>> substitute(Var<Z> v, Type<Z> replacement) {
@@ -99,7 +99,7 @@ public interface Type<X> {
     }
 
     record PureType<A>(Class<A>clazz) implements Type<A> {
-        public <T> Signature<T, A> ccc(Var<T> argument, TVarGen vars) {
+        public <T> Signature<T, A> pointFree(Var<T> argument, TVarGen vars) {
             return new Signature.Pure<>(clazz);
         }
 
@@ -118,9 +118,9 @@ public interface Type<X> {
     }
 
     record First<A, B>(Type<E<A, B>>value) implements Type<A> {
-        public <L> Signature<L, A> ccc(Var<L> argument, TVarGen vars) {
+        public <L> Signature<L, A> pointFree(Var<L> argument, TVarGen vars) {
 
-            return new Signature.First<>(value.ccc(argument, vars));
+            return new Signature.First<>(value.pointFree(argument, vars));
         }
 
         public <Z> Type<A> substitute(Var<Z> v, Type<Z> replacement) {
@@ -129,8 +129,8 @@ public interface Type<X> {
     }
 
     record Second<A, B>(Type<E<A, B>>value) implements Type<B> {
-        public <L> Signature<L, B> ccc(Var<L> argument, TVarGen vars) {
-            return new Signature.Second<>(value.ccc(argument, vars));
+        public <L> Signature<L, B> pointFree(Var<L> argument, TVarGen vars) {
+            return new Signature.Second<>(value.pointFree(argument, vars));
         }
 
         public <Z> Type<B> substitute(Var<Z> v, Type<Z> replacement) {
@@ -141,12 +141,12 @@ public interface Type<X> {
     record Forall<A, B>(Function<Type<A>, Type<B>>f) implements Type<com.sstewartgallus.type.V<A, B>> {
         private static final ThreadLocal<Integer> DEPTH = ThreadLocal.withInitial(() -> 0);
 
-        public <T> Signature<T, V<A, B>> ccc(Var<T> argument, TVarGen vars) {
+        public <T> Signature<T, V<A, B>> pointFree(Var<T> argument, TVarGen vars) {
             Type.Var<E<A, T>> newVar = vars.createTypeVar();
 
             var body = f.apply(new First<>(newVar))
                     .substitute(argument, new Second<>(newVar))
-                    .ccc(newVar, vars);
+                    .pointFree(newVar, vars);
             return Signature.curry(body);
         }
 
@@ -177,10 +177,10 @@ public interface Type<X> {
     record Var<T>(int depth) implements Type<T> {
         @Override
         public String toString() {
-            return "t" + depth;
+            return "domain" + depth;
         }
 
-        public <V> Signature<V, T> ccc(Var<V> argument, TVarGen vars) {
+        public <V> Signature<V, T> pointFree(Var<V> argument, TVarGen vars) {
             if (argument == this) {
                 return (Signature<V, T>) new Signature.Identity<T>();
             }
@@ -219,8 +219,8 @@ public interface Type<X> {
             return l;
         }
 
-        public <X> Signature<X, HList.Cons<H, T>> ccc(Var<X> v, TVarGen vars) {
-            return new Signature.ConsType<>(head.ccc(v, vars), tail.ccc(v, vars));
+        public <X> Signature<X, HList.Cons<H, T>> pointFree(Var<X> v, TVarGen vars) {
+            return new Signature.ConsType<>(head.pointFree(v, vars), tail.pointFree(v, vars));
         }
 
         public String toString() {

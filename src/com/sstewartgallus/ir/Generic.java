@@ -8,7 +8,6 @@ import com.sstewartgallus.runtime.ValueLinker;
 import com.sstewartgallus.type.*;
 import jdk.dynalink.StandardOperation;
 
-import java.lang.constant.ClassDesc;
 import java.lang.constant.ConstantDesc;
 import java.lang.constant.DynamicConstantDesc;
 import java.lang.invoke.MethodHandle;
@@ -73,13 +72,15 @@ public interface Generic<A, B> {
             MethodHandle handle;
             if (value instanceof String || value instanceof Float || value instanceof Double || value instanceof Integer || value instanceof Long) {
                 handle = constant(t, value);
-            } else if (value instanceof ClassDesc desc) {
-                throw new RuntimeException("unimplemented " + desc);
             } else if (value instanceof DynamicConstantDesc<?> dyn) {
                 // fixme... use proper lookup scope..
-                handle = LdcStub.spin(t, dyn);
+                handle = LdcStub.spin(lookup, t, dyn);
             } else {
-                throw new RuntimeException("unimplemented");
+                try {
+                    handle = constant(t, value.resolveConstantDesc(lookup));
+                } catch (ReflectiveOperationException e) {
+                    throw new RuntimeException(e);
+                }
             }
 
             handle = dropArguments(handle, 0, d);

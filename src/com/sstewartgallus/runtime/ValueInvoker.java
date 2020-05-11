@@ -9,7 +9,6 @@ import java.lang.invoke.*;
 import java.util.Arrays;
 
 import static java.lang.invoke.MethodHandles.insertArguments;
-import static java.lang.invoke.MethodHandles.lookup;
 import static java.lang.invoke.MethodType.methodType;
 import static org.objectweb.asm.Opcodes.*;
 
@@ -20,15 +19,21 @@ public abstract class ValueInvoker<T> extends Value<T> {
     private static final Handle BOOTSTRAP = new Handle(H_INVOKESTATIC, Type.getInternalName(ValueInvoker.class), "bootstrap",
             methodType(CallSite.class, MethodHandles.Lookup.class, String.class, MethodType.class).descriptorString(),
             false);
+    private static final SupplierClassValue<LookupHolder> LOOKUP_MAP = new SupplierClassValue<>(LookupHolder::new);
 
     // fixme... use private bootstrap?
     @SuppressWarnings("unused")
     protected static CallSite bootstrap(MethodHandles.Lookup lookup, String name, MethodType methodType) {
-        var lookupValue = (MethodHandles.Lookup) ((AnonClassLoader<?>) lookup.lookupClass().getClassLoader()).getValue();
+        var lookupValue = LOOKUP_MAP.get(lookup.lookupClass()).lookupDelegate;
         methodType = methodType.insertParameterTypes(1, Void.class);
         var mh = ValueLinker.link(lookupValue, StandardOperation.CALL, methodType).dynamicInvoker();
         mh = insertArguments(mh, 1, (Object) null);
         return new ConstantCallSite(mh);
+    }
+
+    @SuppressWarnings("unused")
+    protected static void register(MethodHandles.Lookup lookup) {
+        LOOKUP_MAP.get(lookup.lookupClass()).lookup = lookup;
     }
 
     // fixme... cache comon frames?
@@ -40,24 +45,22 @@ public abstract class ValueInvoker<T> extends Value<T> {
 
         // fixme... privatise as much as possible...
         var cw = new ClassWriter(ClassWriter.COMPUTE_FRAMES | ClassWriter.COMPUTE_MAXS);
-        cw.visit(V14, ACC_FINAL | ACC_PUBLIC, newclassname, null, myname, new String[]{Type.getInternalName(iface)});
+        cw.visit(V14, ACC_FINAL | ACC_PRIVATE, newclassname, null, myname, new String[]{Type.getInternalName(iface)});
 
-        cw.visitField(ACC_PUBLIC | ACC_FINAL | ACC_STATIC, "SINGLE", Type.getObjectType(myname).getDescriptor(), null, null)
-                .visitEnd();
         {
-            var mw = cw.visitMethod(ACC_PUBLIC | ACC_STATIC, "<clinit>", methodType(void.class).descriptorString(), null, null);
+            var mw = cw.visitMethod(ACC_PRIVATE | ACC_STATIC, "<clinit>", methodType(void.class).descriptorString(), null, null);
             mw.visitCode();
-            mw.visitTypeInsn(NEW, newclassname);
-            mw.visitInsn(DUP);
-            mw.visitMethodInsn(INVOKESPECIAL, newclassname, "<init>", methodType(void.class).descriptorString(), false);
-            mw.visitFieldInsn(PUTSTATIC, newclassname, "SINGLE", Type.getObjectType(myname).getDescriptor());
+
+            mw.visitMethodInsn(INVOKESTATIC, Type.getInternalName(MethodHandles.class), "lookup", methodType(MethodHandles.Lookup.class).descriptorString(), false);
+            mw.visitMethodInsn(INVOKESTATIC, Type.getInternalName(ValueInvoker.class), "register", methodType(void.class, MethodHandles.Lookup.class).descriptorString(), false);
+
             mw.visitInsn(RETURN);
             mw.visitMaxs(0, 0);
             mw.visitEnd();
         }
 
         {
-            var mw = cw.visitMethod(ACC_PUBLIC, "<init>", methodType(void.class).descriptorString(), null, null);
+            var mw = cw.visitMethod(ACC_PRIVATE, "<init>", methodType(void.class).descriptorString(), null, null);
             mw.visitCode();
             mw.visitVarInsn(ALOAD, 0);
             mw.visitMethodInsn(INVOKESPECIAL, myname, "<init>", methodType(void.class).descriptorString(), false);
@@ -123,25 +126,29 @@ public abstract class ValueInvoker<T> extends Value<T> {
         cw.visitEnd();
         var bytes = cw.toByteArray();
 
-        var definedClass = AnonClassLoader.defineClass(lookup, ValueInvoker.class.getClassLoader(), newclassname.replace('/', '.'), bytes);
+        var definedClass = AnonClassLoader.defineClass(ValueInvoker.class.getClassLoader(), bytes);
         var klass = definedClass.asSubclass(ValueInvoker.class);
 
-        MethodHandle getter;
+        var privateLookup = LOOKUP_MAP.get(klass).lookup;
+        LOOKUP_MAP.get(klass).lookupDelegate = lookup;
+
+        MethodHandle con;
         try {
-            getter = lookup().findStaticGetter(klass, "SINGLE", ValueInvoker.class);
-        } catch (IllegalAccessException | NoSuchFieldException e) {
+            con = privateLookup.findConstructor(klass, methodType(void.class));
+        } catch (NoSuchMethodException | IllegalAccessException e) {
             throw new RuntimeException(e);
         }
 
-        Object obj;
+        Object invoker;
         try {
-            obj = getter.invoke();
-        } catch (RuntimeException | Error e) {
+            invoker = con.invoke();
+        } catch (Error | RuntimeException e) {
             throw e;
         } catch (Throwable throwable) {
             throw new RuntimeException(throwable);
         }
-        return iface.cast(obj);
+
+        return iface.cast(invoker);
     }
 
     public static <I> I newInstance(MethodHandles.Lookup lookup, Class<I> iface) {
@@ -156,6 +163,11 @@ public abstract class ValueInvoker<T> extends Value<T> {
         var params = method.getParameterTypes();
         var returnType = method.getReturnType();
         return spin(lookup, iface, method.getName(), methodType(returnType, params));
+    }
+
+    private final static class LookupHolder {
+        MethodHandles.Lookup lookupDelegate;
+        MethodHandles.Lookup lookup;
     }
 }
 

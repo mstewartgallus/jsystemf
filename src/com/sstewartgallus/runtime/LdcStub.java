@@ -8,14 +8,15 @@ import org.objectweb.asm.Type;
 import java.lang.constant.DirectMethodHandleDesc;
 import java.lang.constant.DynamicConstantDesc;
 import java.lang.invoke.MethodHandle;
+import java.lang.invoke.MethodHandles;
 
 import static java.lang.invoke.MethodHandles.lookup;
 import static java.lang.invoke.MethodType.methodType;
 import static org.objectweb.asm.Opcodes.*;
 
 public abstract class LdcStub<T> {
-    public static MethodHandle spin(Class<?> kType, DynamicConstantDesc<?> constantDesc) {
-        return spin(kType, toObjectWeb(constantDesc));
+    public static MethodHandle spin(MethodHandles.Lookup lookup, Class<?> kType, DynamicConstantDesc<?> constantDesc) {
+        return spin(lookup, kType, toObjectWeb(constantDesc));
     }
 
     private static ConstantDynamic toObjectWeb(DynamicConstantDesc<?> k) {
@@ -26,7 +27,7 @@ public abstract class LdcStub<T> {
         return new Handle(k.refKind(), Type.getType(k.owner().descriptorString()).getInternalName(), k.methodName(), k.lookupDescriptor(), k.isOwnerInterface());
     }
 
-    private static MethodHandle spin(Class<?> kType, ConstantDynamic constantDesc) {
+    private static MethodHandle spin(MethodHandles.Lookup lookup, Class<?> kType, ConstantDynamic constantDesc) {
         var myname = Type.getInternalName(LdcStub.class);
         var newclassname = myname + "Impl";
 
@@ -47,7 +48,7 @@ public abstract class LdcStub<T> {
 
         var bytes = cw.toByteArray();
 
-        var definedClass = AnonClassLoader.defineClass(constantDesc, LdcStub.class.getClassLoader(), newclassname.replace('/', '.'), bytes);
+        var definedClass = AnonClassLoader.defineClass(LdcStub.class.getClassLoader(), bytes);
         var klass = definedClass.asSubclass(LdcStub.class);
 
         MethodHandle resolve;

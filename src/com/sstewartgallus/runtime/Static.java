@@ -6,10 +6,10 @@ import org.objectweb.asm.Handle;
 import org.objectweb.asm.Type;
 
 import java.lang.invoke.MethodHandle;
+import java.lang.invoke.MethodHandles;
 import java.util.List;
 
 import static java.lang.invoke.MethodHandles.Lookup;
-import static java.lang.invoke.MethodHandles.lookup;
 import static java.lang.invoke.MethodType.methodType;
 import static org.objectweb.asm.Opcodes.*;
 
@@ -19,10 +19,16 @@ public abstract class Static<T> extends FunValue<T> {
             methodType(Infotable.class, Lookup.class, String.class, Class.class).descriptorString(),
             false);
     private static final ConstantDynamic INFO_BOOTSTRAP = new ConstantDynamic("infoTable", Infotable.class.descriptorString(), BOOTSTRAP);
+    private static final SupplierClassValue<LookupHolder> LOOKUP_MAP = new SupplierClassValue<>(LookupHolder::new);
 
     @SuppressWarnings("unused")
     protected static Infotable bootstrapInfoTable(Lookup lookup, String name, Class<?> klass) {
-        return (Infotable) ((AnonClassLoader<?>) lookup.lookupClass().getClassLoader()).getValue();
+        return LOOKUP_MAP.get(lookup.lookupClass()).infotable;
+    }
+
+    @SuppressWarnings("unused")
+    protected static void register(MethodHandles.Lookup lookup) {
+        LOOKUP_MAP.get(lookup.lookupClass()).lookup = lookup;
     }
 
     public static Static<?> spin(List<Class<?>> arguments, Class<?> result, MethodHandle entryPoint) {
@@ -30,18 +36,15 @@ public abstract class Static<T> extends FunValue<T> {
         var newclassname = myname + "Impl";
 
         var cw = new ClassWriter(ClassWriter.COMPUTE_FRAMES | ClassWriter.COMPUTE_MAXS);
-        cw.visit(V14, ACC_FINAL | ACC_PUBLIC, newclassname, null, myname, null);
-
-        cw.visitField(ACC_PUBLIC | ACC_FINAL | ACC_STATIC, "SINGLE", Type.getObjectType(myname).getDescriptor(), null, null)
-                .visitEnd();
+        cw.visit(V14, ACC_FINAL | ACC_PRIVATE, newclassname, null, myname, null);
 
         {
             var mw = cw.visitMethod(ACC_PRIVATE | ACC_STATIC, "<clinit>", methodType(void.class).descriptorString(), null, null);
             mw.visitCode();
-            mw.visitTypeInsn(NEW, newclassname);
-            mw.visitInsn(DUP);
-            mw.visitMethodInsn(INVOKESPECIAL, newclassname, "<init>", methodType(void.class).descriptorString(), false);
-            mw.visitFieldInsn(PUTSTATIC, newclassname, "SINGLE", Type.getObjectType(myname).getDescriptor());
+
+            mw.visitMethodInsn(INVOKESTATIC, Type.getInternalName(MethodHandles.class), "lookup", methodType(MethodHandles.Lookup.class).descriptorString(), false);
+            mw.visitMethodInsn(INVOKESTATIC, Type.getInternalName(Static.class), "register", methodType(void.class, MethodHandles.Lookup.class).descriptorString(), false);
+
             mw.visitInsn(RETURN);
             mw.visitMaxs(0, 0);
             mw.visitEnd();
@@ -69,20 +72,24 @@ public abstract class Static<T> extends FunValue<T> {
         }
 
         cw.visitEnd();
+
         var bytes = cw.toByteArray();
 
-        var definedClass = AnonClassLoader.defineClass(new Infotable(List.of(), arguments, entryPoint), Static.class.getClassLoader(), newclassname.replace('/', '.'), bytes);
+        var definedClass = AnonClassLoader.defineClass(Static.class.getClassLoader(), bytes);
         var klass = definedClass.asSubclass(Static.class);
 
-        MethodHandle singleGetter;
+        var privateLookup = LOOKUP_MAP.get(klass).lookup;
+        LOOKUP_MAP.get(klass).infotable = new Infotable(List.of(), arguments, entryPoint);
+
+        MethodHandle con;
         try {
-            singleGetter = lookup().findStaticGetter(klass, "SINGLE", Static.class);
-        } catch (IllegalAccessException | NoSuchFieldException e) {
+            con = privateLookup.findConstructor(klass, methodType(void.class));
+        } catch (NoSuchMethodException | IllegalAccessException e) {
             throw new RuntimeException(e);
         }
 
         try {
-            return (Static) singleGetter.invoke();
+            return (Static) con.invoke();
         } catch (Throwable throwable) {
             throw new RuntimeException(throwable);
         }
@@ -91,4 +98,10 @@ public abstract class Static<T> extends FunValue<T> {
     public final String toString() {
         return Static.class.getSimpleName() + ":" + infoTable();
     }
+
+    private final static class LookupHolder {
+        Lookup lookup;
+        Infotable infotable;
+    }
 }
+

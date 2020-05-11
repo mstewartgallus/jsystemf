@@ -6,6 +6,7 @@ import org.objectweb.asm.Handle;
 import org.objectweb.asm.Type;
 
 import java.lang.invoke.MethodHandle;
+import java.lang.invoke.MethodHandles;
 import java.lang.reflect.Field;
 import java.lang.reflect.Modifier;
 import java.util.Arrays;
@@ -14,7 +15,6 @@ import java.util.List;
 import java.util.stream.Collectors;
 
 import static java.lang.invoke.MethodHandles.Lookup;
-import static java.lang.invoke.MethodHandles.lookup;
 import static java.lang.invoke.MethodType.methodType;
 import static org.objectweb.asm.Opcodes.*;
 
@@ -25,15 +25,21 @@ public abstract class Closure<T> extends FunValue<T> {
             methodType(Infotable.class, Lookup.class, String.class, Class.class).descriptorString(),
             false);
     private static final ConstantDynamic INFO_BOOTSTRAP = new ConstantDynamic("infoTable", Infotable.class.descriptorString(), BOOTSTRAP);
+    private static final SupplierClassValue<LookupHolder> LOOKUP_MAP = new SupplierClassValue<>(LookupHolder::new);
 
     @SuppressWarnings("unused")
     protected static Infotable bootstrapInfoTable(Lookup lookup, String name, Class<?> klass) {
-        return (Infotable) ((AnonClassLoader<?>) lookup.lookupClass().getClassLoader()).getValue();
+        return LOOKUP_MAP.get(lookup.lookupClass()).infotable;
     }
 
     // fixme... cache comon frames?
     public static MethodHandle spinFactory(List<Class<?>> environment, List<Class<?>> arguments, MethodHandle entryPoint) {
         throw new UnsupportedOperationException("not yet implemented");
+    }
+
+    @SuppressWarnings("unused")
+    protected static void register(MethodHandles.Lookup lookup) {
+        LOOKUP_MAP.get(lookup.lookupClass()).lookup = lookup;
     }
 
     public static MethodHandle spinFactory(Class<?> environment, Class<?> argument, MethodHandle entryPoint) {
@@ -42,10 +48,22 @@ public abstract class Closure<T> extends FunValue<T> {
 
         // fixme... privatise as much as possible...
         var cw = new ClassWriter(ClassWriter.COMPUTE_FRAMES | ClassWriter.COMPUTE_MAXS);
-        cw.visit(V14, ACC_FINAL | ACC_PUBLIC, newclassname, null, myname, null);
+        cw.visit(V14, ACC_FINAL | ACC_PRIVATE, newclassname, null, myname, null);
 
         {
-            var mw = cw.visitMethod(ACC_PUBLIC, "<init>", methodType(void.class, environment).descriptorString(), null, null);
+            var mw = cw.visitMethod(ACC_PRIVATE | ACC_STATIC, "<clinit>", methodType(void.class).descriptorString(), null, null);
+            mw.visitCode();
+
+            mw.visitMethodInsn(INVOKESTATIC, Type.getInternalName(MethodHandles.class), "lookup", methodType(MethodHandles.Lookup.class).descriptorString(), false);
+            mw.visitMethodInsn(INVOKESTATIC, Type.getInternalName(Closure.class), "register", methodType(void.class, MethodHandles.Lookup.class).descriptorString(), false);
+
+            mw.visitInsn(RETURN);
+            mw.visitMaxs(0, 0);
+            mw.visitEnd();
+        }
+
+        {
+            var mw = cw.visitMethod(ACC_PRIVATE, "<init>", methodType(void.class, environment).descriptorString(), null, null);
             mw.visitCode();
             mw.visitVarInsn(ALOAD, 0);
             mw.visitMethodInsn(INVOKESPECIAL, myname, "<init>", methodType(void.class).descriptorString(), false);
@@ -79,18 +97,21 @@ public abstract class Closure<T> extends FunValue<T> {
 
         // fixme... make private if possible...
 
-        cw.visitField(ACC_PUBLIC, "environment", environment.descriptorString(), null, null)
+        cw.visitField(ACC_PRIVATE, "environment", environment.descriptorString(), null, null)
                 .visitEnd();
 
         cw.visitEnd();
         var bytes = cw.toByteArray();
 
-        var definedClass = AnonClassLoader.defineClass(new Infotable(List.of(environment), List.of(argument), entryPoint), Closure.class.getClassLoader(), newclassname.replace('/', '.'), bytes);
+        var definedClass = AnonClassLoader.defineClass(Closure.class.getClassLoader(), bytes);
         var klass = definedClass.asSubclass(Closure.class);
+
+        var privateLookup = LOOKUP_MAP.get(klass).lookup;
+        LOOKUP_MAP.get(klass).infotable = new Infotable(List.of(environment), List.of(argument), entryPoint);
 
         MethodHandle con;
         try {
-            con = lookup().findConstructor(klass, methodType(void.class, environment));
+            con = privateLookup.findConstructor(klass, methodType(void.class, environment));
         } catch (NoSuchMethodException | IllegalAccessException e) {
             throw new RuntimeException(e);
         }
@@ -118,5 +139,9 @@ public abstract class Closure<T> extends FunValue<T> {
         return str;
     }
 
+    private final static class LookupHolder {
+        Lookup lookup;
+        Infotable infotable;
+    }
 }
 

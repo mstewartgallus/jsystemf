@@ -1,5 +1,6 @@
 package com.sstewartgallus.runtime;
 
+import jdk.dynalink.StandardOperation;
 import jdk.dynalink.linker.GuardedInvocation;
 import jdk.dynalink.linker.LinkRequest;
 import jdk.dynalink.linker.LinkerServices;
@@ -11,6 +12,7 @@ import org.objectweb.asm.Type;
 
 import java.lang.invoke.MethodHandle;
 import java.lang.invoke.MethodHandles;
+import java.lang.invoke.MethodType;
 import java.lang.reflect.Field;
 import java.lang.reflect.Modifier;
 import java.util.ArrayList;
@@ -28,7 +30,6 @@ public abstract class Closure<T> extends FunValue<T> {
     private static final Handle BOOTSTRAP = new Handle(H_INVOKESTATIC, Type.getInternalName(Closure.class), "bootstrapInfoTable",
             methodType(Infotable.class, Lookup.class, String.class, Class.class).descriptorString(),
             false);
-    private static final ConstantDynamic INFO_BOOTSTRAP = new ConstantDynamic("infoTable", Infotable.class.descriptorString(), BOOTSTRAP);
     private static final SupplierClassValue<LookupHolder> LOOKUP_MAP = new SupplierClassValue<>(LookupHolder::new);
     private final Object funValue;
 
@@ -36,10 +37,6 @@ public abstract class Closure<T> extends FunValue<T> {
         this.funValue = value;
     }
 
-    @SuppressWarnings("unused")
-    protected static Infotable bootstrapInfoTable(Lookup lookup, String name, Class<?> klass) {
-        return LOOKUP_MAP.get(lookup.lookupClass()).infotable;
-    }
 
     @SuppressWarnings("unused")
     protected static void register(MethodHandles.Lookup lookup) {
@@ -47,11 +44,13 @@ public abstract class Closure<T> extends FunValue<T> {
     }
 
     // fixme... cache common frames?
-    public static MethodHandle spinFactory(List<Class<?>> environments, List<Class<?>> arguments, MethodHandle entryPoint) {
+    public static MethodHandle spinFactory(MethodType methodType) {
+        var environment = methodType.parameterList();
+
         // fixme....
-        var args = new ArrayList<Class<?>>(environments.size() + 1);
+        var args = new ArrayList<Class<?>>(environment.size() + 1);
         args.add(Object.class);
-        args.addAll(environments);
+        args.addAll(environment);
 
         var myname = Type.getInternalName(Closure.class);
         var newclassname = myname + "Impl";
@@ -83,7 +82,7 @@ public abstract class Closure<T> extends FunValue<T> {
 
             var ii = 2;
             var envField = 0;
-            for (var env : environments) {
+            for (var env : environment) {
                 if (env.isPrimitive()) {
                     switch (env.getName()) {
                         case "boolean", "byte", "char", "short", "int" -> {
@@ -117,17 +116,8 @@ public abstract class Closure<T> extends FunValue<T> {
         }
 
         {
-            var mw = cw.visitMethod(ACC_PUBLIC, "infoTable", methodType(Infotable.class).descriptorString(), null, null);
-            mw.visitCode();
-            mw.visitLdcInsn(INFO_BOOTSTRAP);
-            mw.visitInsn(ARETURN);
-            mw.visitMaxs(0, 0);
-            mw.visitEnd();
-        }
-
-        {
             var ii = 0;
-            for (var env : environments) {
+            for (var env : environment) {
                 cw.visitField(ACC_PRIVATE, "e" + ii, env.descriptorString(), null, null)
                         .visitEnd();
                 ++ii;
@@ -141,8 +131,8 @@ public abstract class Closure<T> extends FunValue<T> {
         var klass = definedClass.asSubclass(Closure.class);
 
         var privateLookup = LOOKUP_MAP.get(klass).lookup;
-
-        LOOKUP_MAP.get(klass).infotable = new Infotable(environments, arguments, entryPoint);
+        var holder = LOOKUP_MAP.get(klass);
+        holder.info = new Info(environment);
 
         MethodHandle con;
         try {
@@ -155,25 +145,27 @@ public abstract class Closure<T> extends FunValue<T> {
     }
 
     protected int arity() {
-        return infoTable().arguments().size();
+       return LOOKUP_MAP.get(getClass()).infotable.arguments().size();
     }
 
     protected GuardedInvocation saturatedApplication(LinkRequest linkRequest, LinkerServices linkerServices) throws NoSuchFieldException, IllegalAccessException {
-        var metadata = infoTable();
+        var info = LOOKUP_MAP.get(getClass()).info;
 
-        var argument = metadata.arguments();
-        var environment = metadata.environment();
-        var execute = metadata.entryPoint();
+        var environment = info.environment();
 
         // fixme... handle environment better...
         var environmentGetter = lookup().findGetter(getClass(), "environment", environment.get(0));
-        var mh = filterArguments(execute, 0, environmentGetter);
 
-        // fit into the stupid dummy receiver thing...
-        mh = dropArguments(mh, 1, Void.class);
-        // fixme... also guard on thunk being not fully saturated...
-        mh = mh.asType(mh.type().changeParameterType(0, Value.class));
+        var resultType = linkRequest.getCallSiteDescriptor().getMethodType();
 
+        // fixme... add in receiver/null receiver.
+        var args = new ArrayList<>(environment);
+        args.addAll(resultType.parameterList());
+
+        // fixme... user proper lookup...
+        var mh = ValueLinker.link(lookup(), StandardOperation.CALL, methodType(resultType.returnType(), args)).dynamicInvoker();
+
+        // fixme... also guard on thunk being not fully saturated... etc...
         return new GuardedInvocation(mh, Guards.isOfClass(getClass(), mh.type().changeReturnType(boolean.class)));
     }
 
@@ -200,6 +192,11 @@ public abstract class Closure<T> extends FunValue<T> {
     private final static class LookupHolder {
         Lookup lookup;
         Infotable infotable;
+        Info info;
     }
+
+    private record Info(List<Class<?>>environment) {
+    }
+
 }
 

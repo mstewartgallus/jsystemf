@@ -16,8 +16,6 @@ public abstract class FunValue<T> extends Value<T> {
 
     protected abstract GuardedInvocation saturatedApplication(LinkRequest linkRequest, LinkerServices linkerServices) throws NoSuchFieldException, IllegalAccessException;
 
-    public abstract Infotable infoTable();
-
     // fixme... look furether into   https://gitlab.haskell.org/ghc/ghc/-/wikis/commentary/rts/haskell-execution/function-calls
     final GuardedInvocation getGuardedInvocation(LinkRequest linkRequest, LinkerServices linkerServices) throws NoSuchFieldException, IllegalAccessException {
         Operation operation = linkRequest.getCallSiteDescriptor().getOperation();
@@ -64,19 +62,12 @@ public abstract class FunValue<T> extends Value<T> {
     }
 
     private GuardedInvocation partialApplication(int calledWith, LinkRequest linkRequest, LinkerServices linkerServices) {
-        var metadata = infoTable();
+        // fixme... drop reciever/null receiver arguments....
+        var methodType = linkRequest.getCallSiteDescriptor().getMethodType();
 
-        // fixme... make this work for closures as well... ?
-        var arguments = metadata.arguments();
-        var entryPoint = metadata.entryPoint();
+        var mh = Closure.spinFactory(methodType);
 
-        var calledArgs = arguments.stream().limit(calledWith).collect(Collectors.toUnmodifiableList());
-        var freeArgs = arguments.stream().skip(calledWith + 1).collect(Collectors.toUnmodifiableList());
-
-        var mh = Closure.spinFactory(calledArgs, freeArgs, entryPoint);
-
-        mh = dropArguments(mh, 0, Value.class, Void.class);
-
+        // fixme.. guard on arities...
         return new GuardedInvocation(mh, Guards.isOfClass(getClass(), mh.type().changeReturnType(boolean.class)));
     }
 }

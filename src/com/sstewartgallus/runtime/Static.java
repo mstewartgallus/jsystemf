@@ -20,36 +20,34 @@ import static org.objectweb.asm.Opcodes.*;
 
 public abstract class Static<T> extends FunValue<T> {
 
+    private static final Handle REGISTER_BOOTSTRAP = new Handle(H_INVOKESTATIC, Type.getInternalName(Static.class), "register",
+            methodType(Object.class, Lookup.class, String.class, Class.class).descriptorString(),
+            false);
     private static final Handle BOOTSTRAP = new Handle(H_INVOKESTATIC, Type.getInternalName(Static.class), "bootstrapInfoTable",
             methodType(Infotable.class, Lookup.class, String.class, Class.class).descriptorString(),
             false);
-    private static final ConstantDynamic INFO_BOOTSTRAP = new ConstantDynamic("infoTable", Infotable.class.descriptorString(), BOOTSTRAP);
     private static final SupplierClassValue<LookupHolder> LOOKUP_MAP = new SupplierClassValue<>(LookupHolder::new);
 
     @SuppressWarnings("unused")
-    protected static Infotable bootstrapInfoTable(Lookup lookup, String name, Class<?> klass) {
-        return LOOKUP_MAP.get(lookup.lookupClass()).infotable;
-    }
-
-    @SuppressWarnings("unused")
-    protected static void register(MethodHandles.Lookup lookup) {
+    protected static Object register(MethodHandles.Lookup lookup, String name, Class<?> klass) {
         LOOKUP_MAP.get(lookup.lookupClass()).lookup = lookup;
+        return null;
     }
 
     public static Static<?> spin(List<Class<?>> arguments, Class<?> result, MethodHandle entryPoint) {
+        var registerLookupHack = new ConstantDynamic("registerHack", Object.class.descriptorString(), REGISTER_BOOTSTRAP);
+
         var myname = Type.getInternalName(Static.class);
         var newclassname = myname + "Impl";
 
+        // fixme.. not really a need for dynamically spinning this....
         var cw = new ClassWriter(ClassWriter.COMPUTE_FRAMES | ClassWriter.COMPUTE_MAXS);
         cw.visit(V14, ACC_FINAL | ACC_PRIVATE, newclassname, null, myname, null);
 
         {
             var mw = cw.visitMethod(ACC_PRIVATE | ACC_STATIC, "<clinit>", methodType(void.class).descriptorString(), null, null);
             mw.visitCode();
-
-            mw.visitMethodInsn(INVOKESTATIC, Type.getInternalName(MethodHandles.class), "lookup", methodType(MethodHandles.Lookup.class).descriptorString(), false);
-            mw.visitMethodInsn(INVOKESTATIC, Type.getInternalName(Static.class), "register", methodType(void.class, MethodHandles.Lookup.class).descriptorString(), false);
-
+            mw.visitLdcInsn(registerLookupHack);
             mw.visitInsn(RETURN);
             mw.visitMaxs(0, 0);
             mw.visitEnd();
@@ -66,16 +64,6 @@ public abstract class Static<T> extends FunValue<T> {
             mw.visitEnd();
         }
 
-        // fixme... not really a need for dynamically spinning this in the singleton static case...
-        {
-            var mw = cw.visitMethod(ACC_PUBLIC, "infoTable", methodType(Infotable.class).descriptorString(), null, null);
-            mw.visitCode();
-            mw.visitLdcInsn(INFO_BOOTSTRAP);
-            mw.visitInsn(ARETURN);
-            mw.visitMaxs(0, 0);
-            mw.visitEnd();
-        }
-
         cw.visitEnd();
 
         var bytes = cw.toByteArray();
@@ -84,7 +72,7 @@ public abstract class Static<T> extends FunValue<T> {
         var klass = definedClass.asSubclass(Static.class);
 
         var privateLookup = LOOKUP_MAP.get(klass).lookup;
-        LOOKUP_MAP.get(klass).infotable = new Infotable(List.of(), arguments, entryPoint);
+        LOOKUP_MAP.get(klass).infotable = new Infotable(arguments, entryPoint);
 
         MethodHandle con;
         try {
@@ -98,6 +86,10 @@ public abstract class Static<T> extends FunValue<T> {
         } catch (Throwable throwable) {
             throw new RuntimeException(throwable);
         }
+    }
+
+    Infotable infoTable() {
+        return LOOKUP_MAP.get(getClass()).infotable;
     }
 
     protected int arity() {

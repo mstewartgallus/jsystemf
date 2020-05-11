@@ -1,10 +1,10 @@
 package com.sstewartgallus.pass1;
 
 import com.sstewartgallus.ir.PointFree;
-import com.sstewartgallus.ir.VarGen;
+import com.sstewartgallus.term.Var;
+import com.sstewartgallus.term.VarGen;
 import com.sstewartgallus.type.F;
 import com.sstewartgallus.type.HList;
-import com.sstewartgallus.type.Var;
 
 import java.lang.constant.ConstantDesc;
 import java.util.Objects;
@@ -13,9 +13,7 @@ import java.util.function.Function;
 public interface Pass3<A> {
     TPass0<A> type();
 
-    default <V> Pass3<A> substitute(Var<V> argument, Pass3<V> replacement) {
-        throw null;
-    }
+    <V> Pass3<A> substitute(Var<V> argument, Pass3<V> replacement);
 
     <T extends HList<T>> PointFree<F<T, A>> pointFree(Var<T> argument, VarGen vars, TPass0<T> argType);
 
@@ -41,7 +39,7 @@ public interface Pass3<A> {
         }
 
         public String toString() {
-            return "{" + f + " " + x + "}";
+            return "(" + f + " " + x + ")";
         }
     }
 
@@ -52,7 +50,7 @@ public interface Pass3<A> {
         }
 
         public <V> Pass3<A> substitute(Var<V> argument, Pass3<V> replacement) {
-            throw null;
+            throw new UnsupportedOperationException("unimplemented");
         }
 
         @Override
@@ -93,16 +91,12 @@ public interface Pass3<A> {
         }
     }
 
-    record Lambda<A extends HList<A>, B, R>(TPass0<A>domain, TPass0<R>range, Args<A, B, R>arguments,
+    record Lambda<A extends HList<A>, B, R>(TPass0<R>type, TPass0<A>domain, Args<A, B, R>arguments,
                                             Function<Var<A>, Pass3<B>>f) implements Pass3<R> {
         private static final ThreadLocal<Integer> DEPTH = ThreadLocal.withInitial(() -> 0);
 
         public <V> Pass3<R> substitute(Var<V> argument, Pass3<V> replacement) {
-            return new Lambda<>(domain, range, arguments, x -> f.apply(x).substitute(argument, replacement));
-        }
-
-        public TPass0<R> type() {
-            return range;
+            return new Lambda<>(type, domain, arguments, x -> f.apply(x).substitute(argument, replacement));
         }
 
         @Override
@@ -111,7 +105,7 @@ public interface Pass3<A> {
             var body = f.apply(arg);
             var ccc = body.pointFree(arg, vars, domain);
 
-            return PointFree.lambda(argType, range, arguments, ccc);
+            return PointFree.lambda(argType, type, arguments, ccc);
         }
 
         public String toString() {
@@ -123,7 +117,7 @@ public interface Pass3<A> {
                 var dummy = new Var<A>(depth);
                 var body = f.apply(dummy);
 
-                str = "{" + dummy + ": " + domain + "} -> " + body;
+                str = "{" + dummy + ": " + domain + "} → " + body;
             } finally {
                 DEPTH.set(depth);
                 if (depth == 0) {
@@ -143,10 +137,6 @@ public interface Pass3<A> {
         @Override
         public <T extends HList<T>> PointFree<F<T, A>> pointFree(Var<T> argument, VarGen vars, TPass0<T> argType) {
             return PointFree.constant(argType, type, value);
-        }
-
-        public TPass0<A> type() {
-            return type;
         }
 
         @Override

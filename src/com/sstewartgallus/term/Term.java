@@ -178,7 +178,6 @@ public interface Term<L> {
             return str;
         }
 
-
         @Override
         public <X> X visit(Visitor<X, F<A, B>> visitor) {
             return visitor.onLambda(new Equality.Identical<>(), domain, f);

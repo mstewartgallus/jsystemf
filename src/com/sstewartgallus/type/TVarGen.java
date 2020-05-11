@@ -1,6 +1,4 @@
-package com.sstewartgallus.ir;
-
-import com.sstewartgallus.type.TVar;
+package com.sstewartgallus.type;
 
 public final class TVarGen {
     private int argNumber = 0;

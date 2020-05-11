@@ -11,8 +11,6 @@ import java.util.function.Function;
  */
 public interface Type<X> {
     Type<Integer> INT = new PureType<>(int.class);
-    Type<Boolean> BOOLEAN = new PureType<>(boolean.class);
-    Type<Void> VOID = new PureType<>(Void.class);
 
     static <A, B> Type<E<A, B>> e(Type<A> x, Type<B> y) {
         return new Exists<>(x, y);
@@ -23,9 +21,8 @@ public interface Type<X> {
     }
 
     // fixme... rethink unification...
-    default <Y> Type<X> unify(Type<Y> right) throws TypeCheckException {
-        throw null;
-    }
+
+    <Y> Type<X> unify(Type<Y> right) throws TypeCheckException;
 
     default <B> Term<F<X, B>> l(Function<Term<X>, Term<B>> f) {
         return new Term.Lambda<>(this, f);
@@ -35,11 +32,9 @@ public interface Type<X> {
         return new FunType<>(this, range);
     }
 
-    default <T> Type<X> substitute(TVar<T> v, Type<T> replacement) {
-        throw new UnsupportedOperationException(getClass().toString());
-    }
-
     <L> L visit(Visitor<L, X> visitor);
+
+    <T> Type<X> substitute(TVar<T> v, Type<T> replacement);
 
     interface Visitor<X, L> {
         X onPureType(Class<L> clazz);
@@ -120,7 +115,17 @@ public interface Type<X> {
         }
 
         @Override
+        public <Y> Type<V<A, B>> unify(Type<Y> right) {
+            throw new UnsupportedOperationException("unimplemented");
+        }
+
+        @Override
         public <L> L visit(Visitor<L, V<A, B>> visitor) {
+            throw new UnsupportedOperationException("unimplemented");
+        }
+
+        @Override
+        public <T> Type<V<A, B>> substitute(TVar<T> v, Type<T> replacement) {
             throw new UnsupportedOperationException("unimplemented");
         }
     }
@@ -132,7 +137,17 @@ public interface Type<X> {
         }
 
         @Override
+        public <Y> Type<E<A, B>> unify(Type<Y> right) {
+            throw new UnsupportedOperationException("unimplemented");
+        }
+
+        @Override
         public <L> L visit(Visitor<L, E<A, B>> visitor) {
+            throw new UnsupportedOperationException("unimplemented");
+        }
+
+        @Override
+        public <T> Type<E<A, B>> substitute(TVar<T> v, Type<T> replacement) {
             throw new UnsupportedOperationException("unimplemented");
         }
     }
@@ -149,6 +164,11 @@ public interface Type<X> {
                 return (Type<T>) replacement;
             }
             return this;
+        }
+
+        @Override
+        public <Y> Type<T> unify(Type<Y> right) {
+            throw new UnsupportedOperationException("unimplemented");
         }
 
         @Override

@@ -1,10 +1,10 @@
 package com.sstewartgallus.pass1;
 
-import com.sstewartgallus.ir.VarGen;
+import com.sstewartgallus.term.Var;
+import com.sstewartgallus.term.VarGen;
 import com.sstewartgallus.type.E;
 import com.sstewartgallus.type.F;
 import com.sstewartgallus.type.V;
-import com.sstewartgallus.type.Var;
 
 import java.lang.constant.ConstantDesc;
 import java.util.List;
@@ -52,9 +52,7 @@ public interface Pass1<L> {
 
     <A> Pass1<L> substitute(Var<A> argument, Pass1<A> replacement);
 
-    default Results<L> captureEnv(VarGen vars) {
-        throw null;
-    }
+    Results<L> captureEnv(VarGen vars);
 
     TPass0<L> type();
 
@@ -213,7 +211,7 @@ public interface Pass1<L> {
                 var dummy = new Var<A>(depth);
                 var body = f.apply(new Pass1.Load<>(domain, dummy));
 
-                str = "{" + dummy + ": " + domain + "} → " + body;
+                str = "(" + dummy + ": " + domain + ") → " + body;
             } finally {
                 DEPTH.set(depth);
                 if (depth == 0) {
@@ -244,10 +242,15 @@ public interface Pass1<L> {
         }
     }
 
-    record TPass0Apply<A, B>(Pass1<V<A, B>>f, TPass0<A>x) implements Pass1<B> {
+    record TypeApply<A, B>(Pass1<V<A, B>>f, TPass0<A>x) implements Pass1<B> {
 
         @Override
         public <A> Pass1<B> substitute(Var<A> argument, Pass1<A> replacement) {
+            throw new UnsupportedOperationException("unimplemented");
+        }
+
+        @Override
+        public Results<B> captureEnv(VarGen vars) {
             throw new UnsupportedOperationException("unimplemented");
         }
 
@@ -272,8 +275,13 @@ public interface Pass1<L> {
             throw new UnsupportedOperationException("unimplemented");
         }
 
+        @Override
+        public Results<V<A, B>> captureEnv(VarGen vars) {
+            throw new UnsupportedOperationException("unimplemented");
+        }
+
         public String toString() {
-            throw null;
+            throw new UnsupportedOperationException("unimplemented");
             // var dummy = new TVar<A>(0);
             //   return "{forall " + dummy + ". " + f.apply(new Load<>(dummy)) + "}";
         }
@@ -282,6 +290,11 @@ public interface Pass1<L> {
     record Exists<A, B>(TPass0<A>x, Pass1<B>y) implements Pass1<E<A, B>> {
         public TPass0<E<A, B>> type() {
             return new TPass0.Exists<>(x, y.type());
+        }
+
+        @Override
+        public Results<E<A, B>> captureEnv(VarGen vars) {
+            throw new UnsupportedOperationException("unimplemented");
         }
 
         @Override

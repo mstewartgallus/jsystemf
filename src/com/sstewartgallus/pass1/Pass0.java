@@ -1,7 +1,8 @@
 package com.sstewartgallus.pass1;
 
-import com.sstewartgallus.ir.VarGen;
 import com.sstewartgallus.term.Term;
+import com.sstewartgallus.term.Var;
+import com.sstewartgallus.term.VarGen;
 import com.sstewartgallus.type.*;
 
 import java.lang.constant.ConstantDesc;

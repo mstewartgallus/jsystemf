@@ -1,6 +1,4 @@
-package com.sstewartgallus.ir;
-
-import com.sstewartgallus.type.Var;
+package com.sstewartgallus.term;
 
 public final class VarGen {
     private int argNumber = 0;

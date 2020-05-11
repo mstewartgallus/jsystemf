@@ -1,16 +1,14 @@
 package com.sstewartgallus.pass1;
 
 import com.sstewartgallus.ir.Signature;
-import com.sstewartgallus.ir.TVarGen;
-import com.sstewartgallus.ir.VarGen;
 import com.sstewartgallus.runtime.FunValue;
+import com.sstewartgallus.term.VarGen;
 import com.sstewartgallus.type.*;
 
 import java.util.ArrayList;
 import java.util.List;
 import java.util.function.Function;
 
-// fixme... get rid of compiler ir hackery...
 public interface TPass0<X> {
     static <T> TPass0<T> from(Type<T> type, VarGen vars) {
         return type.visit(new Type.Visitor<>() {

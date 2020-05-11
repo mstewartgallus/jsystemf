@@ -1,9 +1,9 @@
 package com.sstewartgallus.pass1;
 
-import com.sstewartgallus.ir.VarGen;
+import com.sstewartgallus.term.Var;
+import com.sstewartgallus.term.VarGen;
 import com.sstewartgallus.type.F;
 import com.sstewartgallus.type.HList;
-import com.sstewartgallus.type.Var;
 
 import java.lang.constant.ConstantDesc;
 import java.util.Objects;
@@ -12,13 +12,9 @@ import java.util.function.Function;
 public interface Pass2<A> {
     TPass0<A> type();
 
-    default <V> Pass2<A> substitute(Var<V> argument, Pass2<V> replacement) {
-        throw null;
-    }
+    <V> Pass2<A> substitute(Var<V> argument, Pass2<V> replacement);
 
-    default Pass3<A> uncurry(VarGen vars) {
-        throw new UnsupportedOperationException(getClass().toString());
-    }
+    Pass3<A> uncurry(VarGen vars);
 
     interface Body<A> {
         <V> Body<A> substitute(Var<V> argument, Pass2<V> replacement);
@@ -47,7 +43,7 @@ public interface Pass2<A> {
         }
 
         public String toString() {
-            return "{" + f + " " + x + "}";
+            return "(" + f + " " + x + ")";
         }
     }
 
@@ -77,7 +73,7 @@ public interface Pass2<A> {
                                              Args<L, R, A>proof,
                                              Function<Pass3.Get<?, L>, Pass3<R>>f) {
         public Pass3.Lambda<L, R, A> lambda(TPass0<A> range) {
-            return new Pass3.Lambda<>(type, range, proof, x -> f.apply(new Pass3.Get<>(type, x, new Index.Zip<>(type))));
+            return new Pass3.Lambda<>(range, type, proof, x -> f.apply(new Pass3.Get<>(type, x, new Index.Zip<>(type))));
         }
 
     }

@@ -6,14 +6,12 @@ import com.sstewartgallus.ir.Generic;
 import com.sstewartgallus.ir.PointFree;
 import com.sstewartgallus.ir.VarGen;
 import com.sstewartgallus.pass1.Pass0;
+import com.sstewartgallus.pass1.TPass0;
 import com.sstewartgallus.runtime.Value;
 import com.sstewartgallus.runtime.ValueInvoker;
 import com.sstewartgallus.term.Prims;
 import com.sstewartgallus.term.Term;
-import com.sstewartgallus.type.F;
-import com.sstewartgallus.type.Type;
-import com.sstewartgallus.type.TypeCheckException;
-import com.sstewartgallus.type.V;
+import com.sstewartgallus.type.*;
 
 import java.io.IOException;
 import java.io.Reader;
@@ -78,7 +76,7 @@ public final class Main {
         var uncurried = captures.uncurry(vars);
         outputT("Uncurried", uncurried, uncurried.type());
 
-        var pointFree = uncurried.pointFree(vars.createArgument(Type.nil()), vars);
+        var pointFree = uncurried.pointFree(vars.createArgument(), vars, TPass0.NilType.NIL);
         outputT("Point Free", pointFree, pointFree.type());
 
         var generic = PointFree.generic(pointFree);

@@ -3,6 +3,7 @@ package com.sstewartgallus.ir;
 import com.sstewartgallus.mh.Arguments;
 import com.sstewartgallus.mh.TypedMethodHandle;
 import com.sstewartgallus.pass1.Index;
+import com.sstewartgallus.pass1.TPass0;
 import com.sstewartgallus.runtime.LdcStub;
 import com.sstewartgallus.runtime.Static;
 import com.sstewartgallus.runtime.Value;
@@ -35,7 +36,7 @@ public interface Generic<A, B> {
     // for Category we use Void the class that has only one inhabitant
     // fixme... I believe what we want for Generic is the T such that Class<T> has only one inhabitant... null!
     static <B> Value<B> compile(MethodHandles.Lookup lookup, Generic<Void, F<HList.Nil, B>> generic) {
-        var chunk = generic.compile(lookup, Type.VOID);
+        var chunk = generic.compile(lookup, new TPass0.PureType<>(Void.class));
 
         var handle = chunk.intro();
 
@@ -55,7 +56,7 @@ public interface Generic<A, B> {
         throw new UnsupportedOperationException(getClass().toString());
     }
 
-    default Chunk<B> compile(MethodHandles.Lookup lookup, Type<A> klass) {
+    default Chunk<B> compile(Lookup lookup, TPass0<A> klass) {
         throw new UnsupportedOperationException(getClass().toString());
     }
 
@@ -76,7 +77,7 @@ public interface Generic<A, B> {
             throw null;
         }
 
-        public Chunk<B> compile(Lookup lookup, Type<V> klass) {
+        public Chunk<B> compile(Lookup lookup, TPass0<V> klass) {
             var t = signature.apply(klass).erase();
 
             MethodHandle handle;
@@ -108,7 +109,7 @@ public interface Generic<A, B> {
             throw null;
         }
 
-        public Chunk<F<A, B>> compile(Lookup lookup, Type<V> klass) {
+        public Chunk<F<A, B>> compile(Lookup lookup, TPass0<V> klass) {
             var d = domain.apply(klass).flatten();
             var handle = value.compile(lookup, klass).intro();
             handle = dropArguments(handle, 0, d);
@@ -122,7 +123,7 @@ public interface Generic<A, B> {
             return "(curry-type " + f + ")";
         }
 
-        public Chunk<F<X, V<A, B>>> compile(MethodHandles.Lookup lookup, Type<Z> klass) {
+        public Chunk<F<X, V<A, B>>> compile(Lookup lookup, TPass0<Z> klass) {
             // fixme... need to accept a klass arguments at runtime I think...
             // fixme... createa  E<Z,A> from Z ?
             throw new UnsupportedOperationException("unimplemented");
@@ -135,7 +136,7 @@ public interface Generic<A, B> {
                             Generic<V, F<Z, F<A, B>>>f,
                             Generic<V, F<Z, A>>x) implements Generic<V, F<Z, B>> {
 
-        public Chunk<F<Z, B>> compile(MethodHandles.Lookup lookup, Type<V> klass) {
+        public Chunk<F<Z, B>> compile(Lookup lookup, TPass0<V> klass) {
             var d = domain.apply(klass);
 
             var fEmit = f.compile(lookup, klass).intro();
@@ -165,7 +166,7 @@ public interface Generic<A, B> {
     record Get<V, X, A extends HList<A>, B extends HList<B>>(Signature<V, F<A, X>>signature,
                                                              Signature<V, A>value,
                                                              Index<A, HList.Cons<X, B>>ix) implements Generic<V, F<A, X>> {
-        public Chunk<F<A, X>> compile(Lookup lookup, Type<V> klass) {
+        public Chunk<F<A, X>> compile(Lookup lookup, TPass0<V> klass) {
             var domain = value.apply(klass).flatten();
             var num = ix.reify();
             var result = domain.get(num);
@@ -193,7 +194,7 @@ public interface Generic<A, B> {
             return "(λ" + funDomain + " " + body + ")";
         }
 
-        public Chunk<R> compile(Lookup lookup, Type<X> klass) {
+        public Chunk<R> compile(Lookup lookup, TPass0<X> klass) {
             var d = funDomain.apply(klass).flatten();
             var r = funRange.apply(klass).erase();
 

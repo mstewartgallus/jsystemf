@@ -1,6 +1,10 @@
 package com.sstewartgallus.ir;
 
-import com.sstewartgallus.type.*;
+import com.sstewartgallus.pass1.TPass0;
+import com.sstewartgallus.type.E;
+import com.sstewartgallus.type.F;
+import com.sstewartgallus.type.HList;
+import com.sstewartgallus.type.V;
 
 // fixme... simplify point-free type representation...
 public interface Signature<A, B> {
@@ -9,13 +13,13 @@ public interface Signature<A, B> {
     }
 
     // fixme... probably going to need my own runtime of type values... my current type is more like ClassDesc than class
-    default Type<B> apply(Type<A> input) {
+    default TPass0<B> apply(TPass0<A> input) {
         throw new UnsupportedOperationException(getClass().toString());
     }
 
     record Pure<T, A>(Class<A>clazz) implements Signature<T, A> {
-        public Type<A> apply(Type<T> input) {
-            return new Type.PureType<>(clazz);
+        public TPass0<A> apply(TPass0<T> input) {
+            return new TPass0.PureType<>(clazz);
         }
 
         public String toString() {
@@ -24,8 +28,8 @@ public interface Signature<A, B> {
     }
 
     record Function<X, A, B>(Signature<X, A>domain, Signature<X, B>range) implements Signature<X, F<A, B>> {
-        public Type<F<A, B>> apply(Type<X> input) {
-            return domain.apply(input).to(range.apply(input));
+        public TPass0<F<A, B>> apply(TPass0<X> input) {
+            return new TPass0.FunType<>(domain.apply(input), range.apply(input));
         }
 
         public String toString() {
@@ -34,8 +38,8 @@ public interface Signature<A, B> {
     }
 
     record First<L, A, B>(Signature<L, E<A, B>>sig) implements Signature<L, A> {
-        public Type<A> apply(Type<L> input) {
-            return ((Type.Exists<A, B>) sig.apply(input)).x();
+        public TPass0<A> apply(TPass0<L> input) {
+            return ((TPass0.Exists<A, B>) sig.apply(input)).x();
         }
 
         public String toString() {
@@ -44,8 +48,8 @@ public interface Signature<A, B> {
     }
 
     record Second<L, A, B>(Signature<L, E<A, B>>sig) implements Signature<L, B> {
-        public Type<B> apply(Type<L> input) {
-            return ((Type.Exists<A, B>) sig.apply(input)).y();
+        public TPass0<B> apply(TPass0<L> input) {
+            return ((TPass0.Exists<A, B>) sig.apply(input)).y();
         }
 
         public String toString() {
@@ -54,7 +58,7 @@ public interface Signature<A, B> {
     }
 
     record Identity<T>() implements Signature<T, T> {
-        public Type<T> apply(Type<T> input) {
+        public TPass0<T> apply(TPass0<T> input) {
             return input;
         }
 
@@ -64,7 +68,7 @@ public interface Signature<A, B> {
     }
 
     record Curry<A, B, C>(Signature<E<A, C>, B>body) implements Signature<C, V<A, B>> {
-        public Type<V<A, B>> apply(Type<C> input) {
+        public TPass0<V<A, B>> apply(TPass0<C> input) {
             throw new UnsupportedOperationException("unimplemented");
         }
 
@@ -73,9 +77,9 @@ public interface Signature<A, B> {
         }
     }
 
-    record NilType<X>() implements Signature<X, HList.Nil> {
-        public Type<HList.Nil> apply(Type<X> input) {
-            return Type.nil();
+    record NilTPass0<X>() implements Signature<X, HList.Nil> {
+        public TPass0<HList.Nil> apply(TPass0<X> input) {
+            return TPass0.NilType.NIL;
         }
 
         public String toString() {
@@ -84,10 +88,10 @@ public interface Signature<A, B> {
 
     }
 
-    record ConsType<X, H, T extends HList<T>>(Signature<X, H>head,
-                                              Signature<X, T>tail) implements Signature<X, HList.Cons<H, T>> {
-        public Type<HList.Cons<H, T>> apply(Type<X> input) {
-            return Type.cons(head.apply(input), tail.apply(input));
+    record ConsTPass0<X, H, T extends HList<T>>(Signature<X, H>head,
+                                                Signature<X, T>tail) implements Signature<X, HList.Cons<H, T>> {
+        public TPass0<HList.Cons<H, T>> apply(TPass0<X> input) {
+            return new TPass0.ConsType<>(head.apply(input), tail.apply(input));
         }
 
 
@@ -97,7 +101,7 @@ public interface Signature<A, B> {
             builder.append(head);
 
             Signature<?, ? extends HList<?>> current = tail;
-            while (current instanceof ConsType<?, ?, ?> cons) {
+            while (current instanceof ConsTPass0<?, ?, ?> cons) {
                 builder.append(" Δ ");
                 builder.append(cons.head);
                 current = cons.tail;

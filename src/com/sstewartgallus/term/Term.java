@@ -65,14 +65,14 @@ public interface Term<L> {
         return new Pure<>(type, constant.get());
     }
 
-    <X> X visit(Visitor<X, L> visitor);
-
     Type<L> type() throws TypeCheckException;
+
+    <X> X visit(Visitor<X, L> visitor);
 
     interface Visitor<X, L> {
         X onPure(Type<L> type, ConstantDesc constantDesc);
 
-        X onLoad(Var<L> variable);
+        X onLoad(Type<L> type, Var<L> variable);
 
         <A> X onApply(Term<F<A, L>> f, Term<A> x);
 
@@ -96,14 +96,9 @@ public interface Term<L> {
         }
     }
 
-    record Load<A>(Var<A>variable) implements Term<A> {
+    record Load<A>(Type<A>type, Var<A>variable) implements Term<A> {
         public Load {
             Objects.requireNonNull(variable);
-        }
-
-        @Override
-        public Type<A> type() {
-            return variable.type();
         }
 
         @Override
@@ -113,7 +108,7 @@ public interface Term<L> {
 
         @Override
         public <X> X visit(Visitor<X, A> visitor) {
-            return visitor.onLoad(variable);
+            return visitor.onLoad(type, variable);
         }
     }
 
@@ -158,7 +153,7 @@ public interface Term<L> {
 
         @Override
         public Type<F<A, B>> type() throws TypeCheckException {
-            var range = f.apply(new Load<>(new Var<>(domain, 0))).type();
+            var range = f.apply(new Load<>(domain, new Var<>(0))).type();
             return new Type.FunType<>(domain, range);
         }
 
@@ -169,7 +164,7 @@ public interface Term<L> {
 
             String str;
             try {
-                var dummy = new Load<>(new Var<>(domain, depth));
+                var dummy = new Load<>(domain, new Var<>(depth));
                 var body = f.apply(dummy);
                 String bodyStr = body.toString();
 
@@ -225,15 +220,15 @@ public interface Term<L> {
         @Override
         public Type<V<A, B>> type() throws TypeCheckException {
             // fixme... pass in the variable generator?
-            var v = new Type.Var<A>(0);
-            var body = f.apply(v).type();
+            var v = new TVar<A>(0);
+            var body = f.apply(new Type.Load<>(v)).type();
             return Type.v(x -> body.substitute(v, x));
         }
 
         @Override
         public String toString() {
-            var dummy = new Type.Var<A>(0);
-            return "{forall " + dummy + ". " + f.apply(dummy) + "}";
+            var dummy = new TVar<A>(0);
+            return "{forall " + dummy + ". " + f.apply(new Type.Load<>(dummy)) + "}";
         }
     }
 

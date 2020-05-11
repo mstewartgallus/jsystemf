@@ -1,11 +1,10 @@
 package com.sstewartgallus.pass1;
 
 import com.sstewartgallus.ir.VarGen;
-import com.sstewartgallus.term.Var;
 import com.sstewartgallus.type.E;
 import com.sstewartgallus.type.F;
-import com.sstewartgallus.type.Type;
 import com.sstewartgallus.type.V;
+import com.sstewartgallus.type.Var;
 
 import java.lang.constant.ConstantDesc;
 import java.util.List;
@@ -24,10 +23,10 @@ import java.util.stream.Collectors;
 //   | App   (Expr b) (Arg b)
 //   | Lam   b (Expr b)
 //   | Let   (Bind b) (Expr b)
-//   | Case  (Expr b) b Type [Alt b]
+//   | Case  (Expr b) b TPass0 [Alt b]
 //   | Cast  (Expr b) Coercion
 //   | Tick  (Tickish Id) (Expr b)
-//   | Type  Type
+//   | TPass0  TPass0
 
 // arguments Arg b = Expr b
 // arguments Alt b = (AltCon, [b], Expr b)
@@ -41,7 +40,7 @@ import java.util.stream.Collectors;
 
 // fixme... move types out of the ir package
 public interface Pass1<L> {
-    static <A, B> Pass1<V<A, B>> v(Function<Type<A>, Pass1<B>> f) {
+    static <A, B> Pass1<V<A, B>> v(Function<TPass0<A>, Pass1<B>> f) {
         return new Forall<>(f);
     }
 
@@ -57,27 +56,23 @@ public interface Pass1<L> {
         throw null;
     }
 
-    Type<L> type();
+    TPass0<L> type();
 
     interface Body<A> {
         <V> Pass1.Body<A> substitute(Var<V> argument, Pass1<V> replacement);
 
-        Type<A> type();
+        TPass0<A> type();
 
         BodyResults<A> captureEnv(VarGen vars);
     }
 
-    record Results<L>(Set<Var<?>>captured, Pass2<L>value) {
+    record Results<L>(Set<Pass2.Load<?>>captured, Pass2<L>value) {
     }
 
-    record Load<A>(Var<A>variable) implements Pass1<A> {
+    record Load<A>(TPass0<A>type, Var<A>variable) implements Pass1<A> {
         public Results<A> captureEnv(VarGen vars) {
-            return new Results<>(Set.of(variable), new Pass2.Load<>(variable));
-        }
-
-        @Override
-        public Type<A> type() {
-            return variable.type();
+            var x = new Pass2.Load<>(type, variable);
+            return new Results<>(Set.of(x), x);
         }
 
         public <V> Pass1<A> substitute(Var<V> argument, Pass1<V> replacement) {
@@ -107,13 +102,13 @@ public interface Pass1<L> {
             return new Apply<>(f.substitute(argument, replacement), x.substitute(argument, replacement));
         }
 
-        public Type<B> type() {
-            var funType = ((Type.FunType<A, B>) f.type());
+        public TPass0<B> type() {
+            var funTPass0 = ((TPass0.FunType<A, B>) f.type());
             var t = x.type();
-            if (!Objects.equals(t, funType.domain())) {
+            if (!Objects.equals(t, funTPass0.domain())) {
                 throw new RuntimeException("type error");
             }
-            return funType.range();
+            return funTPass0.range();
         }
 
         public String toString() {
@@ -121,34 +116,34 @@ public interface Pass1<L> {
         }
     }
 
-    record BodyResults<L>(Set<Var<?>>captured, Pass2.Body<L>value) {
+    record BodyResults<L>(Set<Pass2.Load<?>>captured, Pass2.Body<L>value) {
     }
 
     record Thunk<A>(Body<A>body) implements Pass1<A> {
-        private static <A> Pass2<A> helper(List<Var<?>> free, int ii, Pass2.Body<A> body) {
+        private static <A> Pass2<A> helper(List<Pass2.Load<?>> free, int ii, Pass2.Body<A> body) {
             if (ii >= free.size()) {
                 return new Pass2.Thunk<>(body);
             }
             return helper(free, ii, free.get(ii), body);
         }
 
-        private static <A, B> Pass2<A> helper(List<Var<?>> free, int ii, Var<B> freeVar, Pass2.Body<A> body) {
-            return new Pass2.Apply<>(helper(free, ii + 1, new Pass2.Lambda<>(freeVar.type(), x -> body.substitute(freeVar, x))),
-                    new Pass2.Load<>(freeVar));
+        private static <A, B> Pass2<A> helper(List<Pass2.Load<?>> free, int ii, Pass2.Load<B> freeVar, Pass2.Body<A> body) {
+            return new Pass2.Apply<>(helper(free, ii + 1, new Pass2.Lambda<>(freeVar.type(), x -> body.substitute(freeVar.variable(), x))),
+                    freeVar);
         }
 
         public Results<A> captureEnv(VarGen vars) {
             var results = body.captureEnv(vars);
             var captured = new TreeSet<>(results.captured);
 
-            List<Var<?>> free = captured.stream().sorted().collect(Collectors.toUnmodifiableList());
+            List<Pass2.Load<?>> free = captured.stream().sorted().collect(Collectors.toUnmodifiableList());
 
             var chunk = results.value;
             return new Results<>(captured, helper(free, 0, chunk));
         }
 
         @Override
-        public Type<A> type() {
+        public TPass0<A> type() {
             return body.type();
         }
 
@@ -169,7 +164,7 @@ public interface Pass1<L> {
         }
 
         @Override
-        public Type<A> type() {
+        public TPass0<A> type() {
             return body.type();
         }
 
@@ -184,25 +179,26 @@ public interface Pass1<L> {
         }
     }
 
-    record Lambda<A, B>(Type<A>domain, Function<Pass1<A>, Body<B>>f) implements Body<F<A, B>> {
+    record Lambda<A, B>(TPass0<A>domain, Function<Pass1<A>, Body<B>>f) implements Body<F<A, B>> {
         private static final ThreadLocal<Integer> DEPTH = ThreadLocal.withInitial(() -> 0);
 
         public <V> Pass1.Body<F<A, B>> substitute(Var<V> argument, Pass1<V> replacement) {
             return new Pass1.Lambda<>(domain, x -> f.apply(x).substitute(argument, replacement));
         }
 
-        public Type<F<A, B>> type() {
-            var range = f.apply(new Pass1.Load<>(new Var<>(domain, 0))).type();
-            return new Type.FunType<>(domain, range);
+        public TPass0<F<A, B>> type() {
+            var range = f.apply(new Pass1.Load<>(domain, new Var<>(0))).type();
+            return new TPass0.FunType<>(domain, range);
         }
 
         @Override
         public BodyResults<F<A, B>> captureEnv(VarGen vars) {
-            var v = vars.createArgument(domain);
-            var body = f.apply(new Load<>(v));
+            var v = vars.<A>createArgument();
+            var load = new Pass1.Load<>(domain, v);
+            var body = f.apply(load);
             var results = body.captureEnv(vars);
-            Set<Var<?>> captures = new TreeSet<>(results.captured);
-            captures.remove(v);
+            Set<Pass2.Load<?>> captures = new TreeSet<>(results.captured);
+            captures.remove(new Pass2.Load<>(domain, v));
 
             var chunk = results.value;
             return new BodyResults<>(captures, new Pass2.Lambda<>(domain, x -> chunk.substitute(v, x)));
@@ -214,8 +210,8 @@ public interface Pass1<L> {
 
             String str;
             try {
-                var dummy = new Var<>(domain, depth);
-                var body = f.apply(new Pass1.Load<>(dummy));
+                var dummy = new Var<A>(depth);
+                var body = f.apply(new Pass1.Load<>(domain, dummy));
 
                 str = "{" + dummy + ": " + domain + "} → " + body;
             } finally {
@@ -229,7 +225,7 @@ public interface Pass1<L> {
     }
 
 
-    record Pure<A>(Type<A>type, ConstantDesc value) implements Pass1<A> {
+    record Pure<A>(TPass0<A>type, ConstantDesc value) implements Pass1<A> {
         public Results<A> captureEnv(VarGen vars) {
             return new Results<>(Set.of(), new Pass2.Pure<>(type, value));
         }
@@ -238,7 +234,7 @@ public interface Pass1<L> {
             return this;
         }
 
-        public Type<A> type() {
+        public TPass0<A> type() {
             return type;
         }
 
@@ -248,15 +244,15 @@ public interface Pass1<L> {
         }
     }
 
-    record TypeApply<A, B>(Pass1<V<A, B>>f, Type<A>x) implements Pass1<B> {
+    record TPass0Apply<A, B>(Pass1<V<A, B>>f, TPass0<A>x) implements Pass1<B> {
 
         @Override
         public <A> Pass1<B> substitute(Var<A> argument, Pass1<A> replacement) {
             throw new UnsupportedOperationException("unimplemented");
         }
 
-        public Type<B> type() {
-            return ((Type.Forall<A, B>) f.type()).f().apply(x);
+        public TPass0<B> type() {
+            return ((TPass0.Forall<A, B>) f.type()).f().apply(x);
         }
 
         @Override
@@ -266,9 +262,9 @@ public interface Pass1<L> {
 
     }
 
-    record Forall<A, B>(Function<Type<A>, Pass1<B>>f) implements Pass1<V<A, B>> {
-        public Type<V<A, B>> type() {
-            return new Type.Forall<>(x -> f.apply(x).type());
+    record Forall<A, B>(Function<TPass0<A>, Pass1<B>>f) implements Pass1<V<A, B>> {
+        public TPass0<V<A, B>> type() {
+            return new TPass0.Forall<>(x -> f.apply(x).type());
         }
 
         @Override
@@ -276,20 +272,16 @@ public interface Pass1<L> {
             throw new UnsupportedOperationException("unimplemented");
         }
 
-        @Override
-        public int hashCode() {
-            return 0;
-        }
-
         public String toString() {
-            var dummy = new Type.Var<A>(0);
-            return "{forall " + dummy + ". " + f.apply(dummy) + "}";
+            throw null;
+            // var dummy = new TVar<A>(0);
+            //   return "{forall " + dummy + ". " + f.apply(new Load<>(dummy)) + "}";
         }
     }
 
-    record Exists<A, B>(Type<A>x, Pass1<B>y) implements Pass1<E<A, B>> {
-        public Type<E<A, B>> type() {
-            return new Type.Exists<>(x, y.type());
+    record Exists<A, B>(TPass0<A>x, Pass1<B>y) implements Pass1<E<A, B>> {
+        public TPass0<E<A, B>> type() {
+            return new TPass0.Exists<>(x, y.type());
         }
 
         @Override

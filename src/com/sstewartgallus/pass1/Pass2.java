@@ -1,17 +1,16 @@
 package com.sstewartgallus.pass1;
 
 import com.sstewartgallus.ir.VarGen;
-import com.sstewartgallus.term.Var;
 import com.sstewartgallus.type.F;
 import com.sstewartgallus.type.HList;
-import com.sstewartgallus.type.Type;
+import com.sstewartgallus.type.Var;
 
 import java.lang.constant.ConstantDesc;
 import java.util.Objects;
 import java.util.function.Function;
 
 public interface Pass2<A> {
-    Type<A> type();
+    TPass0<A> type();
 
     default <V> Pass2<A> substitute(Var<V> argument, Pass2<V> replacement) {
         throw null;
@@ -24,7 +23,7 @@ public interface Pass2<A> {
     interface Body<A> {
         <V> Body<A> substitute(Var<V> argument, Pass2<V> replacement);
 
-        Type<A> type();
+        TPass0<A> type();
 
         Results<? extends HList<?>, ?, A> tuple(VarGen vars);
     }
@@ -38,13 +37,13 @@ public interface Pass2<A> {
             return new Apply<>(f.substitute(argument, replacement), x.substitute(argument, replacement));
         }
 
-        public Type<B> type() {
-            var funType = ((Type.FunType<A, B>) f.type());
+        public TPass0<B> type() {
+            var funTPass0 = ((TPass0.FunType<A, B>) f.type());
             var t = x.type();
-            if (!Objects.equals(t, funType.domain())) {
+            if (!Objects.equals(t, funTPass0.domain())) {
                 throw new RuntimeException("type error");
             }
-            return funType.range();
+            return funTPass0.range();
         }
 
         public String toString() {
@@ -52,14 +51,9 @@ public interface Pass2<A> {
         }
     }
 
-    record Load<A>(Var<A>variable) implements Pass2<A> {
+    record Load<A>(TPass0<A>type, Var<A>variable) implements Pass2<A>, Comparable<Load<?>> {
         public Pass3<A> uncurry(VarGen vars) {
-            return new Pass3.Load<>(variable);
-        }
-
-        @Override
-        public Type<A> type() {
-            return variable.type();
+            return new Pass3.Load<>(type, variable);
         }
 
         public <V> Pass2<A> substitute(Var<V> argument, Pass2<V> replacement) {
@@ -72,13 +66,18 @@ public interface Pass2<A> {
         public String toString() {
             return variable.toString();
         }
+
+        @Override
+        public int compareTo(Load<?> o) {
+            return variable.compareTo(o.variable);
+        }
     }
 
-    record Results<L extends HList<L>, R, A>(Type<L>type,
+    record Results<L extends HList<L>, R, A>(TPass0<L>type,
                                              Args<L, R, A>proof,
                                              Function<Pass3.Get<?, L>, Pass3<R>>f) {
-        public Pass3.Lambda<L, R, A> lambda(Type<A> range) {
-            return new Pass3.Lambda<>(type, range, proof, x -> f.apply(new Pass3.Get<>(x, new Index.Zip<>(type))));
+        public Pass3.Lambda<L, R, A> lambda(TPass0<A> range) {
+            return new Pass3.Lambda<>(type, range, proof, x -> f.apply(new Pass3.Get<>(type, x, new Index.Zip<>(type))));
         }
 
     }
@@ -89,7 +88,7 @@ public interface Pass2<A> {
         }
 
         @Override
-        public Type<A> type() {
+        public TPass0<A> type() {
             return body.type();
         }
 
@@ -106,7 +105,7 @@ public interface Pass2<A> {
     record Expr<A>(Pass2<A>body) implements Body<A> {
         public Results<? extends HList<?>, ?, A> tuple(VarGen vars) {
             var bodyTuple = body.uncurry(vars);
-            return new Results<>(Type.nil(), new Args.Zero<>(), nil -> bodyTuple);
+            return new Results<>(TPass0.NilType.NIL, new Args.Zero<>(), nil -> bodyTuple);
         }
 
         @Override
@@ -115,7 +114,7 @@ public interface Pass2<A> {
         }
 
         @Override
-        public Type<A> type() {
+        public TPass0<A> type() {
             return body.type();
         }
 
@@ -125,13 +124,13 @@ public interface Pass2<A> {
         }
     }
 
-    record Lambda<A, B>(Type<A>domain,
+    record Lambda<A, B>(TPass0<A>domain,
                         Function<Pass2<A>, Body<B>>f) implements Body<F<A, B>> {
         private static final ThreadLocal<Integer> DEPTH = ThreadLocal.withInitial(() -> 0);
 
         public Results<? extends HList<?>, ?, F<A, B>> tuple(VarGen vars) {
-            var v = vars.createArgument(domain);
-            var body = f.apply(new Load<>(v));
+            var v = vars.<A>createArgument();
+            var body = f.apply(new Load<>(domain, v));
             var bodyTuple = body.tuple(vars);
             return consArgument(v, bodyTuple);
         }
@@ -140,22 +139,22 @@ public interface Pass2<A> {
             var tail = bodyTuple.type;
             var proof = bodyTuple.proof;
             var f = bodyTuple.f;
-            return new Results<>(Type.cons(domain, tail), new Args.Add<>(domain, proof),
+            return new Results<>(new TPass0.ConsType<>(domain, tail), new Args.Add<>(domain, proof),
                     argList -> helper(v, f, argList));
         }
 
         public <Q extends HList<Q>, L extends HList<L>, R> Pass3<R> helper(Var<A> v, Function<Pass3.Get<?, L>, Pass3<R>> f, Pass3.Get<Q, HList.Cons<A, L>> argList) {
             Index<Q, L> next = new Index.Next<>(argList.ix());
-            return f.apply(new Pass3.Get<>(argList.variable(), next)).substitute(v, new Pass3.WrapGet<>(argList));
+            return f.apply(new Pass3.Get<>(argList.type(), argList.variable(), next)).substitute(v, new Pass3.WrapGet<>(argList));
         }
 
         public <V> Body<F<A, B>> substitute(Var<V> argument, Pass2<V> replacement) {
             return new Lambda<>(domain, x -> f.apply(x).substitute(argument, replacement));
         }
 
-        public Type<F<A, B>> type() {
-            var range = f.apply(new Load<>(new Var<>(domain, 0))).type();
-            return new Type.FunType<>(domain, range);
+        public TPass0<F<A, B>> type() {
+            var range = f.apply(new Load<>(domain, new Var<>(0))).type();
+            return new TPass0.FunType<>(domain, range);
         }
 
         public String toString() {
@@ -164,8 +163,8 @@ public interface Pass2<A> {
 
             String str;
             try {
-                var dummy = new Var<>(domain, depth);
-                var body = f.apply(new Load<>(dummy));
+                var dummy = new Var<A>(depth);
+                var body = f.apply(new Load<>(domain, dummy));
 
                 str = "{" + dummy + ": " + domain + "} → " + body;
             } finally {
@@ -178,7 +177,7 @@ public interface Pass2<A> {
         }
     }
 
-    record Pure<A>(Type<A>type, ConstantDesc value) implements Pass2<A> {
+    record Pure<A>(TPass0<A>type, ConstantDesc value) implements Pass2<A> {
         public Pass3<A> uncurry(VarGen vars) {
             return new Pass3.Pure<>(type, value);
         }
@@ -187,7 +186,7 @@ public interface Pass2<A> {
             return this;
         }
 
-        public Type<A> type() {
+        public TPass0<A> type() {
             return type;
         }
 

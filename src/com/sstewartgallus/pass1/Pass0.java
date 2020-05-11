@@ -2,7 +2,6 @@ package com.sstewartgallus.pass1;
 
 import com.sstewartgallus.ir.VarGen;
 import com.sstewartgallus.term.Term;
-import com.sstewartgallus.term.Var;
 import com.sstewartgallus.type.*;
 
 import java.lang.constant.ConstantDesc;
@@ -10,17 +9,16 @@ import java.util.Objects;
 import java.util.function.Function;
 
 public interface Pass0<L> {
-    // fixme... use the visitor pattern to do this passing safely...
     static <T> Pass0<T> from(Term<T> term, VarGen vars) {
         return term.visit(new Term.Visitor<>() {
             @Override
             public Pass0<T> onPure(Type<T> type, ConstantDesc constantDesc) {
-                return new Pure<>(type, constantDesc);
+                return new Pure<>(TPass0.from(type, vars), constantDesc);
             }
 
             @Override
-            public Pass0<T> onLoad(Var<T> variable) {
-                return new Load<>(variable);
+            public Pass0<T> onLoad(Type<T> type, Var<T> variable) {
+                return new Load<>(TPass0.from(type, vars), variable);
             }
 
             @Override
@@ -30,9 +28,10 @@ public interface Pass0<L> {
 
             @Override
             public <A, B> Pass0<T> onLambda(Equality<T, F<A, B>> equality, Type<A> domain, Function<Term<A>, Term<B>> f) {
-                var v = vars.createArgument(domain);
-                var body = from(f.apply(new Term.Load<>(v)), vars);
-                Pass0<F<A, B>> lambda = new Pass0.Lambda<>(domain, x -> body.substitute(v, x));
+                var d0 = TPass0.from(domain, vars);
+                var v = vars.<A>createArgument();
+                var body = from(f.apply(new Term.Load<>(domain, v)), vars);
+                Pass0<F<A, B>> lambda = new Pass0.Lambda<>(d0, x -> body.substitute(v, x));
                 // fixme.. penguin
                 return (Pass0) lambda;
             }
@@ -41,13 +40,13 @@ public interface Pass0<L> {
 
     Pass1<L> aggregateLambdas(VarGen vars);
 
-    Type<L> type();
+    TPass0<L> type();
 
     default <X> Pass0<L> substitute(Var<X> variable, Pass0<X> replacement) {
         throw new UnsupportedOperationException(getClass().toString());
     }
 
-    record Pure<A>(Type<A>type, ConstantDesc value) implements Pass0<A> {
+    record Pure<A>(TPass0<A>type, ConstantDesc value) implements Pass0<A> {
         @Override
         public String toString() {
             return String.valueOf(value);
@@ -64,12 +63,7 @@ public interface Pass0<L> {
         }
     }
 
-    record Load<A>(Var<A>variable) implements Pass0<A> {
-        @Override
-        public Type<A> type() {
-            return variable.type();
-        }
-
+    record Load<A>(TPass0<A>type, Var<A>variable) implements Pass0<A> {
         @Override
         public String toString() {
             return variable.toString();
@@ -85,19 +79,19 @@ public interface Pass0<L> {
 
         @Override
         public Pass1<A> aggregateLambdas(VarGen vars) {
-            return new Pass1.Load<>(variable);
+            return new Pass1.Load<>(type, variable);
         }
     }
 
     record Apply<A, B>(Pass0<F<A, B>>f, Pass0<A>x) implements Pass0<B> {
         @Override
-        public Type<B> type() {
-            var funType = ((Type.FunType<A, B>) f.type());
+        public TPass0<B> type() {
+            var funTPass0 = ((TPass0.FunType<A, B>) f.type());
             var t = x.type();
-            if (!Objects.equals(t, funType.domain())) {
-                throw new RuntimeException("type error");
+            if (!Objects.equals(t, funTPass0.domain())) {
+                throw new RuntimeException("TPass0 error");
             }
-            return funType.range();
+            return funTPass0.range();
         }
 
         @Override
@@ -116,7 +110,7 @@ public interface Pass0<L> {
         }
     }
 
-    record Lambda<A, B>(Type<A>domain, Function<Pass0<A>, Pass0<B>>f) implements Pass0<F<A, B>> {
+    record Lambda<A, B>(TPass0<A>domain, Function<Pass0<A>, Pass0<B>>f) implements Pass0<F<A, B>> {
         private static final ThreadLocal<Integer> DEPTH = ThreadLocal.withInitial(() -> 0);
 
         @Override
@@ -125,8 +119,8 @@ public interface Pass0<L> {
         }
 
         public Pass1<F<A, B>> aggregateLambdas(VarGen vars) {
-            var v = vars.createArgument(domain);
-            var body = f.apply(new Load<>(v)).aggregateLambdas(vars);
+            var v = vars.<A>createArgument();
+            var body = f.apply(new Load<>(domain, v)).aggregateLambdas(vars);
 
             if (body instanceof Pass1.Thunk<B> thunk) {
                 var expr = thunk.body();
@@ -136,9 +130,9 @@ public interface Pass0<L> {
             return new Pass1.Thunk<>(new Pass1.Lambda<>(domain, x -> new Pass1.Expr<>(body.substitute(v, x))));
         }
 
-        public Type<F<A, B>> type() {
-            var range = f.apply(new Load<>(new Var<>(domain, 0))).type();
-            return new Type.FunType<>(domain, range);
+        public TPass0<F<A, B>> type() {
+            var range = f.apply(new Load<>(domain, new Var<>(0))).type();
+            return new TPass0.FunType<>(domain, range);
         }
 
         public String toString() {
@@ -147,7 +141,7 @@ public interface Pass0<L> {
 
             String str;
             try {
-                var dummy = new Load<>(new Var<>(domain, depth));
+                var dummy = new Load<>(domain, new Var<>(depth));
                 var body = f.apply(dummy);
                 String bodyStr = body.toString();
 
@@ -162,10 +156,10 @@ public interface Pass0<L> {
         }
     }
 
-    record TypeApply<A, B>(Pass0<V<A, B>>f, Type<A>x) implements Pass0<B> {
+    record TPass0Apply<A, B>(Pass0<V<A, B>>f, TPass0<A>x) implements Pass0<B> {
         @Override
-        public Type<B> type() {
-            return ((Type.Forall<A, B>) f.type()).f().apply(x);
+        public TPass0<B> type() {
+            return ((TPass0.Forall<A, B>) f.type()).f().apply(x);
         }
 
         @Override
@@ -179,16 +173,17 @@ public interface Pass0<L> {
         }
     }
 
-    record Forall<A, B>(Function<Type<A>, Pass0<B>>f) implements Pass0<V<A, B>> {
+    record Forall<A, B>(Function<TPass0<A>, Pass0<B>>f) implements Pass0<V<A, B>> {
         @Override
-        public Type<V<A, B>> type() {
-            return new Type.Forall<>(x -> f.apply(x).type());
+        public TPass0<V<A, B>> type() {
+            return new TPass0.Forall<>(x -> f.apply(x).type());
         }
 
         @Override
         public String toString() {
-            var dummy = new Type.Var<A>(0);
-            return "{forall " + dummy + ". " + f.apply(dummy) + "}";
+            throw null;
+            //   var dummy = new TVar<A>(0);
+            //     return "{forall " + dummy + ". " + f.apply(dummy) + "}";
         }
 
         @Override
@@ -197,10 +192,10 @@ public interface Pass0<L> {
         }
     }
 
-    record Exists<A, B>(Type<A>x, Pass0<B>y) implements Pass0<E<A, B>> {
+    record Exists<A, B>(TPass0<A>x, Pass0<B>y) implements Pass0<E<A, B>> {
         @Override
-        public Type<E<A, B>> type() {
-            return new Type.Exists<>(x, y.type());
+        public TPass0<E<A, B>> type() {
+            return new TPass0.Exists<>(x, y.type());
         }
 
         @Override

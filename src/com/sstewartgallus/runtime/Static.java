@@ -1,5 +1,9 @@
 package com.sstewartgallus.runtime;
 
+import jdk.dynalink.linker.GuardedInvocation;
+import jdk.dynalink.linker.LinkRequest;
+import jdk.dynalink.linker.LinkerServices;
+import jdk.dynalink.linker.support.Guards;
 import org.objectweb.asm.ClassWriter;
 import org.objectweb.asm.ConstantDynamic;
 import org.objectweb.asm.Handle;
@@ -10,6 +14,7 @@ import java.lang.invoke.MethodHandles;
 import java.util.List;
 
 import static java.lang.invoke.MethodHandles.Lookup;
+import static java.lang.invoke.MethodHandles.dropArguments;
 import static java.lang.invoke.MethodType.methodType;
 import static org.objectweb.asm.Opcodes.*;
 
@@ -93,6 +98,21 @@ public abstract class Static<T> extends FunValue<T> {
         } catch (Throwable throwable) {
             throw new RuntimeException(throwable);
         }
+    }
+
+    protected int arity() {
+        return infoTable().arguments().size();
+    }
+
+    protected GuardedInvocation saturatedApplication(LinkRequest linkRequest, LinkerServices linkerServices) throws NoSuchFieldException, IllegalAccessException {
+        var metadata = infoTable();
+
+        var argument = metadata.arguments();
+
+        var mh = metadata.entryPoint();
+        mh = dropArguments(mh, 0, Value.class, Void.class);
+
+        return new GuardedInvocation(mh, Guards.isOfClass(getClass(), mh.type().changeReturnType(boolean.class)));
     }
 
     public final String toString() {

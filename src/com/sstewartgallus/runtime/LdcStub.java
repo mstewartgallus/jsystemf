@@ -33,7 +33,7 @@ public abstract class LdcStub<T> {
 
         // fixme... privatise as much as possible...
         var cw = new ClassWriter(ClassWriter.COMPUTE_FRAMES | ClassWriter.COMPUTE_MAXS);
-        cw.visit(V14, ACC_FINAL | ACC_PUBLIC, newclassname, null, myname, null);
+        cw.visit(V14, ACC_FINAL | ACC_PUBLIC, newclassname, null, null, null);
 
         {
             var mw = cw.visitMethod(ACC_PUBLIC, "resolve", methodType(kType).descriptorString(), null, null);
@@ -48,8 +48,7 @@ public abstract class LdcStub<T> {
 
         var bytes = cw.toByteArray();
 
-        var definedClass = AnonClassLoader.defineClass(LdcStub.class.getClassLoader(), bytes);
-        var klass = definedClass.asSubclass(LdcStub.class);
+        var klass = AnonClassLoader.defineClass(lookup.lookupClass().getClassLoader(), bytes);
 
         MethodHandle resolve;
         try {

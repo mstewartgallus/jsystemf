@@ -7,7 +7,6 @@ import com.sstewartgallus.type.F;
 import com.sstewartgallus.type.Type;
 import com.sstewartgallus.type.V;
 
-import java.lang.constant.Constable;
 import java.lang.constant.ConstantDesc;
 import java.util.List;
 import java.util.Objects;
@@ -230,7 +229,7 @@ public interface Pass1<L> {
     }
 
 
-    record Pure<A extends Constable>(Type<A>type, ConstantDesc value) implements Pass1<A> {
+    record Pure<A>(Type<A>type, ConstantDesc value) implements Pass1<A> {
         public Results<A> captureEnv(VarGen vars) {
             return new Results<>(Set.of(), new Pass2.Pure<>(type, value));
         }

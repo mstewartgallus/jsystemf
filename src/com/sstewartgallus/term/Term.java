@@ -191,7 +191,7 @@ public interface Term<L> {
         }
     }
 
-    record Pure<A extends Constable>(Type<A>type, ConstantDesc value) implements Term<A> {
+    record Pure<A>(Type<A>type, ConstantDesc value) implements Term<A> {
         public Pass1<A> aggregateLambdas(VarGen vars) {
             return new Pass1.Pure<>(type, value);
         }

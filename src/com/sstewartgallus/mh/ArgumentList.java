@@ -9,9 +9,11 @@ public interface ArgumentList<A extends Arguments<A>> {
         NONE
     }
 
-    record And<A, B extends Arguments<B>>(Class<A> klass, ArgumentList<B> tail) implements ArgumentList<Arguments.And<A, B>>{
+    record And<A, B extends Arguments<B>>(Class<A>klass,
+                                          ArgumentList<B>tail) implements ArgumentList<Arguments.And<A, B>> {
     }
 }
+
 interface Ix<A extends Arguments<A>, B extends Arguments<B>> {
     static <A extends Arguments<A>> Ix<A, A> get0() {
         return new Zero<>();
@@ -28,6 +30,6 @@ interface Ix<A extends Arguments<A>, B extends Arguments<B>> {
     record Zero<A extends Arguments<A>>() implements Ix<A, A> {
     }
 
-    record Succ<A extends Arguments<A>, B extends Arguments<B>, C>(Ix<A, Arguments.And<C, B>> ix) implements Ix<A, B> {
+    record Succ<A extends Arguments<A>, B extends Arguments<B>, C>(Ix<A, Arguments.And<C, B>>ix) implements Ix<A, B> {
     }
 }

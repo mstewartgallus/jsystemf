@@ -15,7 +15,7 @@ public interface Val<B> {
     }
 
     // fixme... use hlist...
-    record Apply<A extends Arguments<A>, B>(TypedMethodHandle<A, B>f, ValList<A> x) implements Val<B> {
+    record Apply<A extends Arguments<A>, B>(TypedMethodHandle<A, B>f, ValList<A>x) implements Val<B> {
         @Override
         public <C extends Arguments<C>> TypedMethodHandle<C, B> toHandle(ArgumentList<C> args, Class<B> range) {
             throw new UnsupportedOperationException("unimplemented");

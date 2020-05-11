@@ -14,14 +14,11 @@ public record TypedMethodHandle<A extends Arguments<A>, B>(A domain, Class<B>ran
             return ADD.apply(ValList.none().and(x).and(y));
         });
     }
+
     public static <A extends Arguments<A>, B> TypedMethodHandle<A, B> of(Class<B> range, Arguments<A> domain, Function<ArgumentList<A>, Val<B>> function) {
         var args = makeArgs(domain);
         var valResult = function.apply(args);
         return valResult.toHandle(args, range);
-    }
-
-    Val<B> apply(ValList<A> x) {
-        return new Val.Apply<>(this, x);
     }
 
     static <A extends Arguments<A>> ArgumentList<A> makeArgs(Arguments<A> domain) {
@@ -30,5 +27,9 @@ public record TypedMethodHandle<A extends Arguments<A>, B>(A domain, Class<B>ran
         }
         var d = (Arguments.And<?, ?>) domain;
         return (ArgumentList<A>) new ArgumentList.And<>(d.clazz(), makeArgs(d.tail()));
+    }
+
+    Val<B> apply(ValList<A> x) {
+        return new Val.Apply<>(this, x);
     }
 }

@@ -10,23 +10,25 @@ import java.util.function.Function;
  * compile to a closed cartesian category
  * <p>
  * really for full enterprise javaness it should be called AbstractCategory but whatever....
+ * <p>
+ * Fixme... not really a category anymore is it?
  */
-public interface Category<A, B> {
+public interface Category<A extends HList<A>, B> {
 
     static <A> Generic<Void, F<HList.Nil, A>> generic(Category<HList.Nil, A> category) {
         var vars = new TVarGen();
         return category.generic(vars.createTypeVar(), vars);
     }
 
-    static <V, A, B> Category<V, B> call(Category<V, F<A, B>> f, Category<V, A> x) {
+    static <V extends HList<V>, A, B> Category<V, B> call(Category<V, F<A, B>> f, Category<V, A> x) {
         return new Call<>(f, x);
     }
 
-    static <B, A> Category<B, A> constant(Type<B> domain, Type<A> range, ConstantDesc value) {
+    static <B extends HList<B>, A> Category<B, A> constant(Type<B> domain, Type<A> range, ConstantDesc value) {
         return new Unit<>(domain, range, value);
     }
 
-    static <A extends HList<A>, R, B, Z> Category<Z, R> makeLambda(Type<Z> domain, Type<R> range, Args<A, B, R> arguments, Category<A, B> ccc) {
+    static <A extends HList<A>, R, B, Z extends HList<Z>> Category<Z, R> makeLambda(Type<Z> domain, Type<R> range, Args<A, B, R> arguments, Category<A, B> ccc) {
         return new Lambda<>(domain, range, arguments, ccc);
     }
 
@@ -39,7 +41,7 @@ public interface Category<A, B> {
 
     Type<B> range();
 
-    record Unit<A, B>(Type<A>domain, Type<B>range, ConstantDesc value) implements Category<A, B> {
+    record Unit<A extends HList<A>, B>(Type<A>domain, Type<B>range, ConstantDesc value) implements Category<A, B> {
         public String toString() {
             return "(K " + value.toString() + ")";
         }
@@ -81,7 +83,7 @@ public interface Category<A, B> {
         }
     }
 
-    record Exists<X, A, B>(Type<A>x, Category<X, B>y) implements Category<X, E<A, B>> {
+    record Exists<X extends HList<X>, A, B>(Type<A>x, Category<X, B>y) implements Category<X, E<A, B>> {
 
         @Override
         public <Z> Generic<Z, F<X, E<A, B>>> generic(Type.Var<Z> argument, TVarGen vars) {
@@ -104,7 +106,8 @@ public interface Category<A, B> {
         }
     }
 
-    record Forall<X, A, B>(Type<X>domain, Function<Type<A>, Category<X, B>>f) implements Category<X, V<A, B>> {
+    record Forall<X extends HList<X>, A, B>(Type<X>domain,
+                                            Function<Type<A>, Category<X, B>>f) implements Category<X, V<A, B>> {
         public <Z> Generic<Z, F<X, V<A, B>>> generic(Type.Var<Z> argument, TVarGen vars) {
             Type.Var<E<Z, A>> arg = vars.createTypeVar();
 
@@ -127,7 +130,7 @@ public interface Category<A, B> {
         }
     }
 
-    record Call<Z, A, B>(Category<Z, F<A, B>>f, Category<Z, A>x) implements Category<Z, B> {
+    record Call<Z extends HList<Z>, A, B>(Category<Z, F<A, B>>f, Category<Z, A>x) implements Category<Z, B> {
         @Override
         public <V> Generic<V, F<Z, B>> generic(Type.Var<V> argument, TVarGen vars) {
             var sig = domain().to(range()).ccc(argument, vars);
@@ -154,8 +157,8 @@ public interface Category<A, B> {
         }
     }
 
-    record Lambda<Z, A extends HList<A>, B, R>(Type<Z>domain, Type<R>range, Args<A, B, R>arguments,
-                                               Category<A, B>body) implements Category<Z, R> {
+    record Lambda<Z extends HList<Z>, A extends HList<A>, B, R>(Type<Z>domain, Type<R>range, Args<A, B, R>arguments,
+                                                                Category<A, B>body) implements Category<Z, R> {
         @Override
         public <X> Generic<X, F<Z, R>> generic(Type.Var<X> argument, TVarGen vars) {
             return new Generic.Lambda<>(

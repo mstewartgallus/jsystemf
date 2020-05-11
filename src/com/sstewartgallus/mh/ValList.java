@@ -12,6 +12,7 @@ public interface ValList<A extends Arguments<A>> {
     enum None implements ValList<Arguments.None> {
         NONE
     }
-    record And<A, B extends Arguments<B>>(Val<A> x, ValList<B>tail) implements ValList<Arguments.And<A, B>> {
+
+    record And<A, B extends Arguments<B>>(Val<A>x, ValList<B>tail) implements ValList<Arguments.And<A, B>> {
     }
 }

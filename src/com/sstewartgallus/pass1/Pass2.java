@@ -6,7 +6,6 @@ import com.sstewartgallus.type.F;
 import com.sstewartgallus.type.HList;
 import com.sstewartgallus.type.Type;
 
-import java.lang.constant.Constable;
 import java.lang.constant.ConstantDesc;
 import java.util.Objects;
 import java.util.function.Function;
@@ -179,7 +178,7 @@ public interface Pass2<A> {
         }
     }
 
-    record Pure<A extends Constable>(Type<A>type, ConstantDesc value) implements Pass2<A> {
+    record Pure<A>(Type<A>type, ConstantDesc value) implements Pass2<A> {
         public Pass3<A> tuple(VarGen vars) {
             return new Pass3.Pure<>(type, value);
         }

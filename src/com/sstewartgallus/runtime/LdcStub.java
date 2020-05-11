@@ -25,6 +25,7 @@ public abstract class LdcStub<T> {
     private static Handle toObjectWeb(DirectMethodHandleDesc k) {
         return new Handle(k.refKind(), Type.getType(k.owner().descriptorString()).getInternalName(), k.methodName(), k.lookupDescriptor(), k.isOwnerInterface());
     }
+
     private static MethodHandle spin(Class<?> kType, ConstantDynamic constantDesc) {
         var myname = Type.getInternalName(LdcStub.class);
         var newclassname = myname + "Impl";

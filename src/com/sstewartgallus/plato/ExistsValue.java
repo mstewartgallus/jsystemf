@@ -10,7 +10,7 @@ public record ExistsValue<A, B>(Type<A>x, Term<B>y) implements ValueTerm<E<A, B>
 
     @Override
     public Type<E<A, B>> type() throws TypeCheckException {
-        return new Type.Exists<>(x, y.type());
+        return new ExistentialNormal<>(x, y.type());
     }
 
     @Override

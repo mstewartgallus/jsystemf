@@ -95,7 +95,7 @@ public final class Main {
         var fType = f.type();
         var xType = x.type();
 
-        if (!(fType instanceof Type.FunType<?, ?> funType)) {
+        if (!(fType instanceof FunctionNormal<?, ?> funType)) {
             throw new UnsupportedOperationException("applying nonfunction");
         }
 

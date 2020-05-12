@@ -14,7 +14,7 @@ public record LambdaValue<A, B>(Type<A>domain, Function<Term<A>, Term<B>>f) impl
     @Override
     public Type<F<A, B>> type() throws TypeCheckException {
         var range = f.apply(new VarThunk<>(domain, new Id<>(0))).type();
-        return new Type.FunType<>(domain, range);
+        return new FunctionNormal<>(domain, range);
     }
 
     @Override

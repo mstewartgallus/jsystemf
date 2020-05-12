@@ -11,7 +11,7 @@ public interface Pass0<L> {
             return new Pure<T>(TPass0.from(pure.type(), vars), pure.value());
         }
 
-        if (term instanceof LoadThunk<T> load) {
+        if (term instanceof VarThunk<T> load) {
             return new Var<>(TPass0.from(load.type(), vars), load.variable());
         }
 
@@ -31,7 +31,7 @@ public interface Pass0<L> {
         var f = lambda.f();
         var d0 = TPass0.from(domain, vars);
         var v = vars.<A>createId();
-        var body = from(f.apply(new LoadThunk<>(domain, v)), vars);
+        var body = from(f.apply(new VarThunk<>(domain, v)), vars);
         return new Pass0.Lambda<>(d0, x -> body.substitute(v, x));
     }
 

@@ -3,6 +3,7 @@ package com.sstewartgallus;
 
 import com.sstewartgallus.ast.Node;
 import com.sstewartgallus.ir.Generic;
+import com.sstewartgallus.pass1.Capture;
 import com.sstewartgallus.pass1.Curry;
 import com.sstewartgallus.pass1.Pass1;
 import com.sstewartgallus.pass1.TPass0;
@@ -80,9 +81,12 @@ public final class Main {
             outputT("Interpreter Output", interpreterOutput, interpreterOutput.type());
 
             var curry = Curry.curry(expr, vars);
-            outputT("New Currying", curry, curry.type());
+            outputT("Curried", curry, curry.type());
 
-            var pass1 = Pass1.from(curry, vars); //pass0.aggregateLambdas(vars);
+            var captured = Capture.capture(curry, vars);
+            outputT("New Closures to Partial Application", captured, captured.type());
+
+            var pass1 = Pass1.from(curry, vars);
             outputT("Aggregate Lambdas", pass1, pass1.type());
 
             var captures = pass1.captureEnv(vars).value();

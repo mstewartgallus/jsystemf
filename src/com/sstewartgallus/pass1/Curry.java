@@ -11,7 +11,7 @@ public final class Curry {
             return term;
         }
 
-        if (core instanceof PureValue || core instanceof VarThunk) {
+        if (core instanceof PureValue || core instanceof VarValue) {
             return core;
         }
 
@@ -36,7 +36,7 @@ public final class Curry {
         var f = lambda.f();
 
         var v = ids.<A>createId();
-        var body = f.apply(new VarThunk<>(domain, v));
+        var body = f.apply(new VarValue<>(domain, v));
 
         var curriedBody = curry(body, ids);
 

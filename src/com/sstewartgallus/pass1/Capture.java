@@ -1,0 +1,108 @@
+package com.sstewartgallus.pass1;
+
+import com.sstewartgallus.plato.*;
+
+import java.util.List;
+import java.util.Set;
+import java.util.TreeSet;
+import java.util.stream.Collectors;
+
+public final class Capture {
+    private Capture() {
+    }
+
+    public static <A> Term<A> capture(Term<A> term, IdGen ids) {
+        return captureInternal(term, ids).value;
+    }
+
+    private static <A> Results<A> captureInternal(Term<A> term, IdGen ids) {
+        if (term instanceof CurriedLambdaValue<A> lambda) {
+            return curryLambda(lambda, ids);
+        }
+
+        if (!(term instanceof CoreTerm<A> core)) {
+            throw new IllegalArgumentException("Unexpected term " + term);
+        }
+
+        if (core instanceof PureValue) {
+            return new Results<>(Set.of(), core);
+        }
+
+        if (core instanceof VarValue<A> v) {
+            return new Results<>(Set.of(v), core);
+        }
+
+        if (core instanceof ApplyThunk<?, A> apply) {
+            return captureApply(apply, ids);
+        }
+
+        throw new IllegalArgumentException("Unexpected core term " + term);
+    }
+
+    private static <A> Set<A> union(Set<A> left, Set<A> right) {
+        var x = new TreeSet<>(left);
+        x.addAll(right);
+        return x;
+    }
+
+    private static <A, B> Results<B> captureApply(ApplyThunk<A, B> apply, IdGen ids) {
+        var fResults = captureInternal(apply.f(), ids);
+        var xResults = captureInternal(apply.x(), ids);
+        var captures = union(fResults.captured, xResults.captured);
+        return new Results<>(captures, new ApplyThunk<>(fResults.value, xResults.value));
+    }
+
+    private static <A> Results<A> curryLambda(CurriedLambdaValue<A> lambda, IdGen ids) {
+        var results = captureBody(lambda.body(), ids);
+        var captured = new TreeSet<>(results.captured);
+
+        List<VarValue<?>> free = captured.stream().sorted().collect(Collectors.toUnmodifiableList());
+
+        var chunk = results.value;
+        return new Results<>(captured, helper(free, 0, chunk));
+    }
+
+    private static <A> BodyResults<A> captureBody(CurriedLambdaValue.Body<A> body, IdGen ids) {
+        if (body instanceof CurriedLambdaValue.MainBody<A> mainBody) {
+            var results = captureInternal(mainBody.body(), ids);
+            return new BodyResults<>(results.captured, new CurriedLambdaValue.MainBody<>(results.value));
+        }
+
+        var lambda = (CurriedLambdaValue.LambdaBody<?, ?>) body;
+        // fixme...
+        return (BodyResults) captureLambda(lambda, ids);
+    }
+
+    private static <A, B> BodyResults<F<A, B>> captureLambda(CurriedLambdaValue.LambdaBody<A, B> lambda, IdGen ids) {
+        var domain = lambda.domain();
+        var f = lambda.f();
+
+        var v = ids.<A>createId();
+        var load = new VarValue<>(domain, v);
+        var body = f.apply(load);
+        var results = captureBody(body, ids);
+        Set<VarValue<?>> captures = new TreeSet<>(results.captured);
+        captures.remove(load);
+
+        var chunk = results.value;
+        return new BodyResults<>(captures, new CurriedLambdaValue.LambdaBody<>(domain, x -> chunk.substitute(v, x)));
+    }
+
+    private static <A> Term<A> helper(List<VarValue<?>> free, int ii, CurriedLambdaValue.Body<A> body) {
+        if (ii >= free.size()) {
+            return new CurriedLambdaValue<>(body);
+        }
+        return helper(free, ii, free.get(ii), body);
+    }
+
+    private static <A, B> Term<A> helper(List<VarValue<?>> free, int ii, VarValue<B> freeVar, CurriedLambdaValue.Body<A> body) {
+        return new ApplyThunk<>(helper(free, ii + 1, new CurriedLambdaValue.LambdaBody<>(freeVar.type(), x -> body.substitute(freeVar.variable(), x))),
+                freeVar);
+    }
+
+    record Results<L>(Set<VarValue<?>>captured, Term<L>value) {
+    }
+
+    record BodyResults<L>(Set<VarValue<?>>captured, CurriedLambdaValue.Body<L>value) {
+    }
+}

@@ -10,8 +10,8 @@ import java.util.Objects;
  *
  * @param <A>
  */
-public record VarThunk<A>(Type<A>type, Id<A>variable) implements ThunkTerm<A>, CoreTerm<A> {
-    public VarThunk {
+public record VarValue<A>(Type<A>type, Id<A>variable) implements ValueTerm<A>, CoreTerm<A>, Comparable<VarValue<?>> {
+    public VarValue {
         Objects.requireNonNull(type);
         Objects.requireNonNull(variable);
     }
@@ -21,15 +21,15 @@ public record VarThunk<A>(Type<A>type, Id<A>variable) implements ThunkTerm<A>, C
         return "v" + variable;
     }
 
-    @Override
-    public Term<A> stepThunk() {
-        throw new UnsupportedOperationException("unimplemented");
-    }
-
     public <X> Term<A> substitute(Id<X> argument, Term<X> replacement) {
         if (variable.equals(argument)) {
             return (Term) replacement;
         }
         return this;
+    }
+
+    @Override
+    public int compareTo(VarValue<?> o) {
+        return variable.compareTo(o.variable);
     }
 }

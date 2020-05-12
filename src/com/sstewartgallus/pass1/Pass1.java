@@ -25,7 +25,7 @@ public interface Pass1<L> {
             return new Pure<T>(TPass0.from(pure.type(), vars), pure.value());
         }
 
-        if (term instanceof VarThunk<T> load) {
+        if (term instanceof VarValue<T> load) {
             return new Var<>(TPass0.from(load.type(), vars), load.variable());
         }
 
@@ -60,7 +60,7 @@ public interface Pass1<L> {
     static <A, B> Lambda<A, B> fromLambda(CurriedLambdaValue.LambdaBody<A, B> lambdaBody, IdGen ids) {
         var domain = TPass0.from(lambdaBody.domain(), ids);
         var v = ids.<A>createId();
-        var body = lambdaBody.f().apply(new VarThunk<>(lambdaBody.domain(), v));
+        var body = lambdaBody.f().apply(new VarValue<>(lambdaBody.domain(), v));
         var processedBody = fromBody(body, ids);
         return new Lambda<A, B>(domain, x -> processedBody.substitute(v, x));
     }
@@ -91,7 +91,6 @@ public interface Pass1<L> {
 
             return new Results<>(captures, new Pass2.Apply<>(fCapture.value, xCapture.value));
         }
-
 
         public <V> Pass1<B> substitute(Id<V> argument, Pass1<V> replacement) {
             return new Apply<>(f.substitute(argument, replacement), x.substitute(argument, replacement));

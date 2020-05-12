@@ -14,7 +14,7 @@ public record LambdaValue<A, B>(Type<A>domain,
 
     @Override
     public Type<F<A, B>> type() throws TypeCheckException {
-        var range = f.apply(new VarThunk<>(domain, new Id<>(0))).type();
+        var range = f.apply(new VarValue<>(domain, new Id<>(0))).type();
         return new FunctionNormal<>(domain, range);
     }
 
@@ -25,7 +25,7 @@ public record LambdaValue<A, B>(Type<A>domain,
 
         String str;
         try {
-            var dummy = new VarThunk<>(domain, new Id<>(depth));
+            var dummy = new VarValue<>(domain, new Id<>(depth));
             var body = f.apply(dummy);
             String bodyStr = body.toString();
 

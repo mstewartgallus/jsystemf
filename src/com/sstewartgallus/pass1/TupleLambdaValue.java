@@ -14,7 +14,7 @@ public record TupleLambdaValue<A extends HList<A>, B>(Type<A>domain,
 
     @Override
     public Type<F<A, B>> type() throws TypeCheckException {
-        return domain.to(f.apply(new VarThunk<>(domain, new Id<>(0))).type());
+        return domain.to(f.apply(new VarValue<>(domain, new Id<>(0))).type());
     }
 
     @Override

@@ -5,7 +5,7 @@ import com.sstewartgallus.plato.*;
 import java.util.Objects;
 
 public record ClosureValue<Env extends HList<Env>, A, B>(Term<F<HList.Cons<A, Env>, B>>f,
-                                                         Term<Env>environment) implements LambdaValue<A, B> {
+                                                         Term<Env>environment) implements FunctionValue<A, B> {
     public ClosureValue {
         Objects.requireNonNull(f);
         Objects.requireNonNull(environment);
@@ -16,7 +16,7 @@ public record ClosureValue<Env extends HList<Env>, A, B>(Term<F<HList.Cons<A, En
         var fType = f.type();
 
         var funType = (FunctionNormal<HList.Cons<A, Env>, B>) fType;
-        var domain = ((ConsNormal<A, Env>)funType.domain()).head();
+        var domain = ((ConsNormal<A, Env>) funType.domain()).head();
 
         return domain.to(funType.range());
     }

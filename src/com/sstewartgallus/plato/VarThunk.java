@@ -7,9 +7,10 @@ import java.util.Objects;
 
 /**
  * NOT a core term of the language...
+ *
  * @param <A>
  */
-public record VarThunk<A>(Type<A>type, Id<A>variable) implements ThunkTerm<A> {
+public record VarThunk<A>(Type<A>type, Id<A>variable) implements ThunkTerm<A>, CoreTerm<A> {
     public VarThunk {
         Objects.requireNonNull(type);
         Objects.requireNonNull(variable);
@@ -23,5 +24,12 @@ public record VarThunk<A>(Type<A>type, Id<A>variable) implements ThunkTerm<A> {
     @Override
     public Term<A> stepThunk() {
         throw new UnsupportedOperationException("unimplemented");
+    }
+
+    public <X> Term<A> substitute(Id<X> argument, Term<X> replacement) {
+        if (variable.equals(argument)) {
+            return (Term) replacement;
+        }
+        return this;
     }
 }

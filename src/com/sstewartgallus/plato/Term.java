@@ -46,7 +46,7 @@ public interface Term<L> {
     }
 
     static <A, B> Term<V<A, B>> v(Function<Type<A>, Term<B>> f) {
-        return new TypeLambdaTerm<>(f);
+        return new TypeLambdaValue<>(f);
     }
 
     static <T extends Constable> Term<T> pure(Type<T> type, T value) {
@@ -58,4 +58,8 @@ public interface Term<L> {
     }
 
     Type<L> type() throws TypeCheckException;
+
+    default <X> Term<L> substitute(Id<X> variable, Term<X> replacement) {
+        throw new UnsupportedOperationException(getClass().toString());
+    }
 }

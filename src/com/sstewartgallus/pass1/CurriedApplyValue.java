@@ -56,7 +56,7 @@ public record CurriedApplyValue<A, B>(Body<A, B>f, Term<A>x) implements ThunkTer
 
         @Override
         public Term<B> apply(Term<A> x) {
-            return ((LambdaValue<A, B>) Interpreter.normalize(body)).apply(x);
+            return ((FunctionValue<A, B>) Interpreter.normalize(body)).apply(x);
         }
     }
 }

@@ -6,7 +6,7 @@ import java.util.Objects;
 import java.util.function.Function;
 
 public record TupleLambdaValue<A extends HList<A>, B>(Type<A>domain,
-                                                      Function<Term<A>, Term<B>>f) implements LambdaValue<A, B> {
+                                                      Function<Term<A>, Term<B>>f) implements FunctionValue<A, B> {
     public TupleLambdaValue {
         Objects.requireNonNull(domain);
         Objects.requireNonNull(f);

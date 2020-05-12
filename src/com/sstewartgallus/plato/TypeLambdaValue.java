@@ -3,8 +3,8 @@ package com.sstewartgallus.plato;
 import java.util.Objects;
 import java.util.function.Function;
 
-public record TypeLambdaTerm<A, B>(Function<Type<A>, Term<B>>f) implements Term<V<A, B>>, CoreTerm<V<A, B>> {
-    public TypeLambdaTerm {
+public record TypeLambdaValue<A, B>(Function<Type<A>, Term<B>>f) implements ValueTerm<V<A, B>>, CoreTerm<V<A, B>> {
+    public TypeLambdaValue {
         Objects.requireNonNull(f);
     }
 

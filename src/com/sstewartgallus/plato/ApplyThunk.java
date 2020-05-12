@@ -29,7 +29,7 @@ public record ApplyThunk<A, B>(Term<F<A, B>>f, Term<A>x) implements ThunkTerm<B>
 
     @Override
     public Term<B> stepThunk() {
-        var fNorm = (LambdaValue<A, B>) Interpreter.normalize(f);
+        var fNorm = (FunctionValue<A, B>) Interpreter.normalize(f);
         return fNorm.apply(x);
     }
 }

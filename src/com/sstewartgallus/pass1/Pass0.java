@@ -19,14 +19,14 @@ public interface Pass0<L> {
             return fromApply(apply, vars);
         }
 
-        if (term instanceof MonoLambdaValue<?, ?> lambda) {
+        if (term instanceof LambdaValue<?, ?> lambda) {
             // fixme... penguin
             return (Pass0) fromLambda(lambda, vars);
         }
         throw new IllegalArgumentException("unexpected term " + term);
     }
 
-    static <A, B> Pass0<? super F<A, B>> fromLambda(MonoLambdaValue<A, B> lambda, IdGen vars) {
+    static <A, B> Pass0<? super F<A, B>> fromLambda(LambdaValue<A, B> lambda, IdGen vars) {
         var domain = lambda.domain();
         var f = lambda.f();
         var d0 = TPass0.from(domain, vars);

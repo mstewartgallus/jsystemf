@@ -3,8 +3,7 @@ package com.sstewartgallus;
 
 import com.sstewartgallus.ast.Node;
 import com.sstewartgallus.ir.Generic;
-import com.sstewartgallus.pass1.CurriedApplyValue;
-import com.sstewartgallus.pass1.CurriedLambdaValue;
+import com.sstewartgallus.pass1.Curry;
 import com.sstewartgallus.pass1.Pass0;
 import com.sstewartgallus.pass1.TPass0;
 import com.sstewartgallus.plato.*;
@@ -58,21 +57,12 @@ public final class Main {
             }
         }
 
-        record Penguin2() {
-            static <A> Term<V<A, F<A, F<A, A>>>> k() {
-                return Term.v(t -> new CurriedLambdaValue<>(t, x -> new CurriedLambdaValue.LambdaBody<>(t, y -> new CurriedLambdaValue.MainBody<>(x))));
-            }
-        }
-
+        var vars = new IdGen();
 
         try {
             var kValue = Term.apply(Term.apply(Term.apply(Penguin.id(), Type.INT), Prims.of(3)), Prims.of(5));
             outputT("System F", Penguin.id(), Penguin.id().type());
 
-            var kValue2 = new CurriedApplyValue<>(
-                    new CurriedApplyValue.ApplyBody<>(new CurriedApplyValue.MonoBody<>(Term.apply(Penguin2.k(), Type.INT)), Prims.of(3)),
-                    Prims.of(5));
-            output("System", Interpreter.normalize(kValue2));
 
             outputT("System F", kValue, kValue.type());
 
@@ -82,44 +72,44 @@ public final class Main {
             throw new RuntimeException(e);
         }
 
-        // hack to work around Java's lack of proper generics
         var expr = Term.apply(Type.INT.l(x -> Type.INT.l(y -> x)), Prims.of(4));
         try {
             outputT("System F", expr, expr.type());
 
             var interpreterOutput = Interpreter.normalize(expr);
             outputT("Interpreter Output", interpreterOutput, interpreterOutput.type());
+
+            var pass0 = Pass0.from(expr, vars);
+            outputT("Pass 0", pass0, pass0.type());
+
+            var curry = Curry.curry(expr, vars);
+            outputT("New Currying", curry, curry.type());
+
+            var pass1 = pass0.aggregateLambdas(vars);
+            outputT("Aggregate Lambdas", pass1, pass1.type());
+
+            var captures = pass1.captureEnv(vars).value();
+            outputT("Explicit Environment", captures, captures.type());
+
+            var uncurried = captures.uncurry(vars);
+            outputT("Uncurried", uncurried, uncurried.type());
+
+            var pointFree = uncurried.pointFree(vars.createId(), vars, TPass0.NilType.NIL);
+            outputT("Point Free", pointFree, pointFree.type());
+
+            var generic = pointFree.<Void>generic(vars.createId(), vars);
+            outputT("Generic", generic, generic.signature());
+
+            var main = Generic.compile(lookup(), generic);
+            output("Main", main);
+
+            var bar = API.apply(main, 3);
+            output("Result", bar);
+
+            TO_EXEC = () -> API.apply(main, 3);
         } catch (TypeCheckException e) {
             throw new RuntimeException(e);
         }
-
-        var vars = new IdGen();
-
-        var pass0 = Pass0.from(expr, vars);
-        outputT("Pass 0", pass0, pass0.type());
-
-        var pass1 = pass0.aggregateLambdas(vars);
-        outputT("Aggregate Lambdas", pass1, pass1.type());
-
-        var captures = pass1.captureEnv(vars).value();
-        outputT("Explicit Environment", captures, captures.type());
-
-        var uncurried = captures.uncurry(vars);
-        outputT("Uncurried", uncurried, uncurried.type());
-
-        var pointFree = uncurried.pointFree(vars.createId(), vars, TPass0.NilType.NIL);
-        outputT("Point Free", pointFree, pointFree.type());
-
-        var generic = pointFree.<Void>generic(vars.createId(), vars);
-        outputT("Generic", generic, generic.signature());
-
-        var main = Generic.compile(lookup(), generic);
-        output("Main", main);
-
-        var bar = API.apply(main, 3);
-        output("Result", bar);
-
-        TO_EXEC = () -> API.apply(main, 3);
     }
 
     // fixme.. arguments check more safely...

@@ -30,7 +30,7 @@ public interface Pass0<L> {
             @Override
             public <A, B> Pass0<T> onLambda(Equality<T, F<A, B>> equality, Type<A> domain, Function<Term<A>, Term<B>> f) {
                 var d0 = TPass0.from(domain, vars);
-                var v = vars.<A>createArgument();
+                var v = vars.<A>createId();
                 var body = from(f.apply(new Term.Load<>(domain, v)), vars);
                 Pass0<F<A, B>> lambda = new Pass0.Lambda<>(d0, x -> body.substitute(v, x));
                 // fixme.. penguin
@@ -83,7 +83,7 @@ public interface Pass0<L> {
         }
 
         public Pass1<F<A, B>> aggregateLambdas(VarGen vars) {
-            var v = vars.<A>createArgument();
+            var v = vars.<A>createId();
             var body = f.apply(new Var<>(domain, v)).aggregateLambdas(vars);
 
             if (body instanceof Pass1.Thunk<B> thunk) {
@@ -120,7 +120,7 @@ public interface Pass0<L> {
         }
     }
 
-    record TPass0Apply<A, B>(Pass0<V<A, B>>f, TPass0<A>x) implements Pass0<B> {
+    record TypeApply<A, B>(Pass0<V<A, B>>f, TPass0<A>x) implements Pass0<B> {
         @Override
         public TPass0<B> type() {
             return ((TPass0.Forall<A, B>) f.type()).f().apply(x);

@@ -25,7 +25,7 @@ public interface Pass3<A> {
         public <T extends HList<T>> PointFree<F<T, B>> pointFree(Id<T> argument, VarGen vars, TPass0<T> argType) {
             var fCcc = f.pointFree(argument, vars, argType);
             var xCcc = x.pointFree(argument, vars, argType);
-            return PointFree.call(fCcc, xCcc);
+            return new PointFree.Call<>(fCcc, xCcc);
         }
 
         public TPass0<B> type() {
@@ -42,7 +42,7 @@ public interface Pass3<A> {
         }
     }
 
-    // fixme... eventually eliminated
+    // fixme... eventually eliminate
     record WrapGet<C extends HList<C>, A, B extends HList<B>>(Get<C, HList.Cons<A, B>>list) implements Pass3<A> {
         public String toString() {
             return list.toString();
@@ -86,11 +86,11 @@ public interface Pass3<A> {
 
         @Override
         public <T extends HList<T>> PointFree<F<T, R>> pointFree(Id<T> argument, VarGen vars, TPass0<T> argType) {
-            var arg = vars.<A>createArgument();
+            var arg = vars.<A>createId();
             var body = f.apply(arg);
             var ccc = body.pointFree(arg, vars, domain);
 
-            return PointFree.lambda(argType, type, arguments, ccc);
+            return new PointFree.K<>(argType, new PointFree.Lambda<>(this.type, this.arguments, ccc));
         }
 
         public String toString() {

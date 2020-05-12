@@ -13,31 +13,6 @@ import java.util.TreeSet;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
-// https://gitlab.haskell.org/ghc/ghc/-/wikis/commentary/compiler/core-syn-type
-// arguments CoreExpr = Expr Var
-
-// data Expr b	-- "b" for the arguments of binders,
-//   = Var	  Id
-//   | Lit   Literal
-//   | App   (Expr b) (Arg b)
-//   | Lam   b (Expr b)
-//   | Let   (Bind b) (Expr b)
-//   | Case  (Expr b) b TPass0 [Alt b]
-//   | Cast  (Expr b) Coercion
-//   | Tick  (Tickish Id) (Expr b)
-//   | TPass0  TPass0
-
-// arguments Arg b = Expr b
-// arguments Alt b = (AltCon, [b], Expr b)
-
-// data AltCon = DataAlt DataCon | LitAlt  Literal | DEFAULT
-
-// data Bind b = NonRec b (Expr b) | Rec [(b, (Expr b))]
-
-
-// https://github.com/DanBurton/Blog/blob/master/Literate%20Haskell/SystemF.lhs
-
-// fixme... move types out of the ir package
 public interface Pass1<L> {
     static <A, B> Pass1<V<A, B>> v(Function<TPass0<A>, Pass1<B>> f) {
         return new Forall<>(f);
@@ -172,7 +147,7 @@ public interface Pass1<L> {
 
         @Override
         public BodyResults<F<A, B>> captureEnv(VarGen vars) {
-            var v = vars.<A>createArgument();
+            var v = vars.<A>createId();
             var load = new Var<>(domain, v);
             var body = f.apply(load);
             var results = body.captureEnv(vars);

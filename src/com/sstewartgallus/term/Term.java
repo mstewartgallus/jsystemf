@@ -219,14 +219,14 @@ public interface Term<L> {
         @Override
         public Type<V<A, B>> type() throws TypeCheckException {
             // fixme... pass in the variable generator?
-            var v = new TVar<A>(0);
+            var v = new Id<A>(0);
             var body = f.apply(new Type.Load<>(v)).type();
             return Type.v(x -> body.substitute(v, x));
         }
 
         @Override
         public String toString() {
-            var dummy = new TVar<A>(0);
+            var dummy = new Id<A>(0);
             return "{forall " + dummy + ". " + f.apply(new Type.Load<>(dummy)) + "}";
         }
     }

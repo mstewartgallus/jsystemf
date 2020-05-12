@@ -1,5 +1,6 @@
 package com.sstewartgallus.type;
 
+import com.sstewartgallus.term.Id;
 import com.sstewartgallus.term.Term;
 
 import java.util.function.Function;
@@ -34,12 +35,12 @@ public interface Type<X> {
 
     <L> L visit(Visitor<L, X> visitor);
 
-    <T> Type<X> substitute(TVar<T> v, Type<T> replacement);
+    <T> Type<X> substitute(Id<T> v, Type<T> replacement);
 
     interface Visitor<X, L> {
         X onPureType(Class<L> clazz);
 
-        X onLoadType(TVar<L> variable);
+        X onLoadType(Id<L> variable);
 
         <A, B> X onFunctionType(Equality<L, F<A, B>> equality, Type<A> domain, Type<B> range);
     }
@@ -59,7 +60,7 @@ public interface Type<X> {
         }
 
         @Override
-        public <Z> Type<F<A, B>> substitute(TVar<Z> v, Type<Z> replacement) {
+        public <Z> Type<F<A, B>> substitute(Id<Z> v, Type<Z> replacement) {
             return new FunType<>(domain.substitute(v, replacement), range.substitute(v, replacement));
         }
 
@@ -84,7 +85,7 @@ public interface Type<X> {
         }
 
         @Override
-        public <Z> Type<A> substitute(TVar<Z> v, Type<Z> replacement) {
+        public <Z> Type<A> substitute(Id<Z> v, Type<Z> replacement) {
             return new PureType<>(clazz);
         }
 
@@ -103,7 +104,7 @@ public interface Type<X> {
 
             String str;
             try {
-                var t = new TVar<A>(depth);
+                var t = new Id<A>(depth);
                 str = "{forall " + t + ". " + f.apply(new Load<>(t)) + "}";
             } finally {
                 DEPTH.set(depth);
@@ -125,7 +126,7 @@ public interface Type<X> {
         }
 
         @Override
-        public <T> Type<V<A, B>> substitute(TVar<T> v, Type<T> replacement) {
+        public <T> Type<V<A, B>> substitute(Id<T> v, Type<T> replacement) {
             throw new UnsupportedOperationException("unimplemented");
         }
     }
@@ -147,19 +148,19 @@ public interface Type<X> {
         }
 
         @Override
-        public <T> Type<E<A, B>> substitute(TVar<T> v, Type<T> replacement) {
+        public <T> Type<E<A, B>> substitute(Id<T> v, Type<T> replacement) {
             throw new UnsupportedOperationException("unimplemented");
         }
     }
 
-    record Load<T>(TVar<T>variable) implements Type<T> {
+    record Load<T>(Id<T>variable) implements Type<T> {
         @Override
         public String toString() {
             return variable.toString();
         }
 
         @Override
-        public <Z> Type<T> substitute(TVar<Z> v, Type<Z> replacement) {
+        public <Z> Type<T> substitute(Id<Z> v, Type<Z> replacement) {
             if (v == variable) {
                 return (Type<T>) replacement;
             }

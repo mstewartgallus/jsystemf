@@ -1,10 +1,10 @@
 package com.sstewartgallus.pass1;
 
+import com.sstewartgallus.term.Id;
 import com.sstewartgallus.type.HList;
-import com.sstewartgallus.type.TVar;
 
 public interface Index<A extends HList<A>, B extends HList<B>> {
-    default <V> Index<A, B> substitute(TVar<V> argument, TPass0<V> replacement) {
+    default <V> Index<A, B> substitute(Id<V> argument, TPass0<V> replacement) {
         throw null;
     }
 

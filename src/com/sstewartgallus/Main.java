@@ -3,7 +3,6 @@ package com.sstewartgallus;
 
 import com.sstewartgallus.ast.Node;
 import com.sstewartgallus.ir.Generic;
-import com.sstewartgallus.ir.PointFree;
 import com.sstewartgallus.pass1.Pass0;
 import com.sstewartgallus.pass1.TPass0;
 import com.sstewartgallus.runtime.Value;
@@ -79,10 +78,10 @@ public final class Main {
         var uncurried = captures.uncurry(vars);
         outputT("Uncurried", uncurried, uncurried.type());
 
-        var pointFree = uncurried.pointFree(vars.createArgument(), vars, TPass0.NilType.NIL);
+        var pointFree = uncurried.pointFree(vars.createId(), vars, TPass0.NilType.NIL);
         outputT("Point Free", pointFree, pointFree.type());
 
-        var generic = PointFree.generic(pointFree);
+        var generic = pointFree.<Void>generic(vars.createId(), vars);
         outputT("Generic", generic, generic.signature());
 
         var main = Generic.compile(lookup(), generic);

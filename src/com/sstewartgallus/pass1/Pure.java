@@ -52,6 +52,6 @@ public record Pure<A>(TPass0<A>type, ConstantDesc value) implements Pass0<A>, Pa
 
     @Override
     public <T extends HList<T>> PointFree<F<T, A>> pointFree(Id<T> argument, VarGen vars, TPass0<T> argType) {
-        return PointFree.constant(argType, type, value);
+        return new PointFree.K<>(argType, new PointFree.Con<>(this.type, this.value));
     }
 }

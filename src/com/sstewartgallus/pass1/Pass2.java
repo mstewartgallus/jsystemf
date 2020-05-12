@@ -102,7 +102,7 @@ public interface Pass2<A> {
         private static final ThreadLocal<Integer> DEPTH = ThreadLocal.withInitial(() -> 0);
 
         public Results<? extends HList<?>, ?, F<A, B>> tuple(VarGen vars) {
-            var v = vars.<A>createArgument();
+            var v = vars.<A>createId();
             var body = f.apply(new Var<>(domain, v));
             var bodyTuple = body.tuple(vars);
             return consArgument(v, bodyTuple);

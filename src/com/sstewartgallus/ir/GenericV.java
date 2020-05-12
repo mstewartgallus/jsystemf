@@ -20,7 +20,12 @@ interface GenericV<A, B> extends Generic<V<A, B>> {
         throw new UnsupportedOperationException(getClass().toString());
     }
 
-    default Chunk<B> compile(Lookup lookup, Signature<A> klass) {
+    default Generic<B> apply(Signature<A> x) {
         throw new UnsupportedOperationException(getClass().toString());
+    }
+
+    // fixme... get rid of this eventually...
+    default Chunk<B> compile(Lookup lookup, Signature<A> klass) {
+        return apply(klass).compile(lookup);
     }
 }

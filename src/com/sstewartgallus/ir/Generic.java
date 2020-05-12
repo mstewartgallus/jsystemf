@@ -20,8 +20,13 @@ import static java.lang.invoke.MethodHandles.*;
 import static java.lang.invoke.MethodType.methodType;
 
 public interface Generic<A> {
+    // fixme.. consider static <A, B> Generic<B> apply(Generic<V<A, B>> generic, Signature<A> clazz) {
     static <A, B> Chunk<B> compile(Lookup lookup, Generic<V<A, B>> generic, Signature<A> klass) {
         return ((GenericV<A, B>) generic).compile(lookup, klass);
+    }
+
+    static <A, B> Generic<B> apply(Generic<V<A, B>> generic, Signature<A> klass) {
+        return ((GenericV<A, B>) generic).apply(klass);
     }
 
     // fixme... what really want instead of Void is a T such that Type<T> only has one inhabitant...
@@ -40,6 +45,10 @@ public interface Generic<A> {
         }
 
         return (Value) obj;
+    }
+
+    default Chunk<A> compile(Lookup lookup) {
+        throw new UnsupportedOperationException(getClass().toString());
     }
 
     default Signature<A> signature() {
@@ -77,6 +86,44 @@ public interface Generic<A> {
             }
 
             return new Chunk<>(handle);
+        }
+    }
+
+    record PureValue<A>(Signature<A>signature,
+                        ConstantDesc value) implements Generic<A> {
+        public String toString() {
+            return value.toString();
+        }
+
+        public Chunk<A> compile(MethodHandles.Lookup lookup) {
+            var t = signature.erase();
+
+            MethodHandle handle;
+            if (value instanceof String || value instanceof Float || value instanceof Double || value instanceof Integer || value instanceof Long) {
+                handle = constant(t, value);
+            } else if (value instanceof DynamicConstantDesc<?> dyn) {
+                // fixme... use proper lookup scope..
+                handle = LdcStub.spin(lookup, t, dyn);
+            } else {
+                try {
+                    handle = constant(t, value.resolveConstantDesc(lookup));
+                } catch (ReflectiveOperationException e) {
+                    throw new RuntimeException(e);
+                }
+            }
+
+            return new Chunk<>(handle);
+        }
+    }
+
+    record TypeK<L, A>(Signature<V<L, A>>signature,
+                       Generic<A>value) implements GenericV<L, A> {
+        public String toString() {
+            return "(type-K " + value + ")";
+        }
+
+        public Generic<A> apply(Signature<L> klass) {
+            return value;
         }
     }
 

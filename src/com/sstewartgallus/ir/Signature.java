@@ -33,6 +33,10 @@ public interface Signature<A> {
             return value;
         }
 
+        public Signature<A> range() {
+            return value;
+        }
+
         public String toString() {
             return "(K " + value + ")";
         }
@@ -54,13 +58,17 @@ public interface Signature<A> {
         }
     }
 
-    record Function<X, A, B>(Signature<V<X, A>>domain, Signature<V<X, B>>range) implements SigV<X, F<A, B>> {
+    record Function<X, A, B>(Signature<V<X, A>>domain, Signature<V<X, B>>r) implements SigV<X, F<A, B>> {
         public Signature<F<A, B>> apply(Signature<X> x) {
-            return new FunctionGround<>(Signature.apply(domain, x), Signature.apply(range, x));
+            return new FunctionGround<>(Signature.apply(domain, x), Signature.apply(r, x));
+        }
+
+        public Signature<F<A, B>> range() {
+            return new FunctionGround<>(((SigV<X, A>) domain).range(), ((SigV<X, B>) r).range());
         }
 
         public String toString() {
-            return domain + " → " + range;
+            return domain + " → " + r;
         }
 
         @Override

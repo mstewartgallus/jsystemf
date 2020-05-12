@@ -3,7 +3,7 @@ package com.sstewartgallus.pass1;
 import com.sstewartgallus.ir.Signature;
 import com.sstewartgallus.runtime.FunValue;
 import com.sstewartgallus.term.Id;
-import com.sstewartgallus.term.VarGen;
+import com.sstewartgallus.term.IdGen;
 import com.sstewartgallus.type.*;
 
 import java.util.ArrayList;
@@ -11,7 +11,7 @@ import java.util.List;
 import java.util.function.Function;
 
 public interface TPass0<X> {
-    static <T> TPass0<T> from(Type<T> type, VarGen vars) {
+    static <T> TPass0<T> from(Type<T> type, IdGen vars) {
         return type.visit(new Type.Visitor<>() {
             @Override
             public TPass0<T> onPureType(Class<T> clazz) {
@@ -39,7 +39,7 @@ public interface TPass0<X> {
         throw new UnsupportedOperationException(getClass().toString());
     }
 
-    default <A> Signature<A, X> pointFree(Id<A> v, VarGen vars) {
+    default <A> Signature<A, X> pointFree(Id<A> v, IdGen vars) {
         throw new UnsupportedOperationException(getClass().toString());
     }
 
@@ -56,7 +56,7 @@ public interface TPass0<X> {
         }
 
         @Override
-        public <X> Signature<X, HList.Nil> pointFree(Id<X> v, VarGen vars) {
+        public <X> Signature<X, HList.Nil> pointFree(Id<X> v, IdGen vars) {
             return new Signature.NilTPass0<>();
         }
 
@@ -68,7 +68,7 @@ public interface TPass0<X> {
 
     record FunType<A, B>(TPass0<A>domain, TPass0<B>range) implements TPass0<F<A, B>> {
         @Override
-        public <X> Signature<X, F<A, B>> pointFree(Id<X> v, VarGen vars) {
+        public <X> Signature<X, F<A, B>> pointFree(Id<X> v, IdGen vars) {
             return new Signature.Function<>(domain.pointFree(v, vars), range.pointFree(v, vars));
         }
 
@@ -91,7 +91,7 @@ public interface TPass0<X> {
 
     // fixme... rename/retype, not clear enough this creates a new type...
     record PureType<A>(Class<A>clazz) implements TPass0<A> {
-        public <T> Signature<T, A> pointFree(Id<T> argument, VarGen vars) {
+        public <T> Signature<T, A> pointFree(Id<T> argument, IdGen vars) {
             return new Signature.Pure<>(clazz);
         }
 
@@ -111,7 +111,7 @@ public interface TPass0<X> {
     }
 
     record First<A, B>(TPass0<E<A, B>>value) implements TPass0<A> {
-        public <L> Signature<L, A> pointFree(Id<L> argument, VarGen vars) {
+        public <L> Signature<L, A> pointFree(Id<L> argument, IdGen vars) {
             return new Signature.First<>(value.pointFree(argument, vars));
         }
 
@@ -121,7 +121,7 @@ public interface TPass0<X> {
     }
 
     record Second<A, B>(TPass0<E<A, B>>value) implements TPass0<B> {
-        public <L> Signature<L, B> pointFree(Id<L> argument, VarGen vars) {
+        public <L> Signature<L, B> pointFree(Id<L> argument, IdGen vars) {
             return new Signature.Second<>(value.pointFree(argument, vars));
         }
 
@@ -133,7 +133,7 @@ public interface TPass0<X> {
     record Forall<A, B>(Function<TPass0<A>, TPass0<B>>f) implements TPass0<V<A, B>> {
         private static final ThreadLocal<Integer> DEPTH = ThreadLocal.withInitial(() -> 0);
 
-        public <T> Signature<T, V<A, B>> pointFree(Id<T> argument, VarGen vars) {
+        public <T> Signature<T, V<A, B>> pointFree(Id<T> argument, IdGen vars) {
             /* TVar<E<A, T>> newVar = vars.createTPass0Var();
 
             var body = f.apply(new First<>(newVar))
@@ -175,7 +175,7 @@ public interface TPass0<X> {
         }
 
         @Override
-        public <V> Signature<V, T> pointFree(Id<V> argument, VarGen vars) {
+        public <V> Signature<V, T> pointFree(Id<V> argument, IdGen vars) {
             if (argument == variable) {
                 return (Signature<V, T>) new Signature.Identity<T>();
             }
@@ -211,7 +211,7 @@ public interface TPass0<X> {
         }
 
         @Override
-        public <X> Signature<X, HList.Cons<H, T>> pointFree(Id<X> v, VarGen vars) {
+        public <X> Signature<X, HList.Cons<H, T>> pointFree(Id<X> v, IdGen vars) {
             return new Signature.ConsTPass0<>(head.pointFree(v, vars), tail.pointFree(v, vars));
         }
 

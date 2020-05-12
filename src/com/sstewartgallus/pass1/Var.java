@@ -2,7 +2,7 @@ package com.sstewartgallus.pass1;
 
 import com.sstewartgallus.ir.PointFree;
 import com.sstewartgallus.term.Id;
-import com.sstewartgallus.term.VarGen;
+import com.sstewartgallus.term.IdGen;
 import com.sstewartgallus.type.F;
 import com.sstewartgallus.type.HList;
 
@@ -48,22 +48,22 @@ public record Var<A>(TPass0<A>type,
     }
 
     @Override
-    public Pass1<A> aggregateLambdas(VarGen vars) {
+    public Pass1<A> aggregateLambdas(IdGen vars) {
         return this;
     }
 
     @Override
-    public Pass1.Results<A> captureEnv(VarGen vars) {
+    public Pass1.Results<A> captureEnv(IdGen vars) {
         return new Pass1.Results<A>(Set.of(this), this);
     }
 
     @Override
-    public Pass3<A> uncurry(VarGen vars) {
+    public Pass3<A> uncurry(IdGen vars) {
         return this;
     }
 
     @Override
-    public <T extends HList<T>> PointFree<F<T, A>> pointFree(Id<T> argument, VarGen vars, TPass0<T> argType) {
+    public <T extends HList<T>> PointFree<F<T, A>> pointFree(Id<T> argument, IdGen vars, TPass0<T> argType) {
         throw new UnsupportedOperationException("unimplemented");
     }
 

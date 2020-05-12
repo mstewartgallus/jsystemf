@@ -28,13 +28,8 @@ import static java.lang.invoke.MethodType.methodType;
  * Fixme: Look into a symbolic representation of my target https://www.youtube.com/watch?v=PwL2c6rO6co and then make a dsl for it.
  */
 public interface Generic<A, B> {
-    static <X, A, B, Z> Generic<Z, F<X, V<A, B>>> curry(Signature<Z, F<X, V<A, B>>> signature,
-                                                        Generic<E<Z, A>, F<X, B>> body) {
-        return new CurryType<>(signature, body);
-    }
 
-    // for Category we use Void the class that has only one inhabitant
-    // fixme... I believe what we want for Generic is the T such that Class<T> has only one inhabitant... null!
+    // fixme... what really want instead of Void is a T such that Type<T> only has one inhabitant...
     static <B> Value<B> compile(MethodHandles.Lookup lookup, Generic<Void, F<HList.Nil, B>> generic) {
         var chunk = generic.compile(lookup, new TPass0.PureType<>(Void.class));
 
@@ -137,8 +132,6 @@ public interface Generic<A, B> {
                             Generic<V, F<Z, A>>x) implements Generic<V, F<Z, B>> {
 
         public Chunk<F<Z, B>> compile(Lookup lookup, TPass0<V> klass) {
-            var d = domain.apply(klass);
-
             var fEmit = f.compile(lookup, klass).intro();
             var xEmit = x.compile(lookup, klass).intro();
 

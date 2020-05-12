@@ -7,9 +7,9 @@ import com.sstewartgallus.pass1.Pass0;
 import com.sstewartgallus.pass1.TPass0;
 import com.sstewartgallus.runtime.Value;
 import com.sstewartgallus.runtime.ValueInvoker;
+import com.sstewartgallus.term.IdGen;
 import com.sstewartgallus.term.Prims;
 import com.sstewartgallus.term.Term;
-import com.sstewartgallus.term.VarGen;
 import com.sstewartgallus.type.F;
 import com.sstewartgallus.type.Type;
 import com.sstewartgallus.type.TypeCheckException;
@@ -22,7 +22,6 @@ import java.io.StringReader;
 import java.math.BigInteger;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Objects;
 import java.util.function.Supplier;
 
 import static java.io.StreamTokenizer.TT_EOF;
@@ -64,7 +63,7 @@ public final class Main {
             throw new RuntimeException(e);
         }
 
-        var vars = new VarGen();
+        var vars = new IdGen();
 
         var pass0 = Pass0.from(expr, vars);
         outputT("Pass 0", pass0, pass0.type());
@@ -95,14 +94,17 @@ public final class Main {
 
     // fixme.. arguments check more safely...
     static <A> Term<?> apply(Term<?> f, Term<A> x) throws TypeCheckException {
-        if (f.type() instanceof Type.FunType<?, ?> funType) {
-            if (!Objects.equals(funType.domain(), x.type())) {
-                throw new UnsupportedOperationException("type error");
-            }
-            // fixme... do this more safely..
-            return Term.apply((Term) f, x);
+        var fType = f.type();
+        var xType = x.type();
+
+        if (!(fType instanceof Type.FunType<?, ?> funType)) {
+            throw new UnsupportedOperationException("applying nonfunction");
         }
-        throw new UnsupportedOperationException("applying nonfunction");
+
+        funType.domain().unify(xType);
+
+        // fixme... do this more safely..
+        return Term.apply((Term) f, x);
     }
 
     static void output(String stage, Object results) {

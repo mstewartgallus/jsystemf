@@ -1,8 +1,8 @@
 package com.sstewartgallus.pass1;
 
 import com.sstewartgallus.term.Id;
+import com.sstewartgallus.term.IdGen;
 import com.sstewartgallus.term.Term;
-import com.sstewartgallus.term.VarGen;
 import com.sstewartgallus.type.*;
 
 import java.lang.constant.ConstantDesc;
@@ -10,7 +10,7 @@ import java.util.Objects;
 import java.util.function.Function;
 
 public interface Pass0<L> {
-    static <T> Pass0<T> from(Term<T> term, VarGen vars) {
+    static <T> Pass0<T> from(Term<T> term, IdGen vars) {
         return term.visit(new Term.Visitor<>() {
             @Override
             public Pass0<T> onPure(Type<T> type, ConstantDesc constantDesc) {
@@ -39,7 +39,7 @@ public interface Pass0<L> {
         });
     }
 
-    Pass1<L> aggregateLambdas(VarGen vars);
+    Pass1<L> aggregateLambdas(IdGen vars);
 
     TPass0<L> type();
 
@@ -69,7 +69,7 @@ public interface Pass0<L> {
         }
 
         @Override
-        public Pass1<B> aggregateLambdas(VarGen vars) {
+        public Pass1<B> aggregateLambdas(IdGen vars) {
             return new Pass1.Apply<>(f.aggregateLambdas(vars), x.aggregateLambdas(vars));
         }
     }
@@ -82,7 +82,7 @@ public interface Pass0<L> {
             return new Lambda<>(domain, x -> f.apply(x).substitute(variable, replacement));
         }
 
-        public Pass1<F<A, B>> aggregateLambdas(VarGen vars) {
+        public Pass1<F<A, B>> aggregateLambdas(IdGen vars) {
             var v = vars.<A>createId();
             var body = f.apply(new Var<>(domain, v)).aggregateLambdas(vars);
 
@@ -132,7 +132,7 @@ public interface Pass0<L> {
         }
 
         @Override
-        public Pass1<B> aggregateLambdas(VarGen vars) {
+        public Pass1<B> aggregateLambdas(IdGen vars) {
             throw new UnsupportedOperationException("not yet implemented");
         }
     }
@@ -151,7 +151,7 @@ public interface Pass0<L> {
         }
 
         @Override
-        public Pass1<V<A, B>> aggregateLambdas(VarGen vars) {
+        public Pass1<V<A, B>> aggregateLambdas(IdGen vars) {
             throw new UnsupportedOperationException("not yet implemented");
         }
     }
@@ -168,7 +168,7 @@ public interface Pass0<L> {
         }
 
         @Override
-        public Pass1<E<A, B>> aggregateLambdas(VarGen vars) {
+        public Pass1<E<A, B>> aggregateLambdas(IdGen vars) {
             throw new UnsupportedOperationException("not yet implemented");
         }
     }

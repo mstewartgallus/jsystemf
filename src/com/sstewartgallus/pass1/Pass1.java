@@ -1,7 +1,7 @@
 package com.sstewartgallus.pass1;
 
 import com.sstewartgallus.term.Id;
-import com.sstewartgallus.term.VarGen;
+import com.sstewartgallus.term.IdGen;
 import com.sstewartgallus.type.E;
 import com.sstewartgallus.type.F;
 import com.sstewartgallus.type.V;
@@ -26,7 +26,7 @@ public interface Pass1<L> {
 
     <A> Pass1<L> substitute(Id<A> argument, Pass1<A> replacement);
 
-    Results<L> captureEnv(VarGen vars);
+    Results<L> captureEnv(IdGen vars);
 
     TPass0<L> type();
 
@@ -35,14 +35,14 @@ public interface Pass1<L> {
 
         TPass0<A> type();
 
-        BodyResults<A> captureEnv(VarGen vars);
+        BodyResults<A> captureEnv(IdGen vars);
     }
 
     record Results<L>(Set<Var<?>>captured, Pass2<L>value) {
     }
 
     record Apply<A, B>(Pass1<F<A, B>>f, Pass1<A>x) implements Pass1<B> {
-        public Results<B> captureEnv(VarGen vars) {
+        public Results<B> captureEnv(IdGen vars) {
             var fCapture = f.captureEnv(vars);
             var xCapture = x.captureEnv(vars);
 
@@ -86,7 +86,7 @@ public interface Pass1<L> {
                     freeVar);
         }
 
-        public Results<A> captureEnv(VarGen vars) {
+        public Results<A> captureEnv(IdGen vars) {
             var results = body.captureEnv(vars);
             var captured = new TreeSet<>(results.captured);
 
@@ -123,7 +123,7 @@ public interface Pass1<L> {
         }
 
         @Override
-        public BodyResults<A> captureEnv(VarGen vars) {
+        public BodyResults<A> captureEnv(IdGen vars) {
             var results = body.captureEnv(vars);
             return new BodyResults<>(results.captured, new Pass2.Expr<>(results.value));
         }
@@ -146,7 +146,7 @@ public interface Pass1<L> {
         }
 
         @Override
-        public BodyResults<F<A, B>> captureEnv(VarGen vars) {
+        public BodyResults<F<A, B>> captureEnv(IdGen vars) {
             var v = vars.<A>createId();
             var load = new Var<>(domain, v);
             var body = f.apply(load);
@@ -186,7 +186,7 @@ public interface Pass1<L> {
         }
 
         @Override
-        public Results<B> captureEnv(VarGen vars) {
+        public Results<B> captureEnv(IdGen vars) {
             throw new UnsupportedOperationException("unimplemented");
         }
 
@@ -212,7 +212,7 @@ public interface Pass1<L> {
         }
 
         @Override
-        public Results<V<A, B>> captureEnv(VarGen vars) {
+        public Results<V<A, B>> captureEnv(IdGen vars) {
             throw new UnsupportedOperationException("unimplemented");
         }
 
@@ -229,7 +229,7 @@ public interface Pass1<L> {
         }
 
         @Override
-        public Results<E<A, B>> captureEnv(VarGen vars) {
+        public Results<E<A, B>> captureEnv(IdGen vars) {
             throw new UnsupportedOperationException("unimplemented");
         }
 

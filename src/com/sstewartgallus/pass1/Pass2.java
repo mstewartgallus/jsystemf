@@ -1,7 +1,7 @@
 package com.sstewartgallus.pass1;
 
 import com.sstewartgallus.term.Id;
-import com.sstewartgallus.term.VarGen;
+import com.sstewartgallus.term.IdGen;
 import com.sstewartgallus.type.F;
 import com.sstewartgallus.type.HList;
 
@@ -13,18 +13,18 @@ public interface Pass2<A> {
 
     <V> Pass2<A> substitute(Id<V> argument, Pass2<V> replacement);
 
-    Pass3<A> uncurry(VarGen vars);
+    Pass3<A> uncurry(IdGen vars);
 
     interface Body<A> {
         <V> Body<A> substitute(Id<V> argument, Pass2<V> replacement);
 
         TPass0<A> type();
 
-        Results<? extends HList<?>, ?, A> tuple(VarGen vars);
+        Results<? extends HList<?>, ?, A> tuple(IdGen vars);
     }
 
     record Apply<A, B>(Pass2<F<A, B>>f, Pass2<A>x) implements Pass2<B> {
-        public Pass3<B> uncurry(VarGen vars) {
+        public Pass3<B> uncurry(IdGen vars) {
             return new Pass3.Apply<>(f.uncurry(vars), x.uncurry(vars));
         }
 
@@ -56,7 +56,7 @@ public interface Pass2<A> {
     }
 
     record Thunk<A>(Body<A>body) implements Pass2<A> {
-        public Pass3<A> uncurry(VarGen vars) {
+        public Pass3<A> uncurry(IdGen vars) {
             return body.tuple(vars).lambda(body.type());
         }
 
@@ -76,7 +76,7 @@ public interface Pass2<A> {
     }
 
     record Expr<A>(Pass2<A>body) implements Body<A> {
-        public Results<? extends HList<?>, ?, A> tuple(VarGen vars) {
+        public Results<? extends HList<?>, ?, A> tuple(IdGen vars) {
             var bodyTuple = body.uncurry(vars);
             return new Results<>(TPass0.NilType.NIL, new Args.Zero<>(), nil -> bodyTuple);
         }
@@ -101,7 +101,7 @@ public interface Pass2<A> {
                         Function<Pass2<A>, Body<B>>f) implements Body<F<A, B>> {
         private static final ThreadLocal<Integer> DEPTH = ThreadLocal.withInitial(() -> 0);
 
-        public Results<? extends HList<?>, ?, F<A, B>> tuple(VarGen vars) {
+        public Results<? extends HList<?>, ?, F<A, B>> tuple(IdGen vars) {
             var v = vars.<A>createId();
             var body = f.apply(new Var<>(domain, v));
             var bodyTuple = body.tuple(vars);

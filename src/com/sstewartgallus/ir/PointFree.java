@@ -3,43 +3,27 @@ package com.sstewartgallus.ir;
 import com.sstewartgallus.pass1.Args;
 import com.sstewartgallus.pass1.TPass0;
 import com.sstewartgallus.term.Id;
-import com.sstewartgallus.term.VarGen;
+import com.sstewartgallus.term.IdGen;
 import com.sstewartgallus.type.E;
 import com.sstewartgallus.type.F;
 import com.sstewartgallus.type.HList;
 import com.sstewartgallus.type.V;
 
-import java.lang.constant.ConstantDesc;
 import java.util.function.Function;
 
 public interface PointFree<A> {
-    <Z> Generic<Z, A> generic(Id<Z> argument, VarGen vars);
+    <Z> Generic<Z, A> generic(Id<Z> argument, IdGen vars);
 
     <Z> PointFree<A> substitute(Id<Z> argument, TPass0<Z> replacement);
 
     TPass0<A> type();
-
-    record Con<B>(TPass0<B>type, ConstantDesc value) implements PointFree<B> {
-        public String toString() {
-            return value.toString();
-        }
-
-        public <V> Generic<V, B> generic(Id<V> argument, VarGen vars) {
-            var sig = type().pointFree(argument, vars);
-            return new Generic.Con<>(sig, value);
-        }
-
-        public <V> PointFree<B> substitute(Id<V> argument, TPass0<V> replacement) {
-            return new Con<>(type.substitute(argument, replacement), value);
-        }
-    }
 
     record K<A extends HList<A>, B>(TPass0<A>domain, PointFree<B>value) implements PointFree<F<A, B>> {
         public String toString() {
             return "(K " + value.toString() + ")";
         }
 
-        public <V> Generic<V, F<A, B>> generic(Id<V> argument, VarGen vars) {
+        public <V> Generic<V, F<A, B>> generic(Id<V> argument, IdGen vars) {
             var sig = type().pointFree(argument, vars);
             return new Generic.K<>(sig, domain.pointFree(argument, vars), value.generic(argument, vars));
         }
@@ -57,7 +41,7 @@ public interface PointFree<A> {
     record Get<A extends HList<A>, B extends HList<B>, X>(TPass0<A>domain,
                                                           com.sstewartgallus.pass1.Index<A, HList.Cons<X, B>>ix) implements PointFree<F<A, X>> {
 
-        public <V> Generic<V, F<A, X>> generic(Id<V> argument, VarGen vars) {
+        public <V> Generic<V, F<A, X>> generic(Id<V> argument, IdGen vars) {
             var sig = type().pointFree(argument, vars);
             return new Generic.Get<>(sig, domain.pointFree(argument, vars), ix);
         }
@@ -78,7 +62,7 @@ public interface PointFree<A> {
     record Exists<X extends HList<X>, A, B>(TPass0<A>x, PointFree<F<X, B>>y) implements PointFree<F<X, E<A, B>>> {
 
         @Override
-        public <Z> Generic<Z, F<X, E<A, B>>> generic(Id<Z> argument, VarGen vars) {
+        public <Z> Generic<Z, F<X, E<A, B>>> generic(Id<Z> argument, IdGen vars) {
             throw new UnsupportedOperationException("unimplemented");
         }
 
@@ -94,7 +78,7 @@ public interface PointFree<A> {
 
     record Forall<X extends HList<X>, A, B>(TPass0<X>domain,
                                             Function<TPass0<A>, PointFree<F<X, B>>>f) implements PointFree<F<X, V<A, B>>> {
-        public <Z> Generic<Z, F<X, V<A, B>>> generic(Id<Z> argument, VarGen vars) {
+        public <Z> Generic<Z, F<X, V<A, B>>> generic(Id<Z> argument, IdGen vars) {
             Id<E<Z, A>> arg = vars.createId();
 
             var signature = type().pointFree(argument, vars);
@@ -102,7 +86,7 @@ public interface PointFree<A> {
             Generic<E<Z, A>, F<X, B>> body = f.apply(new TPass0.Second<>(new TPass0.Load<>(arg)))
                     .substitute(argument, new TPass0.First<>(new TPass0.Load<>(arg)))
                     .generic(arg, vars);
-            return Generic.curry(signature, body);
+            return new Generic.CurryType<>(signature, body);
         }
 
         public <Z> PointFree<F<X, V<A, B>>> substitute(Id<Z> argument, TPass0<Z> replacement) {
@@ -117,7 +101,7 @@ public interface PointFree<A> {
     record Call<Z extends HList<Z>, A, B>(PointFree<F<Z, F<A, B>>>f,
                                           PointFree<F<Z, A>>x) implements PointFree<F<Z, B>> {
         @Override
-        public <V> Generic<V, F<Z, B>> generic(Id<V> argument, VarGen vars) {
+        public <V> Generic<V, F<Z, B>> generic(Id<V> argument, IdGen vars) {
             var sig = type().pointFree(argument, vars);
             var domain = ((TPass0.FunType<Z, F<A, B>>) f.type()).domain();
             return new Generic.Call<>(sig, domain.pointFree(argument, vars), f.generic(argument, vars), x.generic(argument, vars));
@@ -143,7 +127,7 @@ public interface PointFree<A> {
     record Lambda<A extends HList<A>, B, R>(TPass0<R>type, Args<A, B, R>arguments,
                                             PointFree<F<A, B>>body) implements PointFree<R> {
         @Override
-        public <X> Generic<X, R> generic(Id<X> argument, VarGen vars) {
+        public <X> Generic<X, R> generic(Id<X> argument, IdGen vars) {
             var bodyT = (TPass0.FunType<A, B>) body.type();
             return new Generic.Lambda<>(
                     type().pointFree(argument, vars),

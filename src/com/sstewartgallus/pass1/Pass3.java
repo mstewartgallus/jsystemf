@@ -2,7 +2,7 @@ package com.sstewartgallus.pass1;
 
 import com.sstewartgallus.ir.PointFree;
 import com.sstewartgallus.term.Id;
-import com.sstewartgallus.term.VarGen;
+import com.sstewartgallus.term.IdGen;
 import com.sstewartgallus.type.F;
 import com.sstewartgallus.type.HList;
 
@@ -14,7 +14,7 @@ public interface Pass3<A> {
 
     <V> Pass3<A> substitute(Id<V> argument, Pass3<V> replacement);
 
-    <T extends HList<T>> PointFree<F<T, A>> pointFree(Id<T> argument, VarGen vars, TPass0<T> argType);
+    <T extends HList<T>> PointFree<F<T, A>> pointFree(Id<T> argument, IdGen vars, TPass0<T> argType);
 
     record Apply<A, B>(Pass3<F<A, B>>f, Pass3<A>x) implements Pass3<B> {
         public <V> Pass3<B> substitute(Id<V> argument, Pass3<V> replacement) {
@@ -22,7 +22,7 @@ public interface Pass3<A> {
         }
 
         @Override
-        public <T extends HList<T>> PointFree<F<T, B>> pointFree(Id<T> argument, VarGen vars, TPass0<T> argType) {
+        public <T extends HList<T>> PointFree<F<T, B>> pointFree(Id<T> argument, IdGen vars, TPass0<T> argType) {
             var fCcc = f.pointFree(argument, vars, argType);
             var xCcc = x.pointFree(argument, vars, argType);
             return new PointFree.Call<>(fCcc, xCcc);
@@ -56,7 +56,7 @@ public interface Pass3<A> {
         }
 
         @Override
-        public <T extends HList<T>> PointFree<F<T, A>> pointFree(Id<T> argument, VarGen vars, TPass0<T> argType) {
+        public <T extends HList<T>> PointFree<F<T, A>> pointFree(Id<T> argument, IdGen vars, TPass0<T> argType) {
             if (argument == list.variable) {
                 return (PointFree) new PointFree.Get<>(list.type(), list.ix);
             }
@@ -85,7 +85,7 @@ public interface Pass3<A> {
         }
 
         @Override
-        public <T extends HList<T>> PointFree<F<T, R>> pointFree(Id<T> argument, VarGen vars, TPass0<T> argType) {
+        public <T extends HList<T>> PointFree<F<T, R>> pointFree(Id<T> argument, IdGen vars, TPass0<T> argType) {
             var arg = vars.<A>createId();
             var body = f.apply(arg);
             var ccc = body.pointFree(arg, vars, domain);

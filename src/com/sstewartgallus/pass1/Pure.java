@@ -1,15 +1,17 @@
 package com.sstewartgallus.pass1;
 
+import com.sstewartgallus.ir.Generic;
 import com.sstewartgallus.ir.PointFree;
 import com.sstewartgallus.term.Id;
-import com.sstewartgallus.term.VarGen;
+import com.sstewartgallus.term.IdGen;
 import com.sstewartgallus.type.F;
 import com.sstewartgallus.type.HList;
 
 import java.lang.constant.ConstantDesc;
 import java.util.Set;
 
-public record Pure<A>(TPass0<A>type, ConstantDesc value) implements Pass0<A>, Pass1<A>, Pass2<A>, Pass3<A> {
+public record Pure<A>(TPass0<A>type,
+                      ConstantDesc value) implements Pass0<A>, Pass1<A>, Pass2<A>, Pass3<A>, PointFree<A> {
     @Override
     public String toString() {
         return String.valueOf(value);
@@ -36,22 +38,33 @@ public record Pure<A>(TPass0<A>type, ConstantDesc value) implements Pass0<A>, Pa
     }
 
     @Override
-    public Pass1<A> aggregateLambdas(VarGen vars) {
+    public <Z> PointFree<A> substitute(Id<Z> argument, TPass0<Z> replacement) {
         return this;
     }
 
     @Override
-    public Pass1.Results<A> captureEnv(VarGen vars) {
+    public Pass1<A> aggregateLambdas(IdGen vars) {
+        return this;
+    }
+
+    @Override
+    public Pass1.Results<A> captureEnv(IdGen vars) {
         return new Pass1.Results<A>(Set.of(), this);
     }
 
     @Override
-    public Pass3<A> uncurry(VarGen vars) {
+    public Pass3<A> uncurry(IdGen vars) {
         return this;
     }
 
     @Override
-    public <T extends HList<T>> PointFree<F<T, A>> pointFree(Id<T> argument, VarGen vars, TPass0<T> argType) {
-        return new PointFree.K<>(argType, new PointFree.Con<>(this.type, this.value));
+    public <T extends HList<T>> PointFree<F<T, A>> pointFree(Id<T> argument, IdGen vars, TPass0<T> argType) {
+        return new PointFree.K<>(argType, this);
+    }
+
+    @Override
+    public <Z> Generic<Z, A> generic(Id<Z> argument, IdGen vars) {
+        var sig = type().pointFree(argument, vars);
+        return new Generic.Con<>(sig, value);
     }
 }

@@ -1,13 +1,56 @@
 package com.sstewartgallus.pass1;
 
-import com.sstewartgallus.plato.F;
-import com.sstewartgallus.plato.Id;
-import com.sstewartgallus.plato.IdGen;
+import com.sstewartgallus.plato.*;
 
 import java.util.Objects;
 import java.util.function.Function;
 
 public interface Pass2<A> {
+    static <T> Pass2<T> from(Term<T> term, IdGen vars) {
+        if (term instanceof PureValue<T> pure) {
+            return new Pure<T>(TPass0.from(pure.type(), vars), pure.value());
+        }
+
+        if (term instanceof VarValue<T> load) {
+            return new Var<>(TPass0.from(load.type(), vars), load.variable());
+        }
+
+        if (term instanceof ApplyThunk<?, T> apply) {
+            return fromApply(apply, vars);
+        }
+
+        if (term instanceof CurriedLambdaValue<T> lambda) {
+            // fixme... penguin
+            return new Pass2.Thunk<>(fromLambda(lambda, vars));
+        }
+        throw new IllegalArgumentException("unexpected term " + term);
+    }
+
+    static <A, B> Pass2<B> fromApply(ApplyThunk<A, B> apply, IdGen vars) {
+        return new Pass2.Apply<>(from(apply.f(), vars), from(apply.x(), vars));
+    }
+
+    static <T> Pass2.Body<T> fromLambda(CurriedLambdaValue<T> lambda, IdGen vars) {
+        var body = lambda.body();
+        return fromBody(body, vars);
+    }
+
+    static <T> Pass2.Body<T> fromBody(CurriedLambdaValue.Body<T> body, IdGen vars) {
+        if (body instanceof CurriedLambdaValue.MainBody<T> mainBody) {
+            return new Pass2.Expr<T>(from(mainBody.body(), vars));
+        }
+        var lambdaBody = (CurriedLambdaValue.LambdaBody<?, ?>) body;
+        return (Pass2.Body) fromLambda(lambdaBody, vars);
+    }
+
+    static <A, B> Pass2.Lambda<A, B> fromLambda(CurriedLambdaValue.LambdaBody<A, B> lambdaBody, IdGen ids) {
+        var domain = TPass0.from(lambdaBody.domain(), ids);
+        var v = ids.<A>createId();
+        var body = lambdaBody.f().apply(new VarValue<>(lambdaBody.domain(), v));
+        var processedBody = fromBody(body, ids);
+        return new Pass2.Lambda<A, B>(domain, x -> processedBody.substitute(v, x));
+    }
+
     TPass0<A> type();
 
     <V> Pass2<A> substitute(Id<V> argument, Pass2<V> replacement);

@@ -5,7 +5,7 @@ import com.sstewartgallus.ast.Node;
 import com.sstewartgallus.ir.Generic;
 import com.sstewartgallus.pass1.Capture;
 import com.sstewartgallus.pass1.Curry;
-import com.sstewartgallus.pass1.Pass1;
+import com.sstewartgallus.pass1.Pass2;
 import com.sstewartgallus.pass1.TPass0;
 import com.sstewartgallus.plato.*;
 import com.sstewartgallus.primitives.Prims;
@@ -84,12 +84,9 @@ public final class Main {
             outputT("Curried", curry, curry.type());
 
             var captured = Capture.capture(curry, vars);
-            outputT("New Closures to Partial Application", captured, captured.type());
+            outputT("Partial Application", captured, captured.type());
 
-            var pass1 = Pass1.from(curry, vars);
-            outputT("Aggregate Lambdas", pass1, pass1.type());
-
-            var captures = pass1.captureEnv(vars).value();
+            var captures = Pass2.from(captured, vars);
             outputT("Explicit Environment", captures, captures.type());
 
             var uncurried = captures.uncurry(vars);

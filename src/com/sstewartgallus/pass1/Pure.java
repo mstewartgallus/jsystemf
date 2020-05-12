@@ -8,18 +8,12 @@ import com.sstewartgallus.plato.IdGen;
 import com.sstewartgallus.plato.V;
 
 import java.lang.constant.ConstantDesc;
-import java.util.Set;
 
 public record Pure<A>(TPass0<A>type,
-                      ConstantDesc value) implements Pass1<A>, Pass2<A>, Pass3<A>, PointFree<A> {
+                      ConstantDesc value) implements Pass2<A>, Pass3<A>, PointFree<A> {
     @Override
     public String toString() {
         return String.valueOf(value);
-    }
-
-    @Override
-    public <A1> Pass1<A> substitute(Id<A1> argument, Pass1<A1> replacement) {
-        return this;
     }
 
     @Override
@@ -35,11 +29,6 @@ public record Pure<A>(TPass0<A>type,
     @Override
     public <Z> PointFree<A> substitute(Id<Z> argument, TPass0<Z> replacement) {
         return this;
-    }
-
-    @Override
-    public Pass1.Results<A> captureEnv(IdGen vars) {
-        return new Pass1.Results<A>(Set.of(), this);
     }
 
     @Override

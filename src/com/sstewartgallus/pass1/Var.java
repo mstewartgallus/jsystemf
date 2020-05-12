@@ -5,21 +5,11 @@ import com.sstewartgallus.plato.F;
 import com.sstewartgallus.plato.Id;
 import com.sstewartgallus.plato.IdGen;
 
-import java.util.Set;
-
 public record Var<A>(TPass0<A>type,
-                     Id<A>variable) implements Pass1<A>, Pass2<A>, Pass3<A>, Comparable<Var<?>> {
+                     Id<A>variable) implements Pass2<A>, Pass3<A>, Comparable<Var<?>> {
     @Override
     public String toString() {
         return variable.toString();
-    }
-
-    @Override
-    public <A1> Pass1<A> substitute(Id<A1> argument, Pass1<A1> replacement) {
-        if (this.variable == argument) {
-            return (Pass1) replacement;
-        }
-        return this;
     }
 
     @Override
@@ -36,11 +26,6 @@ public record Var<A>(TPass0<A>type,
             return (Pass3) replacement;
         }
         return this;
-    }
-
-    @Override
-    public Pass1.Results<A> captureEnv(IdGen vars) {
-        return new Pass1.Results<A>(Set.of(this), this);
     }
 
     @Override

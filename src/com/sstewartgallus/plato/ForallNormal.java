@@ -28,11 +28,6 @@ public record ForallNormal<A, B>(Function<Type<A>, Type<B>>f) implements NormalT
     }
 
     @Override
-    public <L> L visit(Visitor<L, V<A, B>> visitor) {
-        throw new UnsupportedOperationException("unimplemented");
-    }
-
-    @Override
     public <T> Type<V<A, B>> substitute(Id<T> v, Type<T> replacement) {
         throw new UnsupportedOperationException("unimplemented");
     }

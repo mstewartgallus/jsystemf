@@ -12,11 +12,6 @@ public record ExistentialNormal<A, B>(Type<A>x, Type<B>y) implements NormalType<
     }
 
     @Override
-    public <L> L visit(Visitor<L, E<A, B>> visitor) {
-        throw new UnsupportedOperationException("unimplemented");
-    }
-
-    @Override
     public <T> Type<E<A, B>> substitute(Id<T> v, Type<T> replacement) {
         throw new UnsupportedOperationException("unimplemented");
     }

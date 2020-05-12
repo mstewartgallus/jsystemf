@@ -30,15 +30,5 @@ public interface Type<X> {
         return new FunctionNormal<>(this, range);
     }
 
-    <L> L visit(Visitor<L, X> visitor);
-
     <T> Type<X> substitute(Id<T> v, Type<T> replacement);
-
-    interface Visitor<X, L> {
-        X onPureType(Class<L> clazz);
-
-        X onLoadType(Id<L> variable);
-
-        <A, B> X onFunctionType(Equality<L, F<A, B>> equality, Type<A> domain, Type<B> range);
-    }
 }

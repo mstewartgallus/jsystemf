@@ -7,23 +7,18 @@ import java.util.function.Function;
 
 public interface TPass0<X> {
     static <T> TPass0<T> from(Type<T> type, IdGen vars) {
-        return type.visit(new Type.Visitor<>() {
-            @Override
-            public TPass0<T> onPureType(Class<T> clazz) {
-                return new TPass0.PureType<>(clazz);
-            }
-
-            @Override
-            public TPass0<T> onLoadType(Id<T> variable) {
-                return new Load<>(variable);
-            }
-
-            @Override
-            public <A, B> TPass0<T> onFunctionType(Equality<T, F<A, B>> equality, Type<A> domain, Type<B> range) {
-                // fixme...
-                return (TPass0) new TPass0.FunType<>(TPass0.from(domain, vars), TPass0.from(range, vars));
-            }
-        });
+        if (type instanceof PureNormal<T> pure) {
+            return new TPass0.PureType<>(pure.clazz());
+        }
+        if (type instanceof VarType<T> varType) {
+            return new Load<>(varType.variable());
+        }
+        if (type instanceof FunctionNormal<?, ?> funType) {
+            return (TPass0) new TPass0.FunType<>(
+                    TPass0.from(funType.domain(), vars),
+                    TPass0.from(funType.range(), vars));
+        }
+        throw new IllegalArgumentException("Unexpected type " + type);
     }
 
     default <A> Signature<V<A, X>> pointFree(Id<A> v, IdGen vars) {

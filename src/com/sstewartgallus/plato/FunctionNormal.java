@@ -10,11 +10,6 @@ public record FunctionNormal<A, B>(Type<A>domain, Type<B>range) implements Norma
     }
 
     @Override
-    public <L> L visit(Visitor<L, F<A, B>> visitor) {
-        return visitor.onFunctionType(new Equality.Identical<>(), domain, range);
-    }
-
-    @Override
     public <Z> Type<F<A, B>> substitute(Id<Z> v, Type<Z> replacement) {
         return new FunctionNormal<>(domain.substitute(v, replacement), range.substitute(v, replacement));
     }

@@ -19,8 +19,4 @@ public record VarType<T>(Id<T>variable) implements ExtensionDenormal<T> {
         throw new UnsupportedOperationException("unimplemented");
     }
 
-    @Override
-    public <L> L visit(Visitor<L, T> visitor) {
-        return visitor.onLoadType(variable);
-    }
 }

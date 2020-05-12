@@ -5,6 +5,7 @@ import com.sstewartgallus.ast.Node;
 import com.sstewartgallus.ir.Generic;
 import com.sstewartgallus.pass1.Pass0;
 import com.sstewartgallus.pass1.TPass0;
+import com.sstewartgallus.runtime.Interpreter;
 import com.sstewartgallus.runtime.Value;
 import com.sstewartgallus.runtime.ValueInvoker;
 import com.sstewartgallus.term.IdGen;
@@ -59,6 +60,9 @@ public final class Main {
         var expr = Term.apply(Type.INT.l(x -> Type.INT.l(y -> x)), Prims.of(4));
         try {
             outputT("System F", expr, expr.type());
+
+            var interpreterOutput = Interpreter.normalize(expr);
+            outputT("Interpreter Output", interpreterOutput, interpreterOutput.type());
         } catch (TypeCheckException e) {
             throw new RuntimeException(e);
         }

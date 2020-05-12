@@ -104,8 +104,8 @@ public interface Type<X> {
 
             String str;
             try {
-                var t = new Id<A>(depth);
-                str = "{forall " + t + ". " + f.apply(new Load<>(t)) + "}";
+                var t = new Load<>(new Id<A>(depth));
+                str = "{forall " + t + ". " + f.apply(t) + "}";
             } finally {
                 DEPTH.set(depth);
                 if (depth == 0) {
@@ -156,7 +156,7 @@ public interface Type<X> {
     record Load<T>(Id<T>variable) implements Type<T> {
         @Override
         public String toString() {
-            return variable.toString();
+            return "t" + variable;
         }
 
         @Override

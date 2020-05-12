@@ -103,7 +103,7 @@ public interface Term<L> {
 
         @Override
         public String toString() {
-            return variable.toString();
+            return "v" + variable.toString();
         }
 
         @Override
@@ -226,8 +226,8 @@ public interface Term<L> {
 
         @Override
         public String toString() {
-            var dummy = new Id<A>(0);
-            return "{forall " + dummy + ". " + f.apply(new Type.Load<>(dummy)) + "}";
+            var dummy = new Type.Load<>(new Id<A>(0));
+            return "{forall " + dummy + ". " + f.apply(dummy) + "}";
         }
     }
 

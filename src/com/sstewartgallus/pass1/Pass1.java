@@ -1,6 +1,9 @@
 package com.sstewartgallus.pass1;
 
-import com.sstewartgallus.plato.*;
+import com.sstewartgallus.plato.F;
+import com.sstewartgallus.plato.Id;
+import com.sstewartgallus.plato.IdGen;
+import com.sstewartgallus.plato.V;
 
 import java.util.List;
 import java.util.Objects;
@@ -174,29 +177,6 @@ public interface Pass1<L> {
         }
     }
 
-    record TypeApply<A, B>(Pass1<V<A, B>>f, TPass0<A>x) implements Pass1<B> {
-
-        @Override
-        public <A> Pass1<B> substitute(Id<A> argument, Pass1<A> replacement) {
-            throw new UnsupportedOperationException("unimplemented");
-        }
-
-        @Override
-        public Results<B> captureEnv(IdGen vars) {
-            throw new UnsupportedOperationException("unimplemented");
-        }
-
-        public TPass0<B> type() {
-            return ((TPass0.Forall<A, B>) f.type()).f().apply(x);
-        }
-
-        @Override
-        public String toString() {
-            return "{" + f + " " + x + "}";
-        }
-
-    }
-
     record Forall<A, B>(Function<TPass0<A>, Pass1<B>>f) implements Pass1<V<A, B>> {
         public TPass0<V<A, B>> type() {
             return new TPass0.Forall<>(x -> f.apply(x).type());
@@ -216,26 +196,6 @@ public interface Pass1<L> {
             throw new UnsupportedOperationException("unimplemented");
             // var dummy = new TVar<A>(0);
             //   return "{forall " + dummy + ". " + f.apply(new Load<>(dummy)) + "}";
-        }
-    }
-
-    record Exists<A, B>(TPass0<A>x, Pass1<B>y) implements Pass1<E<A, B>> {
-        public TPass0<E<A, B>> type() {
-            return new TPass0.Exists<>(x, y.type());
-        }
-
-        @Override
-        public Results<E<A, B>> captureEnv(IdGen vars) {
-            throw new UnsupportedOperationException("unimplemented");
-        }
-
-        @Override
-        public <X> Pass1<E<A, B>> substitute(Id<X> argument, Pass1<X> replacement) {
-            throw new UnsupportedOperationException("unimplemented");
-        }
-
-        public String toString() {
-            return "{exists " + x + ". " + y + "}";
         }
     }
 }

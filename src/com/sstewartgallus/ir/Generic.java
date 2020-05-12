@@ -93,44 +93,6 @@ public interface Generic<A> {
         }
     }
 
-    record PureValue<A>(Signature<A>signature,
-                        ConstantDesc value) implements Generic<A> {
-        public String toString() {
-            return value.toString();
-        }
-
-        public Chunk<A> compile(MethodHandles.Lookup lookup) {
-            var t = signature.erase();
-
-            MethodHandle handle;
-            if (value instanceof String || value instanceof Float || value instanceof Double || value instanceof Integer || value instanceof Long) {
-                handle = constant(t, value);
-            } else if (value instanceof DynamicConstantDesc<?> dyn) {
-                // fixme... use proper lookup scope..
-                handle = LdcStub.spin(lookup, t, dyn);
-            } else {
-                try {
-                    handle = constant(t, value.resolveConstantDesc(lookup));
-                } catch (ReflectiveOperationException e) {
-                    throw new RuntimeException(e);
-                }
-            }
-
-            return new Chunk<>(handle);
-        }
-    }
-
-    record TypeK<L, A>(Signature<V<L, A>>signature,
-                       Generic<A>value) implements GenericV<L, A> {
-        public String toString() {
-            return "(type-K " + value + ")";
-        }
-
-        public Generic<A> apply(Signature<L> klass) {
-            return value;
-        }
-    }
-
     record K<L, A, B>(Signature<V<L, F<A, B>>>signature,
                       Signature<V<L, A>>domain,
                       Generic<V<L, B>>value) implements GenericV<L, F<A, B>> {

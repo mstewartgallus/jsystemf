@@ -10,16 +10,11 @@ import java.util.function.Function;
 public interface Type<X> {
     Type<Integer> INT = new PureNormal<>(int.class);
 
-    static <A, B> Type<E<A, B>> e(Type<A> x, Type<B> y) {
-        return new ExistentialNormal<>(x, y);
-    }
-
     static <A, B> Type<V<A, B>> v(Function<Type<A>, Type<B>> f) {
         return new ForallNormal<>(f);
     }
 
     // fixme... rethink unification...
-
     <Y> Type<X> unify(Type<Y> right) throws TypeCheckException;
 
     default <B> Term<F<X, B>> l(Function<Term<X>, Term<B>> f) {

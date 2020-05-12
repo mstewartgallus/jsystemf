@@ -50,6 +50,24 @@ public final class Main {
 
         output("System F", term);
 
+        record Penguin() {
+            static <A> Term<V<A, F<A, F<A, A>>>> id() {
+                return Term.v(t -> t.l(x -> t.l(y -> x)));
+            }
+        }
+
+        try {
+            var kValue = Term.apply(Term.apply(Term.apply(Penguin.id(), Type.INT), Prims.of(3)), Prims.of(5));
+            outputT("System F", Penguin.id(), Penguin.id().type());
+
+            outputT("System F", kValue, kValue.type());
+
+            var norm = Interpreter.normalize(kValue);
+            outputT("System F", norm, norm.type());
+        } catch (TypeCheckException e) {
+            throw new RuntimeException(e);
+        }
+
         // hack to work around Java's lack of proper generics
         var expr = Term.apply(Type.INT.l(x -> Type.INT.l(y -> x)), Prims.of(4));
         try {

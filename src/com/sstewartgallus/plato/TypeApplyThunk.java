@@ -17,4 +17,13 @@ public record TypeApplyThunk<A, B>(Term<V<A, B>>f, Type<A>x) implements ThunkTer
     public String toString() {
         return "{" + f + " " + x + "}";
     }
+
+    @Override
+    public Term<B> stepThunk() {
+        // fixme... do types need to be normalized as well?
+        // fixme... type check?
+        var fNorm = (TypeLambdaTerm<A, B>) Interpreter.normalize(f);
+        // fixme... should I normalize the argument?
+        return fNorm.f().apply(x);
+    }
 }

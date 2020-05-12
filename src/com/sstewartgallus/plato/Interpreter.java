@@ -10,40 +10,12 @@ public final class Interpreter {
     private Interpreter() {
     }
 
+    // fixme... pass in a context?
+    // fixme... just make part of the data type?
     public static <A> Term<A> normalize(Term<A> term) {
         while (term instanceof ThunkTerm<A> thunk) {
-            if (term instanceof ApplyThunk<?, A> apply) {
-                term = evalApply(apply);
-                continue;
-            }
-            if (term instanceof TypeApplyThunk<?, A> apply) {
-                term = evalTypeApply(apply);
-                continue;
-            }
-            // fixme... might want to have a checked exception here...
-            throw new IllegalStateException("unexpected term " + thunk);
+            term = thunk.stepThunk();
         }
         return term;
-    }
-
-    private static <A, B> Term<B> evalApply(ApplyThunk<A, B> apply) {
-        var f = apply.f();
-        var x = apply.x();
-        // fixme... type check?
-
-        var fNorm = (LambdaValue<A, B>) normalize(f);
-        // fixme... should I normalize the argument?
-        return fNorm.f().apply(x);
-    }
-
-    private static <A, B> Term<B> evalTypeApply(TypeApplyThunk<A, B> apply) {
-        var f = apply.f();
-        // fixme... do types need to be normalized as well?
-        var x = apply.x();
-        // fixme... type check?
-
-        var fNorm = (TypeLambdaTerm<A, B>) normalize(f);
-        // fixme... should I normalize the argument?
-        return fNorm.f().apply(x);
     }
 }

@@ -27,4 +27,10 @@ public record ApplyThunk<A, B>(Term<F<A, B>>f, Term<A>x) implements ThunkTerm<B>
         return "(" + f + " " + x + ")";
     }
 
+    @Override
+    public Term<B> stepThunk() {
+        var fNorm = (LambdaValue<A, B>) Interpreter.normalize(f);
+        // fixme... should I normalize the argument?
+        return fNorm.f().apply(x);
+    }
 }

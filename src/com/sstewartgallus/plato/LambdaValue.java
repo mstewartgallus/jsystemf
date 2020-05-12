@@ -13,7 +13,7 @@ public record LambdaValue<A, B>(Type<A>domain, Function<Term<A>, Term<B>>f) impl
 
     @Override
     public Type<F<A, B>> type() throws TypeCheckException {
-        var range = f.apply(new LoadThunk<>(domain, new Id<>(0))).type();
+        var range = f.apply(new VarThunk<>(domain, new Id<>(0))).type();
         return new Type.FunType<>(domain, range);
     }
 
@@ -24,7 +24,7 @@ public record LambdaValue<A, B>(Type<A>domain, Function<Term<A>, Term<B>>f) impl
 
         String str;
         try {
-            var dummy = new LoadThunk<>(domain, new Id<>(depth));
+            var dummy = new VarThunk<>(domain, new Id<>(depth));
             var body = f.apply(dummy);
             String bodyStr = body.toString();
 

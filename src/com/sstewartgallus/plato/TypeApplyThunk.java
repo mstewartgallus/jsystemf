@@ -2,7 +2,7 @@ package com.sstewartgallus.plato;
 
 import java.util.Objects;
 
-public record TypeApplyThunk<A, B>(Term<V<A, B>>f, Type<A>x) implements ThunkTerm<B> {
+public record TypeApplyThunk<A, B>(Term<V<A, B>>f, Type<A>x) implements ThunkTerm<B>, CoreTerm<B> {
     public TypeApplyThunk {
         Objects.requireNonNull(f);
         Objects.requireNonNull(x);

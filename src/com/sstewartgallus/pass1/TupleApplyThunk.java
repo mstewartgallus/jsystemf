@@ -1,9 +1,12 @@
-package com.sstewartgallus.plato;
+package com.sstewartgallus.pass1;
+
+import com.sstewartgallus.plato.*;
 
 import java.util.Objects;
+import java.util.function.Function;
 
-public record ApplyThunk<A, B>(Term<F<A, B>>f, Term<A>x) implements ThunkTerm<B>, CoreTerm<B> {
-    public ApplyThunk {
+public record TupleApplyThunk<A extends HList<A>, B>(Term<F<A, B>> f, Term<A> x) implements ThunkTerm<B> {
+    public TupleApplyThunk {
         Objects.requireNonNull(f);
         Objects.requireNonNull(x);
     }
@@ -20,11 +23,6 @@ public record ApplyThunk<A, B>(Term<F<A, B>>f, Term<A>x) implements ThunkTerm<B>
         fType.unify(argType.to(range));
 
         return funType.range();
-    }
-
-    @Override
-    public String toString() {
-        return "(" + f + " " + x + ")";
     }
 
     @Override

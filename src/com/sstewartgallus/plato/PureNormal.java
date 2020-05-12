@@ -1,7 +1,7 @@
 package com.sstewartgallus.plato;
 
 // fixme... rename/retype, not clear enough this creates a new type...
-public record PureNormal<A>(Class<A>clazz) implements NormalType<A> {
+public record PureNormal<A>(Class<A>clazz) implements NormalType<A>, CoreType<A> {
 
     public <Y> Type<A> unify(Type<Y> right) throws TypeCheckException {
         if (this != right) {

@@ -3,6 +3,8 @@ package com.sstewartgallus;
 
 import com.sstewartgallus.ast.Node;
 import com.sstewartgallus.ir.Generic;
+import com.sstewartgallus.pass1.CurriedApplyValue;
+import com.sstewartgallus.pass1.CurriedLambdaValue;
 import com.sstewartgallus.pass1.Pass0;
 import com.sstewartgallus.pass1.TPass0;
 import com.sstewartgallus.plato.*;
@@ -56,9 +58,21 @@ public final class Main {
             }
         }
 
+        record Penguin2() {
+            static <A> Term<V<A, F<A, F<A, A>>>> k() {
+                return Term.v(t -> new CurriedLambdaValue<>(t, x -> new CurriedLambdaValue.LambdaBody<>(t, y -> new CurriedLambdaValue.MainBody<>(x))));
+            }
+        }
+
+
         try {
             var kValue = Term.apply(Term.apply(Term.apply(Penguin.id(), Type.INT), Prims.of(3)), Prims.of(5));
             outputT("System F", Penguin.id(), Penguin.id().type());
+
+            var kValue2 = new CurriedApplyValue<>(
+                    new CurriedApplyValue.ApplyBody<>(new CurriedApplyValue.MonoBody<>(Term.apply(Penguin2.k(), Type.INT)), Prims.of(3)),
+                    Prims.of(5));
+            output("System", Interpreter.normalize(kValue2));
 
             outputT("System F", kValue, kValue.type());
 

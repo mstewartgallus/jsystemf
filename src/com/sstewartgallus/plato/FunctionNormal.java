@@ -1,6 +1,6 @@
 package com.sstewartgallus.plato;
 
-public record FunctionNormal<A, B>(Type<A>domain, Type<B>range) implements NormalType<F<A, B>> {
+public record FunctionNormal<A, B>(Type<A>domain, Type<B>range) implements NormalType<F<A, B>>, CoreType<F<A, B>> {
     @Override
     public <Y> Type<F<A, B>> unify(Type<Y> right) throws TypeCheckException {
         if (!(right instanceof FunctionNormal<?, ?> funType)) {

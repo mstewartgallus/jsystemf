@@ -2,7 +2,7 @@ package com.sstewartgallus.plato;
 
 import java.util.function.Function;
 
-public record ForallNormal<A, B>(Function<Type<A>, Type<B>>f) implements NormalType<V<A, B>> {
+public record ForallNormal<A, B>(Function<Type<A>, Type<B>>f) implements NormalType<V<A, B>>, CoreType<V<A, B>> {
     private static final ThreadLocal<Integer> DEPTH = ThreadLocal.withInitial(() -> 0);
 
     public String toString() {

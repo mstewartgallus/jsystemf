@@ -1,6 +1,6 @@
 package com.sstewartgallus.plato;
 
-public record VarType<T>(Id<T>variable) implements ExtensionDenormal<T> {
+public record VarType<T>(Id<T>variable) implements CoreType<T> {
     @Override
     public String toString() {
         return "t" + variable;

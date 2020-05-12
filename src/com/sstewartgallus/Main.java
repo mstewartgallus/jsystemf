@@ -5,6 +5,7 @@ import com.sstewartgallus.ast.Node;
 import com.sstewartgallus.ir.Generic;
 import com.sstewartgallus.pass1.Curry;
 import com.sstewartgallus.pass1.Pass0;
+import com.sstewartgallus.pass1.Pass1;
 import com.sstewartgallus.pass1.TPass0;
 import com.sstewartgallus.plato.*;
 import com.sstewartgallus.primitives.Prims;
@@ -85,7 +86,7 @@ public final class Main {
             var curry = Curry.curry(expr, vars);
             outputT("New Currying", curry, curry.type());
 
-            var pass1 = pass0.aggregateLambdas(vars);
+            var pass1 = Pass1.from(curry, vars); //pass0.aggregateLambdas(vars);
             outputT("Aggregate Lambdas", pass1, pass1.type());
 
             var captures = pass1.captureEnv(vars).value();

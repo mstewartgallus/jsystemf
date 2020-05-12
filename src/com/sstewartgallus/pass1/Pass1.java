@@ -1,9 +1,6 @@
 package com.sstewartgallus.pass1;
 
-import com.sstewartgallus.plato.F;
-import com.sstewartgallus.plato.Id;
-import com.sstewartgallus.plato.IdGen;
-import com.sstewartgallus.plato.V;
+import com.sstewartgallus.plato.*;
 
 import java.util.List;
 import java.util.Objects;
@@ -21,6 +18,51 @@ public interface Pass1<L> {
         var x = new TreeSet<>(left);
         x.addAll(right);
         return x;
+    }
+
+    static <T> Pass1<T> from(Term<T> term, IdGen vars) {
+        if (term instanceof PureValue<T> pure) {
+            return new Pure<T>(TPass0.from(pure.type(), vars), pure.value());
+        }
+
+        if (term instanceof VarThunk<T> load) {
+            return new Var<>(TPass0.from(load.type(), vars), load.variable());
+        }
+
+        if (term instanceof ApplyThunk<?, T> apply) {
+            return fromApply(apply, vars);
+        }
+
+        if (term instanceof CurriedLambdaValue<T> lambda) {
+            // fixme... penguin
+            return new Thunk<>(fromLambda(lambda, vars));
+        }
+        throw new IllegalArgumentException("unexpected term " + term);
+    }
+
+    static <A, B> Pass1<B> fromApply(ApplyThunk<A, B> apply, IdGen vars) {
+        return new Apply<>(from(apply.f(), vars), from(apply.x(), vars));
+    }
+
+    static <T> Body<T> fromLambda(CurriedLambdaValue<T> lambda, IdGen vars) {
+        var body = lambda.body();
+        return fromBody(body, vars);
+    }
+
+    static <T> Body<T> fromBody(CurriedLambdaValue.Body<T> body, IdGen vars) {
+        if (body instanceof CurriedLambdaValue.MainBody<T> mainBody) {
+            return new Expr<T>(from(mainBody.body(), vars));
+        }
+        var lambdaBody = (CurriedLambdaValue.LambdaBody<?, ?>) body;
+        return (Body) fromLambda(lambdaBody, vars);
+    }
+
+    static <A, B> Lambda<A, B> fromLambda(CurriedLambdaValue.LambdaBody<A, B> lambdaBody, IdGen ids) {
+        var domain = TPass0.from(lambdaBody.domain(), ids);
+        var v = ids.<A>createId();
+        var body = lambdaBody.f().apply(new VarThunk<>(lambdaBody.domain(), v));
+        var processedBody = fromBody(body, ids);
+        return new Lambda<A, B>(domain, x -> processedBody.substitute(v, x));
     }
 
     <A> Pass1<L> substitute(Id<A> argument, Pass1<A> replacement);

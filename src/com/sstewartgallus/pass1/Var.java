@@ -8,18 +8,10 @@ import com.sstewartgallus.plato.IdGen;
 import java.util.Set;
 
 public record Var<A>(TPass0<A>type,
-                     Id<A>variable) implements Pass0<A>, Pass1<A>, Pass2<A>, Pass3<A>, Comparable<Var<?>> {
+                     Id<A>variable) implements Pass1<A>, Pass2<A>, Pass3<A>, Comparable<Var<?>> {
     @Override
     public String toString() {
         return variable.toString();
-    }
-
-    @Override
-    public <X> Pass0<A> substitute(Id<X> argument, Pass0<X> replacement) {
-        if (this.variable == argument) {
-            return (Pass0) replacement;
-        }
-        return this;
     }
 
     @Override
@@ -43,11 +35,6 @@ public record Var<A>(TPass0<A>type,
         if (this.variable == argument) {
             return (Pass3) replacement;
         }
-        return this;
-    }
-
-    @Override
-    public Pass1<A> aggregateLambdas(IdGen vars) {
         return this;
     }
 

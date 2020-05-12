@@ -4,7 +4,6 @@ package com.sstewartgallus;
 import com.sstewartgallus.ast.Node;
 import com.sstewartgallus.ir.Generic;
 import com.sstewartgallus.pass1.Curry;
-import com.sstewartgallus.pass1.Pass0;
 import com.sstewartgallus.pass1.Pass1;
 import com.sstewartgallus.pass1.TPass0;
 import com.sstewartgallus.plato.*;
@@ -79,9 +78,6 @@ public final class Main {
 
             var interpreterOutput = Interpreter.normalize(expr);
             outputT("Interpreter Output", interpreterOutput, interpreterOutput.type());
-
-            var pass0 = Pass0.from(expr, vars);
-            outputT("Pass 0", pass0, pass0.type());
 
             var curry = Curry.curry(expr, vars);
             outputT("New Currying", curry, curry.type());

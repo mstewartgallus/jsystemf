@@ -11,15 +11,10 @@ import java.lang.constant.ConstantDesc;
 import java.util.Set;
 
 public record Pure<A>(TPass0<A>type,
-                      ConstantDesc value) implements Pass0<A>, Pass1<A>, Pass2<A>, Pass3<A>, PointFree<A> {
+                      ConstantDesc value) implements Pass1<A>, Pass2<A>, Pass3<A>, PointFree<A> {
     @Override
     public String toString() {
         return String.valueOf(value);
-    }
-
-    @Override
-    public <X> Pass0<A> substitute(Id<X> variable, Pass0<X> replacement) {
-        return this;
     }
 
     @Override
@@ -39,11 +34,6 @@ public record Pure<A>(TPass0<A>type,
 
     @Override
     public <Z> PointFree<A> substitute(Id<Z> argument, TPass0<Z> replacement) {
-        return this;
-    }
-
-    @Override
-    public Pass1<A> aggregateLambdas(IdGen vars) {
         return this;
     }
 

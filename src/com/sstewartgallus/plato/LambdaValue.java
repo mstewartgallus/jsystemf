@@ -38,8 +38,4 @@ public record LambdaValue<A, B>(Type<A>domain, Function<Term<A>, Term<B>>f) impl
         return str;
     }
 
-    @Override
-    public <X> X visit(Visitor<X, F<A, B>> visitor) {
-        return visitor.onLambda(new Equality.Identical<>(), domain, f);
-    }
 }

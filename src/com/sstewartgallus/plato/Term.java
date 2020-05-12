@@ -1,7 +1,6 @@
 package com.sstewartgallus.plato;
 
 import java.lang.constant.Constable;
-import java.lang.constant.ConstantDesc;
 import java.util.function.Function;
 
 // https://gitlab.haskell.org/ghc/ghc/-/wikis/commentary/compiler/core-syn-type
@@ -59,17 +58,4 @@ public interface Term<L> {
     }
 
     Type<L> type() throws TypeCheckException;
-
-    // fixme... get rid of visitor interface...
-    <X> X visit(Visitor<X, L> visitor);
-
-    interface Visitor<X, L> {
-        X onPure(Type<L> type, ConstantDesc constantDesc);
-
-        X onLoad(Type<L> type, Id<L> variable);
-
-        <A> X onApply(Term<F<A, L>> f, Term<A> x);
-
-        <A, B> X onLambda(Equality<L, F<A, B>> equality, Type<A> domain, Function<Term<A>, Term<B>> f);
-    }
 }

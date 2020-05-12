@@ -2,38 +2,41 @@ package com.sstewartgallus.pass1;
 
 import com.sstewartgallus.plato.*;
 
-import java.lang.constant.ConstantDesc;
 import java.util.Objects;
 import java.util.function.Function;
 
 public interface Pass0<L> {
     static <T> Pass0<T> from(Term<T> term, IdGen vars) {
-        return term.visit(new Term.Visitor<>() {
-            @Override
-            public Pass0<T> onPure(Type<T> type, ConstantDesc constantDesc) {
-                return new Pure<>(TPass0.from(type, vars), constantDesc);
-            }
+        if (term instanceof PureValue<T> pure) {
+            return new Pure<T>(TPass0.from(pure.type(), vars), pure.value());
+        }
 
-            @Override
-            public Pass0<T> onLoad(Type<T> type, Id<T> variable) {
-                return new Var<>(TPass0.from(type, vars), variable);
-            }
+        if (term instanceof LoadThunk<T> load) {
+            return new Var<>(TPass0.from(load.type(), vars), load.variable());
+        }
 
-            @Override
-            public <A> Pass0<T> onApply(Term<F<A, T>> f, Term<A> x) {
-                return new Apply<>(from(f, vars), from(x, vars));
-            }
+        if (term instanceof ApplyThunk<?, T> apply) {
+            return fromApply(apply, vars);
+        }
 
-            @Override
-            public <A, B> Pass0<T> onLambda(Equality<T, F<A, B>> equality, Type<A> domain, Function<Term<A>, Term<B>> f) {
-                var d0 = TPass0.from(domain, vars);
-                var v = vars.<A>createId();
-                var body = from(f.apply(new LoadThunk<>(domain, v)), vars);
-                Pass0<F<A, B>> lambda = new Pass0.Lambda<>(d0, x -> body.substitute(v, x));
-                // fixme.. penguin
-                return (Pass0) lambda;
-            }
-        });
+        if (term instanceof LambdaValue<?, ?> lambda) {
+            // fixme... penguin
+            return (Pass0) fromLambda(lambda, vars);
+        }
+        throw new IllegalArgumentException("unexpected term " + term);
+    }
+
+    static <A, B> Pass0<? super F<A, B>> fromLambda(LambdaValue<A, B> lambda, IdGen vars) {
+        var domain = lambda.domain();
+        var f = lambda.f();
+        var d0 = TPass0.from(domain, vars);
+        var v = vars.<A>createId();
+        var body = from(f.apply(new LoadThunk<>(domain, v)), vars);
+        return new Pass0.Lambda<>(d0, x -> body.substitute(v, x));
+    }
+
+    static <A, B> Pass0<B> fromApply(ApplyThunk<A, B> apply, IdGen vars) {
+        return new Apply<>(from(apply.f(), vars), from(apply.x(), vars));
     }
 
     Pass1<L> aggregateLambdas(IdGen vars);

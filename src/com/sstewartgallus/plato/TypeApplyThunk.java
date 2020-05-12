@@ -9,11 +9,6 @@ public record TypeApplyThunk<A, B>(Term<V<A, B>>f, Type<A>x) implements ThunkTer
     }
 
     @Override
-    public <X> X visit(Visitor<X, B> visitor) {
-        throw new UnsupportedOperationException("unimplemented");
-    }
-
-    @Override
     public Type<B> type() throws TypeCheckException {
         return ((Type.Forall<A, B>) f.type()).f().apply(x);
     }

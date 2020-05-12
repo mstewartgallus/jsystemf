@@ -27,8 +27,4 @@ public record ApplyThunk<A, B>(Term<F<A, B>>f, Term<A>x) implements ThunkTerm<B>
         return "(" + f + " " + x + ")";
     }
 
-    @Override
-    public <X> X visit(Visitor<X, B> visitor) {
-        return visitor.onApply(f, x);
-    }
 }

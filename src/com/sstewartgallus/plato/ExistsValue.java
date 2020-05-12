@@ -9,11 +9,6 @@ public record ExistsValue<A, B>(Type<A>x, Term<B>y) implements ValueTerm<E<A, B>
     }
 
     @Override
-    public <X> X visit(Visitor<X, E<A, B>> visitor) {
-        throw new UnsupportedOperationException("unimplemented");
-    }
-
-    @Override
     public Type<E<A, B>> type() throws TypeCheckException {
         return new Type.Exists<>(x, y.type());
     }

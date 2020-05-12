@@ -9,11 +9,6 @@ public record TypeLambdaTerm<A, B>(Function<Type<A>, Term<B>>f) implements Term<
     }
 
     @Override
-    public <X> X visit(Visitor<X, V<A, B>> visitor) {
-        throw new UnsupportedOperationException("unimplemented");
-    }
-
-    @Override
     public Type<V<A, B>> type() throws TypeCheckException {
         // fixme... pass in the variable generator?
         var v = new Id<A>(0);

@@ -15,8 +15,4 @@ public record PureValue<A>(Type<A>type, ConstantDesc value) implements ValueTerm
         return value.toString();
     }
 
-    @Override
-    public <X> X visit(Visitor<X, A> visitor) {
-        return visitor.onPure(type, value);
-    }
 }

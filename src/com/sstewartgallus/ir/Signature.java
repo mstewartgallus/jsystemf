@@ -1,113 +1,167 @@
 package com.sstewartgallus.ir;
 
-import com.sstewartgallus.pass1.TPass0;
-import com.sstewartgallus.type.E;
 import com.sstewartgallus.type.F;
 import com.sstewartgallus.type.HList;
 import com.sstewartgallus.type.V;
 
-// fixme... simplify point-free type representation...
-public interface Signature<A, B> {
-    static <B, A, T> Signature<T, V<A, B>> curry(Signature<E<A, T>, B> body) {
-        return new Signature.Curry<>(body);
-    }
+import java.util.ArrayList;
+import java.util.List;
 
+public interface Signature<A> {
     // fixme... probably going to need my own runtime of type values... my current type is more like ClassDesc than class
-    default TPass0<B> apply(TPass0<A> input) {
-        throw new UnsupportedOperationException(getClass().toString());
+    static <A, B> Signature<B> apply(Signature<V<A, B>> f, Signature<A> x) {
+        return ((SigV<A, B>) f).apply(x);
     }
 
-    record Pure<T, A>(Class<A>clazz) implements Signature<T, A> {
-        public TPass0<A> apply(TPass0<T> input) {
-            return new TPass0.PureType<>(clazz);
+    Class<?> erase();
+
+    default List<Class<?>> flatten() {
+        return List.of(erase());
+    }
+
+    enum NilSig implements Signature<HList.Nil> {
+        NIL;
+
+        @Override
+        public Class<?> erase() {
+            return Void.class;
+        }
+    }
+
+    record K<T, A>(Signature<A>value) implements SigV<T, A> {
+        public Signature<A> apply(Signature<T> input) {
+            return value;
         }
 
         public String toString() {
-            return clazz.getName();
+            return "(K " + value + ")";
+        }
+
+        @Override
+        public Class<?> erase() {
+            throw new UnsupportedOperationException("unimplemented");
         }
     }
 
-    record Function<X, A, B>(Signature<X, A>domain, Signature<X, B>range) implements Signature<X, F<A, B>> {
-        public TPass0<F<A, B>> apply(TPass0<X> input) {
-            return new TPass0.FunType<>(domain.apply(input), range.apply(input));
+    record Pure<T, A>(Class<A>clazz) implements Signature<A> {
+        public String toString() {
+            return clazz.getName();
+        }
+
+        @Override
+        public Class<?> erase() {
+            return clazz;
+        }
+    }
+
+    record Function<X, A, B>(Signature<V<X, A>>domain, Signature<V<X, B>>range) implements SigV<X, F<A, B>> {
+        public Signature<F<A, B>> apply(Signature<X> x) {
+            return new FunctionGround<>(Signature.apply(domain, x), Signature.apply(range, x));
         }
 
         public String toString() {
             return domain + " → " + range;
         }
+
+        @Override
+        public Class<?> erase() {
+            throw null;
+        }
     }
 
-    record First<L, A, B>(Signature<L, E<A, B>>sig) implements Signature<L, A> {
-        public TPass0<A> apply(TPass0<L> input) {
-            return ((TPass0.Exists<A, B>) sig.apply(input)).x();
-        }
-
+    record FunctionGround<A, B>(Signature<A>domain, Signature<B>range) implements Signature<F<A, B>> {
         public String toString() {
-            return "(exl " + sig + ")";
+            return domain + " → " + range;
+        }
+
+        @Override
+        public Class<?> erase() {
+            return Object.class;
         }
     }
 
-    record Second<L, A, B>(Signature<L, E<A, B>>sig) implements Signature<L, B> {
-        public TPass0<B> apply(TPass0<L> input) {
-            return ((TPass0.Exists<A, B>) sig.apply(input)).y();
-        }
-
-        public String toString() {
-            return "(exr " + sig + ")";
-        }
-    }
-
-    record Identity<T>() implements Signature<T, T> {
-        public TPass0<T> apply(TPass0<T> input) {
+    record Identity<T>() implements SigV<T, T> {
+        public Signature<T> apply(Signature<T> input) {
             return input;
         }
 
         public String toString() {
-            return "id";
+            return "I";
         }
-    }
 
-    record Curry<A, B, C>(Signature<E<A, C>, B>body) implements Signature<C, V<A, B>> {
-        public TPass0<V<A, B>> apply(TPass0<C> input) {
+        @Override
+        public Class<?> erase() {
             throw new UnsupportedOperationException("unimplemented");
         }
-
-        public String toString() {
-            return "(curry " + body + ")";
-        }
     }
 
-    record NilTPass0<X>() implements Signature<X, HList.Nil> {
-        public TPass0<HList.Nil> apply(TPass0<X> input) {
-            return TPass0.NilType.NIL;
+    record ConsType<X, H, T extends HList<T>>(Signature<V<X, H>>head,
+                                              Signature<V<X, T>>tail) implements SigV<X, HList.Cons<H, T>> {
+        public Signature<HList.Cons<H, T>> apply(Signature<X> input) {
+            return new Signature.ConsTypeGround<>(Signature.apply(head, input), Signature.apply(tail, input));
         }
-
-        public String toString() {
-            return "[]";
-        }
-
-    }
-
-    record ConsTPass0<X, H, T extends HList<T>>(Signature<X, H>head,
-                                                Signature<X, T>tail) implements Signature<X, HList.Cons<H, T>> {
-        public TPass0<HList.Cons<H, T>> apply(TPass0<X> input) {
-            return new TPass0.ConsType<>(head.apply(input), tail.apply(input));
-        }
-
 
         public String toString() {
             var builder = new StringBuilder();
             builder.append("(");
             builder.append(head);
 
-            Signature<?, ? extends HList<?>> current = tail;
-            while (current instanceof ConsTPass0<?, ?, ?> cons) {
+            Signature<?> current = tail;
+            while (current instanceof ConsType<?, ?, ?> cons) {
                 builder.append(" Δ ");
                 builder.append(cons.head);
                 current = cons.tail;
             }
             builder.append(" Δ .)");
             return builder.toString();
+        }
+
+        @Override
+        public Class<?> erase() {
+            throw new UnsupportedOperationException("unimplemented");
+        }
+
+        @Override
+        public List<Class<?>> flatten() {
+            throw new UnsupportedOperationException("unimplemented");
+
+        }
+    }
+
+    record ConsTypeGround<H, T extends HList<T>>(Signature<H>head,
+                                                 Signature<T>tail) implements Signature<HList.Cons<H, T>> {
+
+        public String toString() {
+            var builder = new StringBuilder();
+            builder.append("(");
+            builder.append(head);
+
+            Signature<?> current = tail;
+            while (current instanceof ConsTypeGround<?, ?> cons) {
+                builder.append(" Δ ");
+                builder.append(cons.head);
+                current = cons.tail;
+            }
+            builder.append(" Δ .)");
+            return builder.toString();
+        }
+
+        @Override
+        public Class<?> erase() {
+            throw new UnsupportedOperationException("unimplemented");
+        }
+
+        @Override
+        public List<Class<?>> flatten() {
+            var l = new ArrayList<Class<?>>();
+            l.add(head.erase());
+
+            Signature<?> current = tail;
+            while (current instanceof Signature.ConsTypeGround<?, ?> cons) {
+                l.add(cons.head.erase());
+                current = cons.tail;
+            }
+            return l;
         }
     }
 }

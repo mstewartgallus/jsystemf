@@ -1,13 +1,10 @@
 package com.sstewartgallus.pass1;
 
 import com.sstewartgallus.ir.Signature;
-import com.sstewartgallus.runtime.FunValue;
 import com.sstewartgallus.term.Id;
 import com.sstewartgallus.term.IdGen;
 import com.sstewartgallus.type.*;
 
-import java.util.ArrayList;
-import java.util.List;
 import java.util.function.Function;
 
 public interface TPass0<X> {
@@ -31,15 +28,7 @@ public interface TPass0<X> {
         });
     }
 
-    default List<Class<?>> flatten() {
-        return List.of(erase());
-    }
-
-    default Class<?> erase() {
-        throw new UnsupportedOperationException(getClass().toString());
-    }
-
-    default <A> Signature<A, X> pointFree(Id<A> v, IdGen vars) {
+    default <A> Signature<V<A, X>> pointFree(Id<A> v, IdGen vars) {
         throw new UnsupportedOperationException(getClass().toString());
     }
 
@@ -51,36 +40,21 @@ public interface TPass0<X> {
         NIL;
 
         @Override
-        public List<Class<?>> flatten() {
-            return List.of(Void.class);
+        public <X> Signature<V<X, HList.Nil>> pointFree(Id<X> v, IdGen vars) {
+            return new Signature.K<>(Signature.NilSig.NIL);
         }
 
-        @Override
-        public <X> Signature<X, HList.Nil> pointFree(Id<X> v, IdGen vars) {
-            return new Signature.NilTPass0<>();
-        }
-
-        @Override
-        public Class<?> erase() {
-            throw new UnsupportedOperationException("unimplemented");
-        }
     }
 
     record FunType<A, B>(TPass0<A>domain, TPass0<B>range) implements TPass0<F<A, B>> {
         @Override
-        public <X> Signature<X, F<A, B>> pointFree(Id<X> v, IdGen vars) {
+        public <X> Signature<V<X, F<A, B>>> pointFree(Id<X> v, IdGen vars) {
             return new Signature.Function<>(domain.pointFree(v, vars), range.pointFree(v, vars));
         }
 
         @Override
         public <Z> TPass0<F<A, B>> substitute(Id<Z> v, TPass0<Z> replacement) {
             return new FunType<>(domain.substitute(v, replacement), range.substitute(v, replacement));
-        }
-
-        // fixme... consider just using object as we use a generic protocol for our functions
-        @Override
-        public Class<?> erase() {
-            return FunValue.class;
         }
 
         @Override
@@ -91,16 +65,15 @@ public interface TPass0<X> {
 
     // fixme... rename/retype, not clear enough this creates a new type...
     record PureType<A>(Class<A>clazz) implements TPass0<A> {
-        public <T> Signature<T, A> pointFree(Id<T> argument, IdGen vars) {
-            return new Signature.Pure<>(clazz);
+        public <T> Signature<V<T, A>> pointFree(Id<T> argument, IdGen vars) {
+            return new Signature.K<>(new Signature.Pure<>(clazz));
         }
 
         public <Z> TPass0<A> substitute(Id<Z> v, TPass0<Z> replacement) {
             return new PureType<>(clazz);
         }
 
-        @Override
-        public Class<?> erase() {
+        private Class<?> erase() {
             return clazz;
         }
 
@@ -111,8 +84,9 @@ public interface TPass0<X> {
     }
 
     record First<A, B>(TPass0<E<A, B>>value) implements TPass0<A> {
-        public <L> Signature<L, A> pointFree(Id<L> argument, IdGen vars) {
-            return new Signature.First<>(value.pointFree(argument, vars));
+        public <L> Signature<V<L, A>> pointFree(Id<L> argument, IdGen vars) {
+            throw null;
+            // return new Sig.First<>(value.pointFree(argument, vars));
         }
 
         public <Z> TPass0<A> substitute(Id<Z> v, TPass0<Z> replacement) {
@@ -121,8 +95,10 @@ public interface TPass0<X> {
     }
 
     record Second<A, B>(TPass0<E<A, B>>value) implements TPass0<B> {
-        public <L> Signature<L, B> pointFree(Id<L> argument, IdGen vars) {
-            return new Signature.Second<>(value.pointFree(argument, vars));
+        public <L> Signature<V<L, B>> pointFree(Id<L> argument, IdGen vars) {
+            throw null;
+
+            //  return new SigFunction.Second<>(value.pointFree(argument, vars));
         }
 
         public <Z> TPass0<B> substitute(Id<Z> v, TPass0<Z> replacement) {
@@ -133,7 +109,7 @@ public interface TPass0<X> {
     record Forall<A, B>(Function<TPass0<A>, TPass0<B>>f) implements TPass0<V<A, B>> {
         private static final ThreadLocal<Integer> DEPTH = ThreadLocal.withInitial(() -> 0);
 
-        public <T> Signature<T, V<A, B>> pointFree(Id<T> argument, IdGen vars) {
+        public <T> Signature<V<T, V<A, B>>> pointFree(Id<T> argument, IdGen vars) {
             /* TVar<E<A, T>> newVar = vars.createTPass0Var();
 
             var body = f.apply(new First<>(newVar))
@@ -175,9 +151,9 @@ public interface TPass0<X> {
         }
 
         @Override
-        public <V> Signature<V, T> pointFree(Id<V> argument, IdGen vars) {
+        public <X> Signature<V<X, T>> pointFree(Id<X> argument, IdGen vars) {
             if (argument == variable) {
-                return (Signature<V, T>) new Signature.Identity<T>();
+                return (Signature) new Signature.Identity<T>();
             }
             throw new IllegalStateException("wrong variable " + argument + " " + this);
         }
@@ -192,27 +168,10 @@ public interface TPass0<X> {
     }
 
     record ConsType<H, T extends HList<T>>(TPass0<H>head, TPass0<T>tail) implements TPass0<HList.Cons<H, T>> {
-        @Override
-        public Class<?> erase() {
-            throw new UnsupportedOperationException("unimplemented");
-        }
 
         @Override
-        public List<Class<?>> flatten() {
-            var l = new ArrayList<Class<?>>();
-            l.add(head.erase());
-
-            TPass0<?> current = tail;
-            while (current instanceof ConsType<?, ?> cons) {
-                l.add(cons.head.erase());
-                current = cons.tail;
-            }
-            return l;
-        }
-
-        @Override
-        public <X> Signature<X, HList.Cons<H, T>> pointFree(Id<X> v, IdGen vars) {
-            return new Signature.ConsTPass0<>(head.pointFree(v, vars), tail.pointFree(v, vars));
+        public <X> Signature<V<X, HList.Cons<H, T>>> pointFree(Id<X> v, IdGen vars) {
+            return new Signature.ConsType<>(head.pointFree(v, vars), tail.pointFree(v, vars));
         }
 
         @Override
@@ -222,7 +181,7 @@ public interface TPass0<X> {
             builder.append(head);
 
             TPass0<? extends HList<?>> current = tail;
-            while (current instanceof ConsType<?, ?> cons) {
+            while (current instanceof ConsType cons) {
                 builder.append(" Δ ");
                 builder.append(cons.head);
                 current = cons.tail;

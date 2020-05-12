@@ -6,6 +6,7 @@ import com.sstewartgallus.term.Id;
 import com.sstewartgallus.term.IdGen;
 import com.sstewartgallus.type.F;
 import com.sstewartgallus.type.HList;
+import com.sstewartgallus.type.V;
 
 import java.lang.constant.ConstantDesc;
 import java.util.Set;
@@ -63,8 +64,8 @@ public record Pure<A>(TPass0<A>type,
     }
 
     @Override
-    public <Z> Generic<Z, A> generic(Id<Z> argument, IdGen vars) {
+    public <Z> Generic<V<Z, A>> generic(Id<Z> argument, IdGen vars) {
         var sig = type().pointFree(argument, vars);
-        return new Generic.Con<>(sig, value);
+        return new Generic.Pure<>(sig, value);
     }
 }

@@ -3,7 +3,6 @@ package com.sstewartgallus.ir;
 import com.sstewartgallus.mh.Arguments;
 import com.sstewartgallus.mh.TypedMethodHandle;
 import com.sstewartgallus.pass1.Index;
-import com.sstewartgallus.pass1.TPass0;
 import com.sstewartgallus.runtime.LdcStub;
 import com.sstewartgallus.runtime.Static;
 import com.sstewartgallus.runtime.Value;
@@ -20,18 +19,14 @@ import java.util.stream.Collectors;
 import static java.lang.invoke.MethodHandles.*;
 import static java.lang.invoke.MethodType.methodType;
 
-/**
- * A category represents Term a -> Term b in a point free way
- * <p>
- * Generic represents Type a -> Term a in a point free way
- * <p>
- * Fixme: Look into a symbolic representation of my target https://www.youtube.com/watch?v=PwL2c6rO6co and then make a dsl for it.
- */
-public interface Generic<A, B> {
+public interface Generic<A> {
+    static <A, B> Chunk<B> compile(Lookup lookup, Generic<V<A, B>> generic, Signature<A> klass) {
+        return ((GenericV<A, B>) generic).compile(lookup, klass);
+    }
 
     // fixme... what really want instead of Void is a T such that Type<T> only has one inhabitant...
-    static <B> Value<B> compile(MethodHandles.Lookup lookup, Generic<Void, F<HList.Nil, B>> generic) {
-        var chunk = generic.compile(lookup, new TPass0.PureType<>(Void.class));
+    static <B> Value<B> compile(Lookup lookup, Generic<V<Void, F<HList.Nil, B>>> generic) {
+        var chunk = Generic.compile(lookup, generic, new Signature.Pure<>(Void.class));
 
         var handle = chunk.intro();
 
@@ -47,33 +42,25 @@ public interface Generic<A, B> {
         return (Value) obj;
     }
 
-    default Bundle<?, ?, B> compileToHandle(MethodHandles.Lookup lookup, Type<A> klass) {
-        throw new UnsupportedOperationException(getClass().toString());
-    }
-
-    default Chunk<B> compile(Lookup lookup, TPass0<A> klass) {
-        throw new UnsupportedOperationException(getClass().toString());
-    }
-
-    default Signature<A, B> signature() {
+    default Signature<A> signature() {
         throw new UnsupportedOperationException(getClass().toString());
     }
 
     record Bundle<C extends Arguments<C>, D, B>(TypedMethodHandle<C, D>handle, Proof<C, D, B>proof) {
     }
 
-    record Con<V, A, B>(Signature<V, B>signature,
-                        ConstantDesc value) implements Generic<V, B> {
+    record Pure<L, B>(Signature<V<L, B>>signature,
+                      ConstantDesc value) implements GenericV<L, B> {
         public String toString() {
             return value.toString();
         }
 
-        public Bundle<?, ?, B> compileToHandle(Lookup lookup, Type<V> klass) {
+        public Bundle<?, ?, B> compileToHandle(MethodHandles.Lookup lookup, Type<L> klass) {
             throw null;
         }
 
-        public Chunk<B> compile(Lookup lookup, TPass0<V> klass) {
-            var t = signature.apply(klass).erase();
+        public Chunk<B> compile(MethodHandles.Lookup lookup, Signature<L> klass) {
+            var t = Signature.apply(signature, klass).erase();
 
             MethodHandle handle;
             if (value instanceof String || value instanceof Float || value instanceof Double || value instanceof Integer || value instanceof Long) {
@@ -93,32 +80,32 @@ public interface Generic<A, B> {
         }
     }
 
-    record K<V, A, B>(Signature<V, F<A, B>>signature,
-                      Signature<V, A>domain,
-                      Generic<V, B>value) implements Generic<V, F<A, B>> {
+    record K<L, A, B>(Signature<V<L, F<A, B>>>signature,
+                      Signature<V<L, A>>domain,
+                      Generic<V<L, B>>value) implements GenericV<L, F<A, B>> {
         public String toString() {
             return "(K " + value + ")";
         }
 
-        public Bundle<?, ?, F<A, B>> compileToHandle(MethodHandles.Lookup lookup, Type<V> klass) {
+        public Bundle<?, ?, F<A, B>> compileToHandle(MethodHandles.Lookup lookup, Type<L> klass) {
             throw null;
         }
 
-        public Chunk<F<A, B>> compile(Lookup lookup, TPass0<V> klass) {
-            var d = domain.apply(klass).flatten();
-            var handle = value.compile(lookup, klass).intro();
+        public Chunk<F<A, B>> compile(MethodHandles.Lookup lookup, Signature<L> klass) {
+            var d = Signature.apply(domain, klass).flatten();
+            var handle = Generic.compile(lookup, value, klass).intro();
             handle = dropArguments(handle, 0, d);
             return new Chunk<>(handle);
         }
     }
 
-    record CurryType<Z, X, A, B, C>(Signature<Z, F<X, V<A, B>>>signature,
-                                    Generic<E<Z, A>, F<X, B>>f) implements Generic<Z, F<X, V<A, B>>> {
+    record CurryType<Z, X, A, B>(Signature<V<Z, F<X, V<A, B>>>>signature,
+                                 Generic<V<E<Z, A>, F<X, B>>>f) implements GenericV<Z, F<X, V<A, B>>> {
         public String toString() {
             return "(curry-type " + f + ")";
         }
 
-        public Chunk<F<X, V<A, B>>> compile(Lookup lookup, TPass0<Z> klass) {
+        public Chunk<F<X, V<A, B>>> compile(MethodHandles.Lookup lookup, Signature<Z> klass) {
             // fixme... need to accept a klass arguments at runtime I think...
             // fixme... createa  E<Z,A> from Z ?
             throw new UnsupportedOperationException("unimplemented");
@@ -126,14 +113,14 @@ public interface Generic<A, B> {
         }
     }
 
-    record Call<V, Z, A, B>(Signature<V, F<Z, B>>signature,
-                            Signature<V, Z>domain,
-                            Generic<V, F<Z, F<A, B>>>f,
-                            Generic<V, F<Z, A>>x) implements Generic<V, F<Z, B>> {
+    record Call<L, Z, A, B>(Signature<V<L, F<Z, B>>>signature,
+                            Signature<V<L, Z>>domain,
+                            Generic<V<L, F<Z, F<A, B>>>>f,
+                            Generic<V<L, F<Z, A>>>x) implements GenericV<L, F<Z, B>> {
 
-        public Chunk<F<Z, B>> compile(Lookup lookup, TPass0<V> klass) {
-            var fEmit = f.compile(lookup, klass).intro();
-            var xEmit = x.compile(lookup, klass).intro();
+        public Chunk<F<Z, B>> compile(MethodHandles.Lookup lookup, Signature<L> klass) {
+            var fEmit = Generic.compile(lookup, f, klass).intro();
+            var xEmit = Generic.compile(lookup, x, klass).intro();
 
             var cs = ValueLinker.link(lookup, StandardOperation.CALL, methodType(Object.class, fEmit.type().returnType(), Void.class, xEmit.type().returnType()));
             var mh = cs.dynamicInvoker();
@@ -156,11 +143,11 @@ public interface Generic<A, B> {
         }
     }
 
-    record Get<V, X, A extends HList<A>, B extends HList<B>>(Signature<V, F<A, X>>signature,
-                                                             Signature<V, A>value,
-                                                             Index<A, HList.Cons<X, B>>ix) implements Generic<V, F<A, X>> {
-        public Chunk<F<A, X>> compile(Lookup lookup, TPass0<V> klass) {
-            var domain = value.apply(klass).flatten();
+    record Get<L, X, A extends HList<A>, B extends HList<B>>(Signature<V<L, F<A, X>>>signature,
+                                                             Signature<V<L, A>>value,
+                                                             Index<A, HList.Cons<X, B>>ix) implements GenericV<L, F<A, X>> {
+        public Chunk<F<A, X>> compile(Lookup lookup, Signature<L> klass) {
+            var domain = Signature.apply(value, klass).flatten();
             var num = ix.reify();
             var result = domain.get(num);
 
@@ -180,18 +167,18 @@ public interface Generic<A, B> {
     }
 
     record Lambda<X, A extends HList<A>, B, R>(
-            Signature<X, R>signature,
-            Signature<X, A>funDomain, Signature<X, B>funRange,
-            Generic<X, F<A, B>>body) implements Generic<X, R> {
+            Signature<V<X, R>>signature,
+            Signature<V<X, A>>funDomain, Signature<V<X, B>>funRange,
+            Generic<V<X, F<A, B>>>body) implements GenericV<X, R> {
         public String toString() {
             return "(λ" + funDomain + " " + body + ")";
         }
 
-        public Chunk<R> compile(Lookup lookup, TPass0<X> klass) {
-            var d = funDomain.apply(klass).flatten();
-            var r = funRange.apply(klass).erase();
+        public Chunk<R> compile(Lookup lookup, Signature<X> klass) {
+            var d = Signature.apply(funDomain, klass).flatten();
+            var r = Signature.apply(funRange, klass).erase();
 
-            var bodyEmit = body.compile(lookup, klass).intro();
+            var bodyEmit = Generic.compile(lookup, body, klass).intro();
 
             // fixme... attach a name or some other metadata...
             var staticK = Static.spin(d, r, bodyEmit);

@@ -1,23 +1,22 @@
 package com.sstewartgallus.pass1;
 
-import com.sstewartgallus.term.Var;
+import com.sstewartgallus.term.Id;
 import com.sstewartgallus.term.VarGen;
 import com.sstewartgallus.type.F;
 import com.sstewartgallus.type.HList;
 
-import java.lang.constant.ConstantDesc;
 import java.util.Objects;
 import java.util.function.Function;
 
 public interface Pass2<A> {
     TPass0<A> type();
 
-    <V> Pass2<A> substitute(Var<V> argument, Pass2<V> replacement);
+    <V> Pass2<A> substitute(Id<V> argument, Pass2<V> replacement);
 
     Pass3<A> uncurry(VarGen vars);
 
     interface Body<A> {
-        <V> Body<A> substitute(Var<V> argument, Pass2<V> replacement);
+        <V> Body<A> substitute(Id<V> argument, Pass2<V> replacement);
 
         TPass0<A> type();
 
@@ -29,7 +28,7 @@ public interface Pass2<A> {
             return new Pass3.Apply<>(f.uncurry(vars), x.uncurry(vars));
         }
 
-        public <V> Pass2<B> substitute(Var<V> argument, Pass2<V> replacement) {
+        public <V> Pass2<B> substitute(Id<V> argument, Pass2<V> replacement) {
             return new Apply<>(f.substitute(argument, replacement), x.substitute(argument, replacement));
         }
 
@@ -44,28 +43,6 @@ public interface Pass2<A> {
 
         public String toString() {
             return "(" + f + " " + x + ")";
-        }
-    }
-
-    record Load<A>(TPass0<A>type, Var<A>variable) implements Pass2<A>, Comparable<Load<?>> {
-        public Pass3<A> uncurry(VarGen vars) {
-            return new Pass3.Load<>(type, variable);
-        }
-
-        public <V> Pass2<A> substitute(Var<V> argument, Pass2<V> replacement) {
-            if (argument == variable) {
-                return (Pass2<A>) replacement;
-            }
-            return this;
-        }
-
-        public String toString() {
-            return variable.toString();
-        }
-
-        @Override
-        public int compareTo(Load<?> o) {
-            return variable.compareTo(o.variable);
         }
     }
 
@@ -89,7 +66,7 @@ public interface Pass2<A> {
         }
 
         @Override
-        public <V> Pass2<A> substitute(Var<V> argument, Pass2<V> replacement) {
+        public <V> Pass2<A> substitute(Id<V> argument, Pass2<V> replacement) {
             return new Thunk<>(body.substitute(argument, replacement));
         }
 
@@ -105,7 +82,7 @@ public interface Pass2<A> {
         }
 
         @Override
-        public <X> Body<A> substitute(Var<X> argument, Pass2<X> replacement) {
+        public <X> Body<A> substitute(Id<X> argument, Pass2<X> replacement) {
             return new Expr<>(body.substitute(argument, replacement));
         }
 
@@ -126,12 +103,12 @@ public interface Pass2<A> {
 
         public Results<? extends HList<?>, ?, F<A, B>> tuple(VarGen vars) {
             var v = vars.<A>createArgument();
-            var body = f.apply(new Load<>(domain, v));
+            var body = f.apply(new Var<>(domain, v));
             var bodyTuple = body.tuple(vars);
             return consArgument(v, bodyTuple);
         }
 
-        public <L extends HList<L>, R> Results<HList.Cons<A, L>, R, F<A, B>> consArgument(Var<A> v, Results<L, R, B> bodyTuple) {
+        public <L extends HList<L>, R> Results<HList.Cons<A, L>, R, F<A, B>> consArgument(Id<A> v, Results<L, R, B> bodyTuple) {
             var tail = bodyTuple.type;
             var proof = bodyTuple.proof;
             var f = bodyTuple.f;
@@ -139,17 +116,17 @@ public interface Pass2<A> {
                     argList -> helper(v, f, argList));
         }
 
-        public <Q extends HList<Q>, L extends HList<L>, R> Pass3<R> helper(Var<A> v, Function<Pass3.Get<?, L>, Pass3<R>> f, Pass3.Get<Q, HList.Cons<A, L>> argList) {
+        public <Q extends HList<Q>, L extends HList<L>, R> Pass3<R> helper(Id<A> v, Function<Pass3.Get<?, L>, Pass3<R>> f, Pass3.Get<Q, HList.Cons<A, L>> argList) {
             Index<Q, L> next = new Index.Next<>(argList.ix());
             return f.apply(new Pass3.Get<>(argList.type(), argList.variable(), next)).substitute(v, new Pass3.WrapGet<>(argList));
         }
 
-        public <V> Body<F<A, B>> substitute(Var<V> argument, Pass2<V> replacement) {
+        public <V> Body<F<A, B>> substitute(Id<V> argument, Pass2<V> replacement) {
             return new Lambda<>(domain, x -> f.apply(x).substitute(argument, replacement));
         }
 
         public TPass0<F<A, B>> type() {
-            var range = f.apply(new Load<>(domain, new Var<>(0))).type();
+            var range = f.apply(new Var<>(domain, new Id<>(0))).type();
             return new TPass0.FunType<>(domain, range);
         }
 
@@ -159,8 +136,8 @@ public interface Pass2<A> {
 
             String str;
             try {
-                var dummy = new Var<A>(depth);
-                var body = f.apply(new Load<>(domain, dummy));
+                var dummy = new Id<A>(depth);
+                var body = f.apply(new Var<>(domain, dummy));
 
                 str = "{" + dummy + ": " + domain + "} → " + body;
             } finally {
@@ -170,25 +147,6 @@ public interface Pass2<A> {
                 }
             }
             return str;
-        }
-    }
-
-    record Pure<A>(TPass0<A>type, ConstantDesc value) implements Pass2<A> {
-        public Pass3<A> uncurry(VarGen vars) {
-            return new Pass3.Pure<>(type, value);
-        }
-
-        public <V> Pass2<A> substitute(Var<V> argument, Pass2<V> replacement) {
-            return this;
-        }
-
-        public TPass0<A> type() {
-            return type;
-        }
-
-        @Override
-        public String toString() {
-            return String.valueOf(value);
         }
     }
 }

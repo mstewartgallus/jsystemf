@@ -1,7 +1,7 @@
 package com.sstewartgallus.pass1;
 
+import com.sstewartgallus.term.Id;
 import com.sstewartgallus.term.Term;
-import com.sstewartgallus.term.Var;
 import com.sstewartgallus.term.VarGen;
 import com.sstewartgallus.type.*;
 
@@ -18,8 +18,8 @@ public interface Pass0<L> {
             }
 
             @Override
-            public Pass0<T> onLoad(Type<T> type, Var<T> variable) {
-                return new Load<>(TPass0.from(type, vars), variable);
+            public Pass0<T> onLoad(Type<T> type, Id<T> variable) {
+                return new Var<>(TPass0.from(type, vars), variable);
             }
 
             @Override
@@ -43,45 +43,8 @@ public interface Pass0<L> {
 
     TPass0<L> type();
 
-    default <X> Pass0<L> substitute(Var<X> variable, Pass0<X> replacement) {
+    default <X> Pass0<L> substitute(Id<X> variable, Pass0<X> replacement) {
         throw new UnsupportedOperationException(getClass().toString());
-    }
-
-    record Pure<A>(TPass0<A>type, ConstantDesc value) implements Pass0<A> {
-        @Override
-        public String toString() {
-            return String.valueOf(value);
-        }
-
-        @Override
-        public <X> Pass0<A> substitute(Var<X> variable, Pass0<X> replacement) {
-            return this;
-        }
-
-        @Override
-        public Pass1<A> aggregateLambdas(VarGen vars) {
-            return new Pass1.Pure<>(type, value);
-        }
-    }
-
-    record Load<A>(TPass0<A>type, Var<A>variable) implements Pass0<A> {
-        @Override
-        public String toString() {
-            return variable.toString();
-        }
-
-        @Override
-        public <X> Pass0<A> substitute(Var<X> variable, Pass0<X> replacement) {
-            if (this.variable == variable) {
-                return (Pass0) replacement;
-            }
-            return this;
-        }
-
-        @Override
-        public Pass1<A> aggregateLambdas(VarGen vars) {
-            return new Pass1.Load<>(type, variable);
-        }
     }
 
     record Apply<A, B>(Pass0<F<A, B>>f, Pass0<A>x) implements Pass0<B> {
@@ -101,7 +64,7 @@ public interface Pass0<L> {
         }
 
         @Override
-        public <X> Pass0<B> substitute(Var<X> variable, Pass0<X> replacement) {
+        public <X> Pass0<B> substitute(Id<X> variable, Pass0<X> replacement) {
             return new Apply<>(f.substitute(variable, replacement), x.substitute(variable, replacement));
         }
 
@@ -115,13 +78,13 @@ public interface Pass0<L> {
         private static final ThreadLocal<Integer> DEPTH = ThreadLocal.withInitial(() -> 0);
 
         @Override
-        public <X> Pass0<F<A, B>> substitute(Var<X> variable, Pass0<X> replacement) {
+        public <X> Pass0<F<A, B>> substitute(Id<X> variable, Pass0<X> replacement) {
             return new Lambda<>(domain, x -> f.apply(x).substitute(variable, replacement));
         }
 
         public Pass1<F<A, B>> aggregateLambdas(VarGen vars) {
             var v = vars.<A>createArgument();
-            var body = f.apply(new Load<>(domain, v)).aggregateLambdas(vars);
+            var body = f.apply(new Var<>(domain, v)).aggregateLambdas(vars);
 
             if (body instanceof Pass1.Thunk<B> thunk) {
                 var expr = thunk.body();
@@ -132,7 +95,7 @@ public interface Pass0<L> {
         }
 
         public TPass0<F<A, B>> type() {
-            var range = f.apply(new Load<>(domain, new Var<>(0))).type();
+            var range = f.apply(new Var<>(domain, new Id<>(0))).type();
             return new TPass0.FunType<>(domain, range);
         }
 
@@ -142,7 +105,7 @@ public interface Pass0<L> {
 
             String str;
             try {
-                var dummy = new Load<>(domain, new Var<>(depth));
+                var dummy = new Var<>(domain, new Id<>(depth));
                 var body = f.apply(dummy);
                 String bodyStr = body.toString();
 

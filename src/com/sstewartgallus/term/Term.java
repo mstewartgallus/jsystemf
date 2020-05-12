@@ -72,7 +72,7 @@ public interface Term<L> {
     interface Visitor<X, L> {
         X onPure(Type<L> type, ConstantDesc constantDesc);
 
-        X onLoad(Type<L> type, Var<L> variable);
+        X onLoad(Type<L> type, Id<L> variable);
 
         <A> X onApply(Term<F<A, L>> f, Term<A> x);
 
@@ -96,7 +96,7 @@ public interface Term<L> {
         }
     }
 
-    record Load<A>(Type<A>type, Var<A>variable) implements Term<A> {
+    record Load<A>(Type<A>type, Id<A>variable) implements Term<A> {
         public Load {
             Objects.requireNonNull(variable);
         }
@@ -153,7 +153,7 @@ public interface Term<L> {
 
         @Override
         public Type<F<A, B>> type() throws TypeCheckException {
-            var range = f.apply(new Load<>(domain, new Var<>(0))).type();
+            var range = f.apply(new Load<>(domain, new Id<>(0))).type();
             return new Type.FunType<>(domain, range);
         }
 
@@ -164,7 +164,7 @@ public interface Term<L> {
 
             String str;
             try {
-                var dummy = new Load<>(domain, new Var<>(depth));
+                var dummy = new Load<>(domain, new Id<>(depth));
                 var body = f.apply(dummy);
                 String bodyStr = body.toString();
 

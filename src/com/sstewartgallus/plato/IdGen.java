@@ -1,4 +1,4 @@
-package com.sstewartgallus.term;
+package com.sstewartgallus.plato;
 
 public final class IdGen {
     private int argNumber = 0;

@@ -1,8 +1,8 @@
 package com.sstewartgallus.ir;
 
-import com.sstewartgallus.type.F;
-import com.sstewartgallus.type.HList;
-import com.sstewartgallus.type.V;
+import com.sstewartgallus.pass1.HList;
+import com.sstewartgallus.plato.F;
+import com.sstewartgallus.plato.V;
 
 import java.util.ArrayList;
 import java.util.List;

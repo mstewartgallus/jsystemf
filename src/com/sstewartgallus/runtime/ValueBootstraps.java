@@ -1,6 +1,6 @@
 package com.sstewartgallus.runtime;
 
-import com.sstewartgallus.type.Type;
+import com.sstewartgallus.plato.Type;
 
 import java.lang.invoke.MethodHandles;
 

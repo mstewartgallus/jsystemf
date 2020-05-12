@@ -1,4 +1,4 @@
-package com.sstewartgallus.type;
+package com.sstewartgallus.plato;
 
 // fixme... consider just a throwable not an exception..
 public class TypeCheckException extends Exception {

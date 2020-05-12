@@ -2,12 +2,16 @@ package com.sstewartgallus.ir;
 
 import com.sstewartgallus.mh.Arguments;
 import com.sstewartgallus.mh.TypedMethodHandle;
+import com.sstewartgallus.pass1.HList;
 import com.sstewartgallus.pass1.Index;
+import com.sstewartgallus.plato.E;
+import com.sstewartgallus.plato.F;
+import com.sstewartgallus.plato.Type;
+import com.sstewartgallus.plato.V;
 import com.sstewartgallus.runtime.LdcStub;
 import com.sstewartgallus.runtime.Static;
 import com.sstewartgallus.runtime.Value;
 import com.sstewartgallus.runtime.ValueLinker;
-import com.sstewartgallus.type.*;
 import jdk.dynalink.StandardOperation;
 
 import java.lang.constant.ConstantDesc;

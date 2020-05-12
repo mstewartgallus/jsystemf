@@ -1,7 +1,6 @@
 package com.sstewartgallus.pass1;
 
-import com.sstewartgallus.type.F;
-import com.sstewartgallus.type.HList;
+import com.sstewartgallus.plato.F;
 
 public interface Args<A extends HList<A>, B, R> {
 

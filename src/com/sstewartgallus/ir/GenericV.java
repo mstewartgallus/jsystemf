@@ -1,7 +1,7 @@
 package com.sstewartgallus.ir;
 
-import com.sstewartgallus.type.Type;
-import com.sstewartgallus.type.V;
+import com.sstewartgallus.plato.Type;
+import com.sstewartgallus.plato.V;
 
 import java.lang.invoke.MethodHandles;
 

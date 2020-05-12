@@ -1,9 +1,7 @@
 package com.sstewartgallus.pass1;
 
 import com.sstewartgallus.ir.Signature;
-import com.sstewartgallus.term.Id;
-import com.sstewartgallus.term.IdGen;
-import com.sstewartgallus.type.*;
+import com.sstewartgallus.plato.*;
 
 import java.util.function.Function;
 

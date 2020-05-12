@@ -1,6 +1,6 @@
 package com.sstewartgallus.ir;
 
-import com.sstewartgallus.type.V;
+import com.sstewartgallus.plato.V;
 
 public interface SigV<A, B> extends Signature<V<A, B>> {
     default Signature<B> range() {

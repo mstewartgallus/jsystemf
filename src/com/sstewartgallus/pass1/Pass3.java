@@ -1,10 +1,9 @@
 package com.sstewartgallus.pass1;
 
 import com.sstewartgallus.ir.PointFree;
-import com.sstewartgallus.term.Id;
-import com.sstewartgallus.term.IdGen;
-import com.sstewartgallus.type.F;
-import com.sstewartgallus.type.HList;
+import com.sstewartgallus.plato.F;
+import com.sstewartgallus.plato.Id;
+import com.sstewartgallus.plato.IdGen;
 
 import java.util.Objects;
 import java.util.function.Function;

@@ -1,9 +1,6 @@
 package com.sstewartgallus.pass1;
 
-import com.sstewartgallus.term.Id;
-import com.sstewartgallus.term.IdGen;
-import com.sstewartgallus.term.Term;
-import com.sstewartgallus.type.*;
+import com.sstewartgallus.plato.*;
 
 import java.lang.constant.ConstantDesc;
 import java.util.Objects;
@@ -31,7 +28,7 @@ public interface Pass0<L> {
             public <A, B> Pass0<T> onLambda(Equality<T, F<A, B>> equality, Type<A> domain, Function<Term<A>, Term<B>> f) {
                 var d0 = TPass0.from(domain, vars);
                 var v = vars.<A>createId();
-                var body = from(f.apply(new Term.Load<>(domain, v)), vars);
+                var body = from(f.apply(new LoadThunk<>(domain, v)), vars);
                 Pass0<F<A, B>> lambda = new Pass0.Lambda<>(d0, x -> body.substitute(v, x));
                 // fixme.. penguin
                 return (Pass0) lambda;

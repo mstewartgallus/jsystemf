@@ -1,4 +1,4 @@
-package com.sstewartgallus.type;
+package com.sstewartgallus.pass1;
 
 public interface HList<H extends HList<H>> {
     record Nil() implements HList<Nil> {

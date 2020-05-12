@@ -1,13 +1,9 @@
 package com.sstewartgallus.ir;
 
 import com.sstewartgallus.pass1.Args;
+import com.sstewartgallus.pass1.HList;
 import com.sstewartgallus.pass1.TPass0;
-import com.sstewartgallus.term.Id;
-import com.sstewartgallus.term.IdGen;
-import com.sstewartgallus.type.E;
-import com.sstewartgallus.type.F;
-import com.sstewartgallus.type.HList;
-import com.sstewartgallus.type.V;
+import com.sstewartgallus.plato.*;
 
 import java.util.function.Function;
 
@@ -23,7 +19,7 @@ public interface PointFree<A> {
             return "(K " + value.toString() + ")";
         }
 
-        public <V> Generic<com.sstewartgallus.type.V<V, F<A, B>>> generic(Id<V> argument, IdGen vars) {
+        public <V> Generic<com.sstewartgallus.plato.V<V, F<A, B>>> generic(Id<V> argument, IdGen vars) {
             var sig = type().pointFree(argument, vars);
             return new GenericV.K<>(sig, domain.pointFree(argument, vars), value.generic(argument, vars));
         }
@@ -41,7 +37,7 @@ public interface PointFree<A> {
     record Get<A extends HList<A>, B extends HList<B>, X>(TPass0<A>domain,
                                                           com.sstewartgallus.pass1.Index<A, HList.Cons<X, B>>ix) implements PointFree<F<A, X>> {
 
-        public <V> Generic<com.sstewartgallus.type.V<V, F<A, X>>> generic(Id<V> argument, IdGen vars) {
+        public <V> Generic<com.sstewartgallus.plato.V<V, F<A, X>>> generic(Id<V> argument, IdGen vars) {
             var sig = type().pointFree(argument, vars);
             return new GenericV.Get<>(sig, domain.pointFree(argument, vars), ix);
         }
@@ -101,7 +97,7 @@ public interface PointFree<A> {
     record Call<Z extends HList<Z>, A, B>(PointFree<F<Z, F<A, B>>>f,
                                           PointFree<F<Z, A>>x) implements PointFree<F<Z, B>> {
         @Override
-        public <V> Generic<com.sstewartgallus.type.V<V, F<Z, B>>> generic(Id<V> argument, IdGen vars) {
+        public <V> Generic<com.sstewartgallus.plato.V<V, F<Z, B>>> generic(Id<V> argument, IdGen vars) {
             var sig = type().pointFree(argument, vars);
             var domain = ((TPass0.FunType<Z, F<A, B>>) f.type()).domain();
             return new GenericV.Call<>(sig, domain.pointFree(argument, vars), f.generic(argument, vars), x.generic(argument, vars));

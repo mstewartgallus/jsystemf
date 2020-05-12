@@ -1,4 +1,4 @@
-package com.sstewartgallus.term;
+package com.sstewartgallus.plato;
 
 public record Id<A>(int number) implements Comparable<Id<?>> {
     public String toString() {

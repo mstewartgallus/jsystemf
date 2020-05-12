@@ -2,11 +2,10 @@ package com.sstewartgallus.pass1;
 
 import com.sstewartgallus.ir.Generic;
 import com.sstewartgallus.ir.PointFree;
-import com.sstewartgallus.term.Id;
-import com.sstewartgallus.term.IdGen;
-import com.sstewartgallus.type.F;
-import com.sstewartgallus.type.HList;
-import com.sstewartgallus.type.V;
+import com.sstewartgallus.plato.F;
+import com.sstewartgallus.plato.Id;
+import com.sstewartgallus.plato.IdGen;
+import com.sstewartgallus.plato.V;
 
 import java.lang.constant.ConstantDesc;
 import java.util.Set;

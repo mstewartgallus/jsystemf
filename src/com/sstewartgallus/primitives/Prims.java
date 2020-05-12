@@ -1,6 +1,7 @@
-package com.sstewartgallus.term;
+package com.sstewartgallus.primitives;
 
-import com.sstewartgallus.type.Type;
+import com.sstewartgallus.plato.Term;
+import com.sstewartgallus.plato.Type;
 
 public final class Prims {
 

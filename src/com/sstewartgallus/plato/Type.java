@@ -1,7 +1,4 @@
-package com.sstewartgallus.type;
-
-import com.sstewartgallus.term.Id;
-import com.sstewartgallus.term.Term;
+package com.sstewartgallus.plato;
 
 import java.util.function.Function;
 
@@ -26,7 +23,7 @@ public interface Type<X> {
     <Y> Type<X> unify(Type<Y> right) throws TypeCheckException;
 
     default <B> Term<F<X, B>> l(Function<Term<X>, Term<B>> f) {
-        return new Term.Lambda<>(this, f);
+        return new LambdaValue<>(this, f);
     }
 
     default <B> Type<F<X, B>> to(Type<B> range) {

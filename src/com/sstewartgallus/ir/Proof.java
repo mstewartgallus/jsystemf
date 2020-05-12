@@ -1,7 +1,7 @@
 package com.sstewartgallus.ir;
 
 import com.sstewartgallus.mh.Arguments;
-import com.sstewartgallus.type.F;
+import com.sstewartgallus.plato.F;
 
 public interface Proof<A extends Arguments<A>, B, K> {
     record Trivial<A>() implements Proof<Arguments.None, A, A> {

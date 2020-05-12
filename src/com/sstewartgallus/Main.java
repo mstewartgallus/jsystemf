@@ -5,16 +5,10 @@ import com.sstewartgallus.ast.Node;
 import com.sstewartgallus.ir.Generic;
 import com.sstewartgallus.pass1.Pass0;
 import com.sstewartgallus.pass1.TPass0;
-import com.sstewartgallus.runtime.Interpreter;
+import com.sstewartgallus.plato.*;
+import com.sstewartgallus.primitives.Prims;
 import com.sstewartgallus.runtime.Value;
 import com.sstewartgallus.runtime.ValueInvoker;
-import com.sstewartgallus.term.IdGen;
-import com.sstewartgallus.term.Prims;
-import com.sstewartgallus.term.Term;
-import com.sstewartgallus.type.F;
-import com.sstewartgallus.type.Type;
-import com.sstewartgallus.type.TypeCheckException;
-import com.sstewartgallus.type.V;
 
 import java.io.IOException;
 import java.io.Reader;

@@ -1,4 +1,4 @@
-package com.sstewartgallus.type;
+package com.sstewartgallus.plato;
 
 @SuppressWarnings("unused")
 public final class V<A, B> {

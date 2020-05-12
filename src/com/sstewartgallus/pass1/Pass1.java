@@ -1,10 +1,6 @@
 package com.sstewartgallus.pass1;
 
-import com.sstewartgallus.term.Id;
-import com.sstewartgallus.term.IdGen;
-import com.sstewartgallus.type.E;
-import com.sstewartgallus.type.F;
-import com.sstewartgallus.type.V;
+import com.sstewartgallus.plato.*;
 
 import java.util.List;
 import java.util.Objects;

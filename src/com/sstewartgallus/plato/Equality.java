@@ -1,4 +1,4 @@
-package com.sstewartgallus.type;
+package com.sstewartgallus.plato;
 
 public interface Equality<A, B> {
     B from(A value);

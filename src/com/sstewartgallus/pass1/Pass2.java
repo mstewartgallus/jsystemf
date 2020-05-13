@@ -2,13 +2,22 @@ package com.sstewartgallus.pass1;
 
 import com.sstewartgallus.plato.*;
 
+import java.lang.constant.Constable;
 import java.util.Objects;
 import java.util.function.Function;
 
 public interface Pass2<A> {
     static <T> Pass2<T> from(Term<T> term, IdGen vars) {
         if (term instanceof PureValue<T> pure) {
-            return new Pure<T>(TPass0.from(pure.type(), vars), pure.value());
+            var value = pure.value();
+            if (!(value instanceof Constable constable)) {
+                throw new IllegalArgumentException("cannot convert to IR, not constable " + value);
+            }
+            var val = constable.describeConstable();
+            if (val.isEmpty()) {
+                throw new IllegalArgumentException("cannot convert to IR, not constable " + value);
+            }
+            return new Pure<T>(TPass0.from(pure.type(), vars), val.get());
         }
 
         if (term instanceof VarValue<T> load) {

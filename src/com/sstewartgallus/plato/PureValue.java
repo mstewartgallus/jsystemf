@@ -1,10 +1,8 @@
 package com.sstewartgallus.plato;
 
-import java.lang.constant.ConstantDesc;
 import java.util.Objects;
 
-// fixme.. can't be constantdesc..., just embed a value...
-public record PureValue<A>(Type<A>type, ConstantDesc value) implements ValueTerm<A>, CoreTerm<A> {
+public record PureValue<A>(Type<A>type, A value) implements ValueTerm<A>, CoreTerm<A> {
     public PureValue {
         Objects.requireNonNull(type);
         Objects.requireNonNull(value);
@@ -12,7 +10,7 @@ public record PureValue<A>(Type<A>type, ConstantDesc value) implements ValueTerm
 
     @Override
     public String toString() {
-        return value.toString();
+        return Objects.toString(value);
     }
 
 }

@@ -1,6 +1,5 @@
 package com.sstewartgallus.plato;
 
-import java.lang.constant.Constable;
 import java.util.function.Function;
 
 // https://gitlab.haskell.org/ghc/ghc/-/wikis/commentary/compiler/core-syn-type
@@ -49,12 +48,8 @@ public interface Term<L> {
         return new TypeLambdaValue<>(f);
     }
 
-    static <T extends Constable> Term<T> pure(Type<T> type, T value) {
-        var constant = value.describeConstable();
-        if (constant.isEmpty()) {
-            throw new IllegalArgumentException("not a constable value " + value);
-        }
-        return new PureValue<>(type, constant.get());
+    static <T> Term<T> pure(Type<T> type, T value) {
+        return new PureValue<>(type, value);
     }
 
     Type<L> type() throws TypeCheckException;

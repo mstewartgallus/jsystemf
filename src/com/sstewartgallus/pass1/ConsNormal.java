@@ -25,4 +25,8 @@ record ConsNormal<H, T extends HList<T>>(Type<H>head, Type<T>tail) implements No
     public <X> Type<HList.Cons<H, T>> substitute(Id<X> v, Type<X> replacement) {
         return new ConsNormal<>(head.substitute(v, replacement), tail.substitute(v, replacement));
     }
+
+    public String toString() {
+        return "(" + head + " Δ " + tail + ")";
+    }
 }

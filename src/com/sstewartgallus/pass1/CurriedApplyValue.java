@@ -4,59 +4,72 @@ import com.sstewartgallus.plato.*;
 
 import java.util.Objects;
 
-// fixme... slow ?
-public record CurriedApplyValue<A, B>(Body<A, B>f, Term<A>x) implements ThunkTerm<B> {
+public record CurriedApplyValue<A>(Body<A>body) implements ThunkTerm<A> {
     public CurriedApplyValue {
-        Objects.requireNonNull(f);
-        Objects.requireNonNull(x);
+        Objects.requireNonNull(body);
     }
 
     @Override
-    public Type<B> type() throws TypeCheckException {
-        return ((FunctionNormal<A, B>) f.type()).range();
+    public Type<A> type() throws TypeCheckException {
+        return body.type();
     }
 
     @Override
-    public Term<B> stepThunk() {
-        return f.apply(x);
+    public Term<A> stepThunk() {
+        return body.stepThunk();
     }
 
-    public interface Body<A, B> {
-        Type<F<A, B>> type() throws TypeCheckException;
-
-        Term<B> apply(Term<A> x);
+    @Override
+    public String toString() {
+        return "(" + body + ")";
     }
 
-    public static record ApplyBody<A, B, C>(Body<A, F<B, C>>f, Term<A>x) implements Body<B, C> {
+    public interface Body<A> {
+        Type<A> type() throws TypeCheckException;
+
+        Term<A> stepThunk();
+    }
+
+    public static record ApplyBody<A, B>(Body<F<A, B>>f, Term<A>x) implements Body<B> {
         public ApplyBody {
             Objects.requireNonNull(f);
             Objects.requireNonNull(x);
         }
 
         @Override
-        public Type<F<B, C>> type() throws TypeCheckException {
-            return toTerm().type();
-        }
-
-        private Term<F<B, C>> toTerm() {
-            return new CurriedApplyValue<>(f, x);
+        public Type<B> type() throws TypeCheckException {
+            return ((FunctionNormal<A, B>) f.type()).range();
         }
 
         @Override
-        public Term<C> apply(Term<B> y) {
-            return Term.apply(f.apply(x), y);
+        public Term<B> stepThunk() {
+            return Term.apply(f.stepThunk(), x);
+        }
+
+        @Override
+        public String toString() {
+            return f + " " + x;
         }
     }
 
-    public record MonoBody<A, B>(Term<F<A, B>>body) implements Body<A, B> {
+    public record MonoBody<A>(Term<A>body) implements Body<A> {
+        public MonoBody {
+            Objects.requireNonNull(body);
+        }
+
         @Override
-        public Type<F<A, B>> type() throws TypeCheckException {
+        public Type<A> type() throws TypeCheckException {
             return body.type();
         }
 
         @Override
-        public Term<B> apply(Term<A> x) {
-            return ((FunctionValue<A, B>) Interpreter.normalize(body)).apply(x);
+        public Term<A> stepThunk() {
+            return body;
+        }
+
+        @Override
+        public String toString() {
+            return body.toString();
         }
     }
 }

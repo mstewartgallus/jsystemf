@@ -6,7 +6,7 @@ import jdk.dynalink.linker.LinkRequest;
 import jdk.dynalink.linker.LinkerServices;
 import jdk.dynalink.linker.support.Guards;
 
-// fixme... break out into another class for environment capturing closures...
+// fixme... break out into another class for env capturing closures...
 public abstract class FunValue<T> extends Value<T> {
     protected abstract int arity();
 

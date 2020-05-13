@@ -32,4 +32,9 @@ public record ApplyThunk<A, B>(Term<F<A, B>>f, Term<A>x) implements ThunkTerm<B>
         var fNorm = (FunctionValue<A, B>) Interpreter.normalize(f);
         return fNorm.apply(x);
     }
+
+    @Override
+    public <X> Term<B> substitute(Id<X> v, Term<X> replacement) {
+        return new ApplyThunk<>(f.substitute(v, replacement), x.substitute(v, replacement));
+    }
 }

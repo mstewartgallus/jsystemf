@@ -5,6 +5,13 @@ import com.sstewartgallus.plato.*;
 import java.util.Objects;
 import java.util.function.Function;
 
+/**
+ * Fixme... consider lowering to an applicative functor style...
+ * <p>
+ * pure (\f x y -> f (x, y)) <*> F <*> X <*> Y
+ *
+ * @param <A>
+ */
 public record CurriedLambdaValue<A>(Body<A>body) implements ThunkTerm<A> {
     public CurriedLambdaValue {
         Objects.requireNonNull(body);
@@ -22,7 +29,7 @@ public record CurriedLambdaValue<A>(Body<A>body) implements ThunkTerm<A> {
 
     @Override
     public String toString() {
-        return body.toString();
+        return "(" + body + ")";
     }
 
     public interface Body<A> {
@@ -70,7 +77,7 @@ public record CurriedLambdaValue<A>(Body<A>body) implements ThunkTerm<A> {
                 var body = f.apply(dummy);
                 String bodyStr = body.toString();
 
-                str = "({" + dummy + ": " + domain + "} → " + bodyStr + ")";
+                str = "{" + dummy + ": " + domain + "} → " + bodyStr;
             } finally {
                 DEPTH.set(depth);
                 if (depth == 0) {

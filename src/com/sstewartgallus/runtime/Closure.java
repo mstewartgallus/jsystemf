@@ -20,7 +20,7 @@ import static java.lang.invoke.MethodHandles.*;
 import static java.lang.invoke.MethodType.methodType;
 import static org.objectweb.asm.Opcodes.*;
 
-// fixme... break out into another class for environment capturing closures...
+// fixme... break out into another class for env capturing closures...
 public abstract class Closure<T> extends FunValue<T> {
     private static final SupplierClassValue<LookupHolder> LOOKUP_MAP = new SupplierClassValue<>(LookupHolder::new);
     private static final MethodHandle FUN_VALUE;
@@ -75,7 +75,7 @@ public abstract class Closure<T> extends FunValue<T> {
             mw.visitEnd();
         }
 
-        // fixme... consider using methodhandles for passing in the environment...
+        // fixme... consider using methodhandles for passing in the env...
         {
             var mw = cw.visitMethod(ACC_PRIVATE, "<init>", methodType(void.class, args).descriptorString(), null, null);
             mw.visitCode();

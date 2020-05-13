@@ -3,10 +3,7 @@ package com.sstewartgallus;
 
 import com.sstewartgallus.ast.Node;
 import com.sstewartgallus.ir.Generic;
-import com.sstewartgallus.pass1.Capture;
-import com.sstewartgallus.pass1.Curry;
-import com.sstewartgallus.pass1.Pass2;
-import com.sstewartgallus.pass1.TPass0;
+import com.sstewartgallus.pass1.*;
 import com.sstewartgallus.plato.*;
 import com.sstewartgallus.primitives.Prims;
 import com.sstewartgallus.runtime.Value;
@@ -64,9 +61,6 @@ public final class Main {
             var kValue = Term.apply(Term.apply(Term.apply(Penguin.id(), Type.INT), Prims.of(3)), Prims.of(5));
             outputT("System F", Penguin.id(), Penguin.id().type());
 
-
-            outputT("System F", kValue, kValue.type());
-
             var norm = Interpreter.normalize(kValue);
             outputT("System F", norm, norm.type());
         } catch (TypeCheckException e) {
@@ -85,6 +79,9 @@ public final class Main {
 
             var captured = Capture.capture(curry, vars);
             outputT("Partial Application", captured, captured.type());
+
+            var applyCurried = CurryApply.curryApply(curry, vars);
+            outputT("Apply Curried", applyCurried, applyCurried.type());
 
             var captures = Pass2.from(captured, vars);
             outputT("Explicit Environment", captures, captures.type());

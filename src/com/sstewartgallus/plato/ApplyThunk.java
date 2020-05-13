@@ -29,8 +29,20 @@ public record ApplyThunk<A, B>(Term<F<A, B>>f, Term<A>x) implements ThunkTerm<B>
 
     @Override
     public Term<B> stepThunk() {
-        var fNorm = (FunctionValue<A, B>) Interpreter.normalize(f);
-        return fNorm.apply(x);
+        var fType = f.type();
+
+        var funType = (FunctionNormal<A, B>) fType;
+        var range = funType.range();
+
+        var fNorm = Interpreter.normalize(f);
+        // fixme... how will this compile ?
+        if (fNorm instanceof PureValue<F<A, B>> pure) {
+            var fValue = pure.value();
+            var xNorm = Interpreter.normalize(x);
+            var extract = xNorm.extract();
+            return new PureValue<B>(range, fValue.apply(extract));
+        }
+        return ((LambdaValue<A, B>) fNorm).apply(x);
     }
 
     @Override

@@ -7,7 +7,7 @@ public final class CurryApply {
     }
 
     public static <A> Term<A> curryApply(Term<A> term, IdGen ids) {
-        if (term instanceof CurriedLambdaValue<A> lambda) {
+        if (term instanceof CurriedLambdaThunk<A> lambda) {
             return curryLambda(lambda, ids);
         }
 
@@ -29,27 +29,27 @@ public final class CurryApply {
     private static <A, B> Term<B> curryApply(ApplyThunk<A, B> apply, IdGen ids) {
         var f = curryApply(apply.f(), ids);
         var x = curryApply(apply.x(), ids);
-        if (f instanceof CurriedApplyValue<F<A, B>> fCurry) {
-            return new CurriedApplyValue<>(new CurriedApplyValue.ApplyBody<>(fCurry.body(), x));
+        if (f instanceof CurriedApplyThunk<F<A, B>> fCurry) {
+            return new CurriedApplyThunk<>(new CurriedApplyThunk.ApplyBody<>(fCurry.body(), x));
         }
-        return new CurriedApplyValue<>(new CurriedApplyValue.ApplyBody<>(new CurriedApplyValue.MonoBody<>(f), x));
+        return new CurriedApplyThunk<>(new CurriedApplyThunk.ApplyBody<>(new CurriedApplyThunk.MonoBody<>(f), x));
     }
 
-    private static <A> Term<A> curryLambda(CurriedLambdaValue<A> lambda, IdGen ids) {
-        return new CurriedLambdaValue<>(curryBody(lambda.body(), ids));
+    private static <A> Term<A> curryLambda(CurriedLambdaThunk<A> lambda, IdGen ids) {
+        return new CurriedLambdaThunk<>(curryBody(lambda.body(), ids));
     }
 
-    private static <A> CurriedLambdaValue.Body<A> curryBody(CurriedLambdaValue.Body<A> body, IdGen ids) {
-        if (body instanceof CurriedLambdaValue.MainBody<A> mainBody) {
-            return new CurriedLambdaValue.MainBody<>(curryApply(mainBody.body(), ids));
+    private static <A> CurriedLambdaThunk.Body<A> curryBody(CurriedLambdaThunk.Body<A> body, IdGen ids) {
+        if (body instanceof CurriedLambdaThunk.MainBody<A> mainBody) {
+            return new CurriedLambdaThunk.MainBody<>(curryApply(mainBody.body(), ids));
         }
-        return (CurriedLambdaValue.LambdaBody) curryLambdaBody((CurriedLambdaValue.LambdaBody<?, ?>) body, ids);
+        return (CurriedLambdaThunk.LambdaBody) curryLambdaBody((CurriedLambdaThunk.LambdaBody<?, ?>) body, ids);
     }
 
-    private static <A, B> CurriedLambdaValue.LambdaBody<A, B> curryLambdaBody(CurriedLambdaValue.LambdaBody<A, B> body, IdGen ids) {
+    private static <A, B> CurriedLambdaThunk.LambdaBody<A, B> curryLambdaBody(CurriedLambdaThunk.LambdaBody<A, B> body, IdGen ids) {
         var domain = body.domain();
         var v = ids.<A>createId();
         var curriedBody = body.f().apply(new VarValue<>(domain, v));
-        return new CurriedLambdaValue.LambdaBody<>(domain, x -> curriedBody.substitute(v, x));
+        return new CurriedLambdaThunk.LambdaBody<>(domain, x -> curriedBody.substitute(v, x));
     }
 }

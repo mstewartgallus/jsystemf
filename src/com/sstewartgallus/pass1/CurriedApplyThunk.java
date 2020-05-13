@@ -4,8 +4,8 @@ import com.sstewartgallus.plato.*;
 
 import java.util.Objects;
 
-public record CurriedApplyValue<A>(Body<A>body) implements ThunkTerm<A> {
-    public CurriedApplyValue {
+public record CurriedApplyThunk<A>(Body<A>body) implements ThunkTerm<A> {
+    public CurriedApplyThunk {
         Objects.requireNonNull(body);
     }
 

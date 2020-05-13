@@ -12,8 +12,8 @@ import java.util.function.Function;
  *
  * @param <A>
  */
-public record CurriedLambdaValue<A>(Body<A>body) implements ThunkTerm<A> {
-    public CurriedLambdaValue {
+public record CurriedLambdaThunk<A>(Body<A>body) implements ThunkTerm<A> {
+    public CurriedLambdaThunk {
         Objects.requireNonNull(body);
     }
 
@@ -57,7 +57,7 @@ public record CurriedLambdaValue<A>(Body<A>body) implements ThunkTerm<A> {
 
         @Override
         public Term<F<A, B>> toTerm() {
-            return new LambdaValue<>(domain, x -> new CurriedLambdaValue<>(f.apply(x)));
+            return new LambdaValue<>(domain, x -> new CurriedLambdaThunk<>(f.apply(x)));
         }
 
         @Override

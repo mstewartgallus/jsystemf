@@ -4,29 +4,25 @@ import com.sstewartgallus.plato.*;
 
 import java.util.Objects;
 
-public record TupleApplyThunk<A extends HList<A>, B>(Term<F<A, B>>f, Term<A>x) implements ThunkTerm<B> {
+public record TupleApplyThunk<A, B>(Term<A>f, Arg<A, B>x) implements ThunkTerm<B> {
     public TupleApplyThunk {
         Objects.requireNonNull(f);
         Objects.requireNonNull(x);
     }
 
+    private static <A, B, C> Term<C> applyParam(LambdaValue<A, B> f, Arg.Add<A, B, C> x) {
+        var result = f.apply(x.argument());
+        return new TupleApplyThunk<>(result, x.tail());
+    }
+
     @Override
     public Type<B> type() throws TypeCheckException {
-        var fType = f.type();
-
-        var funType = (FunctionNormal<A, B>) fType;
-        var range = funType.range();
-
-        var argType = x.type();
-
-        fType.unify(argType.to(range));
-
-        return funType.range();
+        // fixme...
+        throw null;
     }
 
     @Override
     public Term<B> stepThunk() {
-        var fNorm = (FunctionValue<A, B>) Interpreter.normalize(f);
-        return fNorm.apply(x);
+        return x.apply(f);
     }
 }

@@ -4,7 +4,7 @@ import java.util.Objects;
 import java.util.function.Function;
 
 public record LambdaValue<A, B>(Type<A>domain,
-                                Function<Term<A>, Term<B>>f) implements FunctionValue<A, B>, CoreTerm<F<A, B>> {
+                                Function<Term<A>, Term<B>>f) implements ValueTerm<F<A, B>>, CoreTerm<F<A, B>> {
     private static final ThreadLocal<Integer> DEPTH = ThreadLocal.withInitial(() -> 0);
 
     public LambdaValue {
@@ -39,7 +39,6 @@ public record LambdaValue<A, B>(Type<A>domain,
         return str;
     }
 
-    @Override
     public Term<B> apply(Term<A> x) {
         // fixme... typecheck domain?
         return f.apply(x);

@@ -12,10 +12,10 @@ public final class Interpreter {
 
     // fixme... pass in a context?
     // fixme... just make part of the data type?
-    public static <A> Term<A> normalize(Term<A> term) {
+    public static <A> ValueTerm<A> normalize(Term<A> term) {
         while (term instanceof ThunkTerm<A> thunk) {
             term = thunk.stepThunk();
         }
-        return term;
+        return (ValueTerm<A>) term;
     }
 }

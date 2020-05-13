@@ -1,6 +1,5 @@
 package com.sstewartgallus.plato;
 
-public final class F<A, B> {
-    private F() {
-    }
+public interface F<A, B> {
+    B apply(A value);
 }

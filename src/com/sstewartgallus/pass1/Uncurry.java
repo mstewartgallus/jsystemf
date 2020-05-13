@@ -7,8 +7,11 @@ public final class Uncurry {
     }
 
     public static <A> Term<A> uncurry(Term<A> term, IdGen ids) {
-        if (term instanceof CurriedLambdaValue<A> lambda) {
+        if (term instanceof CurriedLambdaThunk<A> lambda) {
             return uncurryLambda(lambda, ids);
+        }
+        if (term instanceof CurriedApplyThunk<A> apply) {
+            return uncurryApply(apply, ids);
         }
 
         if (!(term instanceof CoreTerm<A> core)) {
@@ -19,38 +22,46 @@ public final class Uncurry {
             return core;
         }
 
-        if (core instanceof VarValue<A> v) {
+        if (core instanceof VarValue<A>) {
             return core;
-        }
-
-        if (core instanceof ApplyThunk<?, A> apply) {
-            return uncurryApply(apply, ids);
         }
 
         throw new IllegalArgumentException("Unexpected core term " + term);
     }
 
-    private static <A, B> Term<B> uncurryApply(ApplyThunk<A, B> apply, IdGen ids) {
-        var uncurryF = uncurry(apply.f(), ids);
-        var uncurryX = uncurry(apply.x(), ids);
-        return new ApplyThunk<>(uncurryF, uncurryX);
+    private static <A> Term<A> uncurryApply(CurriedApplyThunk<A> apply, IdGen ids) {
+        var uncurriedBody = uncurryApplyBody(apply.body(), ids);
+        return new CurriedApplyThunk<>(uncurriedBody);
     }
 
-    private static <A> Term<A> uncurryLambda(CurriedLambdaValue<A> lambda, IdGen ids) {
+    private static <A> CurriedApplyThunk.Body<A> uncurryApplyBody(CurriedApplyThunk.Body<A> body, IdGen ids) {
+        if (body instanceof CurriedApplyThunk.MonoBody<A> monoBody) {
+            return new CurriedApplyThunk.MonoBody<>(uncurry(monoBody.body(), ids));
+        }
+        return uncurryApplyBodyApply((CurriedApplyThunk.ApplyBody<?, A>) body, ids);
+    }
+
+    private static <A, B> CurriedApplyThunk.Body<B> uncurryApplyBodyApply(CurriedApplyThunk.ApplyBody<A, B> apply, IdGen ids) {
+        var uncurryF = uncurryApplyBody(apply.f(), ids);
+        var uncurryX = uncurry(apply.x(), ids);
+        return new CurriedApplyThunk.ApplyBody<>(uncurryF, uncurryX);
+    }
+
+    private static <A> Term<A> uncurryLambda(CurriedLambdaThunk<A> lambda, IdGen ids) {
         return uncurryBody(lambda.body(), ids, NilNormal.NIL);
     }
 
-    private static <Env extends HList<Env>, A> Term<A> uncurryBody(CurriedLambdaValue.Body<A> body, IdGen ids, Type<Env> env) {
-        if (body instanceof CurriedLambdaValue.MainBody<A> mainBody) {
+    private static <Env extends HList<Env>, A> Term<A> uncurryBody(CurriedLambdaThunk.Body<A> body, IdGen ids, Type<Env> env) {
+        if (body instanceof CurriedLambdaThunk.MainBody<A> mainBody) {
             var uncurryBody = uncurry(mainBody.body(), ids);
             return uncurryBody;
         }
-        var lambda = (CurriedLambdaValue.LambdaBody<?, ?>) body;
+        var lambda = (CurriedLambdaThunk.LambdaBody<?, ?>) body;
         // fixme...
         return (Term) uncurryLambdaBody(lambda, ids, (Type) env);
     }
 
-    private static <X extends HList<X>, A, B> Term<F<A, F<X, B>>> uncurryLambdaBody(CurriedLambdaValue.LambdaBody<A, B> lambda, IdGen ids, Type<X> env) {
+    private static <X extends HList<X>, A, B> Term<F<A, F<X, B>>> uncurryLambdaBody(CurriedLambdaThunk.LambdaBody<A, B> lambda, IdGen ids, Type<X> env) {
         var domain = lambda.domain();
         var f = lambda.f();
 

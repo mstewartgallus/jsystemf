@@ -16,7 +16,7 @@ public final class Capture {
     }
 
     private static <A> Results<A> captureInternal(Term<A> term, IdGen ids) {
-        if (term instanceof CurriedLambdaValue<A> lambda) {
+        if (term instanceof CurriedLambdaThunk<A> lambda) {
             return curryLambda(lambda, ids);
         }
 
@@ -52,7 +52,7 @@ public final class Capture {
         return new Results<>(captures, new ApplyThunk<>(fResults.value, xResults.value));
     }
 
-    private static <A> Results<A> curryLambda(CurriedLambdaValue<A> lambda, IdGen ids) {
+    private static <A> Results<A> curryLambda(CurriedLambdaThunk<A> lambda, IdGen ids) {
         var results = captureBody(lambda.body(), ids);
         var captured = new TreeSet<>(results.captured);
 
@@ -62,18 +62,18 @@ public final class Capture {
         return new Results<>(captured, helper(free, 0, chunk));
     }
 
-    private static <A> BodyResults<A> captureBody(CurriedLambdaValue.Body<A> body, IdGen ids) {
-        if (body instanceof CurriedLambdaValue.MainBody<A> mainBody) {
+    private static <A> BodyResults<A> captureBody(CurriedLambdaThunk.Body<A> body, IdGen ids) {
+        if (body instanceof CurriedLambdaThunk.MainBody<A> mainBody) {
             var results = captureInternal(mainBody.body(), ids);
-            return new BodyResults<>(results.captured, new CurriedLambdaValue.MainBody<>(results.value));
+            return new BodyResults<>(results.captured, new CurriedLambdaThunk.MainBody<>(results.value));
         }
 
-        var lambda = (CurriedLambdaValue.LambdaBody<?, ?>) body;
+        var lambda = (CurriedLambdaThunk.LambdaBody<?, ?>) body;
         // fixme...
         return (BodyResults) captureLambda(lambda, ids);
     }
 
-    private static <A, B> BodyResults<F<A, B>> captureLambda(CurriedLambdaValue.LambdaBody<A, B> lambda, IdGen ids) {
+    private static <A, B> BodyResults<F<A, B>> captureLambda(CurriedLambdaThunk.LambdaBody<A, B> lambda, IdGen ids) {
         var domain = lambda.domain();
         var f = lambda.f();
 
@@ -85,24 +85,24 @@ public final class Capture {
         captures.remove(load);
 
         var chunk = results.value;
-        return new BodyResults<>(captures, new CurriedLambdaValue.LambdaBody<>(domain, x -> chunk.substitute(v, x)));
+        return new BodyResults<>(captures, new CurriedLambdaThunk.LambdaBody<>(domain, x -> chunk.substitute(v, x)));
     }
 
-    private static <A> Term<A> helper(List<VarValue<?>> free, int ii, CurriedLambdaValue.Body<A> body) {
+    private static <A> Term<A> helper(List<VarValue<?>> free, int ii, CurriedLambdaThunk.Body<A> body) {
         if (ii >= free.size()) {
-            return new CurriedLambdaValue<>(body);
+            return new CurriedLambdaThunk<>(body);
         }
         return helper(free, ii, free.get(ii), body);
     }
 
-    private static <A, B> Term<A> helper(List<VarValue<?>> free, int ii, VarValue<B> freeVar, CurriedLambdaValue.Body<A> body) {
-        return new ApplyThunk<>(helper(free, ii + 1, new CurriedLambdaValue.LambdaBody<>(freeVar.type(), x -> body.substitute(freeVar.variable(), x))),
+    private static <A, B> Term<A> helper(List<VarValue<?>> free, int ii, VarValue<B> freeVar, CurriedLambdaThunk.Body<A> body) {
+        return new ApplyThunk<>(helper(free, ii + 1, new CurriedLambdaThunk.LambdaBody<>(freeVar.type(), x -> body.substitute(freeVar.variable(), x))),
                 freeVar);
     }
 
     record Results<L>(Set<VarValue<?>>captured, Term<L>value) {
     }
 
-    record BodyResults<L>(Set<VarValue<?>>captured, CurriedLambdaValue.Body<L>value) {
+    record BodyResults<L>(Set<VarValue<?>>captured, CurriedLambdaThunk.Body<L>value) {
     }
 }

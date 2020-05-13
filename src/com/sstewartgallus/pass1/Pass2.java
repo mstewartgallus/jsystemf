@@ -28,7 +28,7 @@ public interface Pass2<A> {
             return fromApply(apply, vars);
         }
 
-        if (term instanceof CurriedLambdaValue<T> lambda) {
+        if (term instanceof CurriedLambdaThunk<T> lambda) {
             // fixme... penguin
             return new Pass2.Thunk<>(fromLambda(lambda, vars));
         }
@@ -39,20 +39,20 @@ public interface Pass2<A> {
         return new Pass2.Apply<>(from(apply.f(), vars), from(apply.x(), vars));
     }
 
-    static <T> Pass2.Body<T> fromLambda(CurriedLambdaValue<T> lambda, IdGen vars) {
+    static <T> Pass2.Body<T> fromLambda(CurriedLambdaThunk<T> lambda, IdGen vars) {
         var body = lambda.body();
         return fromBody(body, vars);
     }
 
-    static <T> Pass2.Body<T> fromBody(CurriedLambdaValue.Body<T> body, IdGen vars) {
-        if (body instanceof CurriedLambdaValue.MainBody<T> mainBody) {
+    static <T> Pass2.Body<T> fromBody(CurriedLambdaThunk.Body<T> body, IdGen vars) {
+        if (body instanceof CurriedLambdaThunk.MainBody<T> mainBody) {
             return new Pass2.Expr<T>(from(mainBody.body(), vars));
         }
-        var lambdaBody = (CurriedLambdaValue.LambdaBody<?, ?>) body;
+        var lambdaBody = (CurriedLambdaThunk.LambdaBody<?, ?>) body;
         return (Pass2.Body) fromLambda(lambdaBody, vars);
     }
 
-    static <A, B> Pass2.Lambda<A, B> fromLambda(CurriedLambdaValue.LambdaBody<A, B> lambdaBody, IdGen ids) {
+    static <A, B> Pass2.Lambda<A, B> fromLambda(CurriedLambdaThunk.LambdaBody<A, B> lambdaBody, IdGen ids) {
         var domain = TPass0.from(lambdaBody.domain(), ids);
         var v = ids.<A>createId();
         var body = lambdaBody.f().apply(new VarValue<>(lambdaBody.domain(), v));

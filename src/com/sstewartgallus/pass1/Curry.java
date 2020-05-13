@@ -40,11 +40,11 @@ public final class Curry {
 
         var curriedBody = curry(body, ids);
 
-        if (curriedBody instanceof CurriedLambdaValue<B> curriedLambdaValue) {
+        if (curriedBody instanceof CurriedLambdaThunk<B> curriedLambdaValue) {
             var expr = curriedLambdaValue.body();
-            return new CurriedLambdaValue<>(new CurriedLambdaValue.LambdaBody<>(domain, x -> expr.substitute(v, x)));
+            return new CurriedLambdaThunk<>(new CurriedLambdaThunk.LambdaBody<>(domain, x -> expr.substitute(v, x)));
         }
 
-        return new CurriedLambdaValue<>(new CurriedLambdaValue.LambdaBody<>(domain, x -> new CurriedLambdaValue.MainBody<>(body.substitute(v, x))));
+        return new CurriedLambdaThunk<>(new CurriedLambdaThunk.LambdaBody<>(domain, x -> new CurriedLambdaThunk.MainBody<>(body.substitute(v, x))));
     }
 }

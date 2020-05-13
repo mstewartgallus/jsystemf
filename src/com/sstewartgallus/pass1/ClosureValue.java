@@ -23,6 +23,6 @@ public record ClosureValue<A extends HList<A>, X, B>(Term<F<HList.Cons<X, A>, B>
 
     @Override
     public Term<B> apply(Term<A> x) {
-        return new TupleApplyThunk<>(f, new ConsValue<>(env, x));
+        throw null;
     }
 }

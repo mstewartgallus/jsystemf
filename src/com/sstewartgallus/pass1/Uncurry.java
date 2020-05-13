@@ -48,40 +48,47 @@ public final class Uncurry {
     }
 
     private static <A> Term<A> uncurryLambda(CurriedLambdaThunk<A> lambda, IdGen ids) {
-        return uncurryBody(lambda.body(), ids, NilNormal.NIL);
+        return uncurryBody(lambda.body(), ids);
     }
 
-    private static <Env extends HList<Env>, A> Term<A> uncurryBody(CurriedLambdaThunk.Body<A> body, IdGen ids, Type<Env> env) {
+    private static <X extends HList<X>, A, C> Term<A> uncurryBody(CurriedLambdaThunk.Body<A> body, IdGen ids) {
         if (body instanceof CurriedLambdaThunk.MainBody<A> mainBody) {
-            var uncurryBody = uncurry(mainBody.body(), ids);
-            return uncurryBody;
+            return uncurry(mainBody.body(), ids);
         }
         var lambda = (CurriedLambdaThunk.LambdaBody<?, ?>) body;
         // fixme...
-        return (Term) uncurryLambdaBody(lambda, ids, (Type) env);
+        return (Term) uncurryLambdaBody(lambda, ids);
     }
 
-    private static <X extends HList<X>, A, B> Term<F<A, F<X, B>>> uncurryLambdaBody(CurriedLambdaThunk.LambdaBody<A, B> lambda, IdGen ids, Type<X> env) {
+    private static <X extends HList<X>, B, A, C> Term<F<B, A>> uncurryLambdaBody(CurriedLambdaThunk.LambdaBody<B, A> lambda, IdGen ids) {
         var domain = lambda.domain();
         var f = lambda.f();
 
-        var head = ids.<A>createId();
+        var head = ids.<B>createId();
         var headVar = new VarValue<>(domain, head);
 
         var body = f.apply(headVar);
 
-        Term<B> toUncurry = uncurryBody(body, ids, new ConsNormal<>(domain, env));
-        if (toUncurry instanceof UncurryValue<?, ?, ?> uncurry) {
-            return cons((UncurryValue) uncurry);
+        Term<A> toUncurry = uncurryBody(body, ids);
+        if (toUncurry instanceof TupleLambdaThunk<?, ?, A> tuple) {
+            // fixme...
+            return cons(domain, head, (TupleLambdaThunk) tuple);
         }
-        return new UncurryValue<>(domain, new ConsNormal<>(domain, env).l(x -> toUncurry.substitute(head, head(x))));
+
+        return new TupleLambdaThunk<>(new Sig.Cons<>(domain, new Sig.Zero<>(body.type())), tuple -> {
+            var h = tuple.head();
+            return toUncurry.substitute(head, h);
+        });
     }
 
-    private static <X extends HList<X>, A, B> Term<F<A, F<X, B>>> cons(UncurryValue<X, A, B> uncurry) {
-        return null;
-    }
-
-    private static <A, Env extends HList<Env>> Term<A> head(Term<HList.Cons<A, Env>> product) {
-        return new HeadThunk<>(product);
+    private static <X extends HList<X>, C, B, A> Term<F<B, A>> cons(Type<B> domain, Id<B> head, TupleLambdaThunk<X, F<B, C>, A> tuple) {
+        var tupleF = tuple.f();
+        var env = tuple.sig();
+        Sig<HList.Cons<Term<B>, X>, F<B, C>, F<B, A>> sig = new Sig.Cons<B, X, F<B, C>, A>(domain, env);
+        return new TupleLambdaThunk<HList.Cons<Term<B>, X>, F<B, C>, F<B, A>>(sig, p -> {
+            Term<B> h = p.head();
+            X t = p.tail();
+            return tupleF.apply(t).substitute(head, h);
+        });
     }
 }

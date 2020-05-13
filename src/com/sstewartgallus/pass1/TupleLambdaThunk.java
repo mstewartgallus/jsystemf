@@ -1,9 +1,6 @@
 package com.sstewartgallus.pass1;
 
-import com.sstewartgallus.plato.Term;
-import com.sstewartgallus.plato.ThunkTerm;
-import com.sstewartgallus.plato.Type;
-import com.sstewartgallus.plato.TypeCheckException;
+import com.sstewartgallus.plato.*;
 
 import java.util.Objects;
 import java.util.function.Function;
@@ -24,5 +21,15 @@ public record TupleLambdaThunk<L extends HList<L>, C, D>(Sig<L, C, D>sig,
     @Override
     public Term<D> stepThunk() {
         return sig.stepThunk(f);
+    }
+
+    @Override
+    public <X> Term<D> substitute(Id<X> variable, Term<X> replacement) {
+        return new TupleLambdaThunk<>(sig, x -> f.apply(x).substitute(variable, replacement));
+    }
+
+    @Override
+    public String toString() {
+        return "(" + sig.stringify(f, new IdGen()) + ")";
     }
 }

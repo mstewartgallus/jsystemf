@@ -83,6 +83,9 @@ public final class Main {
             var applyCurried = CurryApply.curryApply(curry, vars);
             outputT("Apply Curried", applyCurried, applyCurried.type());
 
+            var uncurry = Uncurry.uncurry(applyCurried, vars);
+            outputT("Uncurry", uncurry, uncurry.type());
+
             var captures = Pass2.from(captured, vars);
             outputT("Explicit Environment", captures, captures.type());
 

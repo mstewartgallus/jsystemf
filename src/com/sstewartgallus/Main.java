@@ -1,7 +1,9 @@
 package com.sstewartgallus;
 
 
+import com.sstewartgallus.ext.tuples.HList;
 import com.sstewartgallus.ext.tuples.NilNormal;
+import com.sstewartgallus.ext.variables.Id;
 import com.sstewartgallus.ext.variables.IdGen;
 import com.sstewartgallus.frontend.Entity;
 import com.sstewartgallus.frontend.Environment;
@@ -98,25 +100,25 @@ public final class Main {
         var interpreterOutput = Interpreter.normalize(term);
         outputT("Interpreter Output", interpreterOutput, interpreterOutput.type());
 
-        var curry = Curry.curry(term, vars);
+        var curry = Curry.curry(term);
         outputT("Curried", curry, curry.type());
 
         var captured = Capture.capture(curry, vars);
         outputT("Partial Application", captured, captured.type());
 
-        var applyCurried = CurryApply.curryApply(curry, vars);
+        var applyCurried = CurryApply.curryApply(curry);
         outputT("Apply Curried", applyCurried, applyCurried.type());
 
-        var tuple = Tuple.uncurry(applyCurried, vars);
+        var tuple = Tuple.uncurry(applyCurried);
         outputT("Tuple", tuple, tuple.type());
 
-        var uncurry = Uncurry.uncurry(tuple, vars);
+        var uncurry = Uncurry.uncurry(tuple);
         outputT("Uncurry", uncurry, uncurry.type());
 
-        var pointFree = ConvertPointFree.pointFree(uncurry, NilNormal.NIL, vars.createId(), vars);
+        var pointFree = ConvertPointFree.pointFree(uncurry, NilNormal.NIL, new Id<HList.Nil>(), vars);
         outputT("Point Free", pointFree, pointFree.type());
 
-        var generic = pointFree.generic(vars.createId(), vars);
+        var generic = pointFree.generic(new Id<Object>());
         outputT("Generic", generic, generic.signature());
 
         // fixme.. hack

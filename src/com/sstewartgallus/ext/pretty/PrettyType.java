@@ -1,7 +1,6 @@
 package com.sstewartgallus.ext.pretty;
 
 import com.sstewartgallus.ext.variables.Id;
-import com.sstewartgallus.ext.variables.IdGen;
 import com.sstewartgallus.ir.Signature;
 import com.sstewartgallus.plato.Type;
 import com.sstewartgallus.plato.TypeCheckException;
@@ -42,7 +41,7 @@ public final class PrettyType<A> implements Type<A>, AutoCloseable {
     }
 
     @Override
-    public <Z> Signature<V<Z, A>> pointFree(Id<Z> argument, IdGen vars) {
+    public <Z> Signature<V<Z, A>> pointFree(Id<Z> argument) {
         throw null;
     }
 }

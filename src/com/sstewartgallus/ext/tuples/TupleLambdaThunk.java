@@ -2,7 +2,6 @@ package com.sstewartgallus.ext.tuples;
 
 import com.sstewartgallus.ext.pretty.PrettyValue;
 import com.sstewartgallus.ext.variables.Id;
-import com.sstewartgallus.ext.variables.IdGen;
 import com.sstewartgallus.ext.variables.VarValue;
 import com.sstewartgallus.plato.*;
 
@@ -34,7 +33,7 @@ public record TupleLambdaThunk<L extends HList<L>, C, D>(Sig<L, C, D>sig,
 
     @Override
     public String toString() {
-        return "(" + sig.stringify(f, new IdGen()) + ")";
+        return "(" + sig.stringify(f) + ")";
     }
 
 
@@ -44,9 +43,9 @@ public record TupleLambdaThunk<L extends HList<L>, C, D>(Sig<L, C, D>sig,
 
         Type<D> type();
 
-        String stringify(Function<T, Term<C>> f, IdGen ids);
+        String stringify(Function<T, Term<C>> f);
 
-        Results<?, C, D> uncurry(Function<T, Term<C>> f, IdGen ids);
+        Results<?, C, D> uncurry(Function<T, Term<C>> f);
 
         record Zero<A>(Type<A>type) implements Sig<HList.Nil, A, A> {
             @Override
@@ -55,12 +54,12 @@ public record TupleLambdaThunk<L extends HList<L>, C, D>(Sig<L, C, D>sig,
             }
 
             @Override
-            public String stringify(Function<HList.Nil, Term<A>> f, IdGen ids) {
+            public String stringify(Function<HList.Nil, Term<A>> f) {
                 return ". → " + f.apply(HList.Nil.NIL).toString();
             }
 
             @Override
-            public Results<HList.Nil, A, A> uncurry(Function<HList.Nil, Term<A>> f, IdGen ids) {
+            public Results<HList.Nil, A, A> uncurry(Function<HList.Nil, Term<A>> f) {
                 var body = f.apply(HList.Nil.NIL);
                 return new Results<>(new UncurryLambdaThunk.Sig.Zero<>(type), nil -> body);
             }
@@ -91,17 +90,17 @@ public record TupleLambdaThunk<L extends HList<L>, C, D>(Sig<L, C, D>sig,
             }
 
             @Override
-            public String stringify(Function<HList.Cons<Term<H>, T>, Term<C>> f, IdGen ids) {
+            public String stringify(Function<HList.Cons<Term<H>, T>, Term<C>> f) {
                 try (var pretty = PrettyValue.generate(head)) {
-                    return "{" + pretty + ": " + head + "} Δ " + tail.stringify(t -> f.apply(new HList.Cons<>(pretty, t)), ids);
+                    return "{" + pretty + ": " + head + "} Δ " + tail.stringify(t -> f.apply(new HList.Cons<>(pretty, t)));
                 }
             }
 
             @Override
-            public Results<?, C, F<H, D>> uncurry(Function<HList.Cons<Term<H>, T>, Term<C>> f, IdGen ids) {
-                var headId = ids.<H>createId();
+            public Results<?, C, F<H, D>> uncurry(Function<HList.Cons<Term<H>, T>, Term<C>> f) {
+                var headId = new Id<H>();
                 var headVar = new VarValue<>(head, headId);
-                var value = tail.uncurry(t -> f.apply(new HList.Cons<>(headVar, t)), ids);
+                var value = tail.uncurry(t -> f.apply(new HList.Cons<>(headVar, t)));
                 return cons(headId, value);
             }
 

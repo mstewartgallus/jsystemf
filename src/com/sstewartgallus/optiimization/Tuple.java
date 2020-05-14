@@ -6,7 +6,6 @@ import com.sstewartgallus.ext.tuples.CurriedLambdaThunk;
 import com.sstewartgallus.ext.tuples.HList;
 import com.sstewartgallus.ext.tuples.TupleLambdaThunk;
 import com.sstewartgallus.ext.variables.Id;
-import com.sstewartgallus.ext.variables.IdGen;
 import com.sstewartgallus.ext.variables.VarValue;
 import com.sstewartgallus.plato.F;
 import com.sstewartgallus.plato.Term;
@@ -16,12 +15,12 @@ public final class Tuple {
     private Tuple() {
     }
 
-    public static <A> Term<A> uncurry(Term<A> term, IdGen ids) {
+    public static <A> Term<A> uncurry(Term<A> term) {
         if (term instanceof CurriedLambdaThunk<A> lambda) {
-            return uncurryLambda(lambda, ids);
+            return uncurryLambda(lambda);
         }
         if (term instanceof CurriedApplyThunk<A> apply) {
-            return uncurryApply(apply, ids);
+            return uncurryApply(apply);
         }
 
         if (term instanceof ObjectValue) {
@@ -35,47 +34,47 @@ public final class Tuple {
         throw new IllegalArgumentException("Unexpected core list " + term);
     }
 
-    private static <A> Term<A> uncurryApply(CurriedApplyThunk<A> apply, IdGen ids) {
-        var uncurriedBody = uncurryApplyBody(apply.body(), ids);
+    private static <A> Term<A> uncurryApply(CurriedApplyThunk<A> apply) {
+        var uncurriedBody = uncurryApplyBody(apply.body());
         return new CurriedApplyThunk<>(uncurriedBody);
     }
 
-    private static <A> CurriedApplyThunk.Body<A> uncurryApplyBody(CurriedApplyThunk.Body<A> body, IdGen ids) {
+    private static <A> CurriedApplyThunk.Body<A> uncurryApplyBody(CurriedApplyThunk.Body<A> body) {
         if (body instanceof CurriedApplyThunk.MonoBody<A> monoBody) {
-            return new CurriedApplyThunk.MonoBody<>(uncurry(monoBody.body(), ids));
+            return new CurriedApplyThunk.MonoBody<>(uncurry(monoBody.body()));
         }
-        return uncurryApplyBodyApply((CurriedApplyThunk.ApplyBody<?, A>) body, ids);
+        return uncurryApplyBodyApply((CurriedApplyThunk.ApplyBody<?, A>) body);
     }
 
-    private static <A, B> CurriedApplyThunk.Body<B> uncurryApplyBodyApply(CurriedApplyThunk.ApplyBody<A, B> apply, IdGen ids) {
-        var uncurryF = uncurryApplyBody(apply.f(), ids);
-        var uncurryX = uncurry(apply.x(), ids);
+    private static <A, B> CurriedApplyThunk.Body<B> uncurryApplyBodyApply(CurriedApplyThunk.ApplyBody<A, B> apply) {
+        var uncurryF = uncurryApplyBody(apply.f());
+        var uncurryX = uncurry(apply.x());
         return new CurriedApplyThunk.ApplyBody<>(uncurryF, uncurryX);
     }
 
-    private static <A> Term<A> uncurryLambda(CurriedLambdaThunk<A> lambda, IdGen ids) {
-        return uncurryBody(lambda.body(), ids);
+    private static <A> Term<A> uncurryLambda(CurriedLambdaThunk<A> lambda) {
+        return uncurryBody(lambda.body());
     }
 
-    private static <X extends HList<X>, A, C> Term<A> uncurryBody(CurriedLambdaThunk.Body<A> body, IdGen ids) {
+    private static <X extends HList<X>, A, C> Term<A> uncurryBody(CurriedLambdaThunk.Body<A> body) {
         if (body instanceof CurriedLambdaThunk.MainBody<A> mainBody) {
-            return uncurry(mainBody.body(), ids);
+            return uncurry(mainBody.body());
         }
         var lambda = (CurriedLambdaThunk.LambdaBody<?, ?>) body;
         // fixme...
-        return (Term) uncurryLambdaBody(lambda, ids);
+        return (Term) uncurryLambdaBody(lambda);
     }
 
-    private static <X extends HList<X>, B, A, C> Term<F<B, A>> uncurryLambdaBody(CurriedLambdaThunk.LambdaBody<B, A> lambda, IdGen ids) {
+    private static <X extends HList<X>, B, A, C> Term<F<B, A>> uncurryLambdaBody(CurriedLambdaThunk.LambdaBody<B, A> lambda) {
         var domain = lambda.domain();
         var f = lambda.f();
 
-        var head = ids.<B>createId();
+        var head = new Id<B>();
         var headVar = new VarValue<>(domain, head);
 
         var body = f.apply(headVar);
 
-        Term<A> toUncurry = uncurryBody(body, ids);
+        Term<A> toUncurry = uncurryBody(body);
         if (toUncurry instanceof TupleLambdaThunk<?, ?, A> tuple) {
             // fixme...
             return cons(domain, head, (TupleLambdaThunk) tuple);

@@ -1,5 +1,6 @@
 package com.sstewartgallus.frontend;
 
+import com.sstewartgallus.ext.variables.Id;
 import com.sstewartgallus.ext.variables.IdGen;
 import com.sstewartgallus.ext.variables.VarType;
 import com.sstewartgallus.ext.variables.VarValue;
@@ -89,7 +90,7 @@ public class Frontend {
                     var binder = ((Node.Atom) nodes.get(1)).value();
                     var rest = new Node.Array(nodes.subList(2, nodes.size()));
 
-                    var id = ids.createId();
+                    var id = new Id<Object>();
                     var variable = new VarType<>(id);
                     var entity = new Entity.TypeEntity(variable);
                     var newEnv = environment.put(binder, entity);
@@ -125,7 +126,7 @@ public class Frontend {
     }
 
     private static <A> Term<?> getTerm(String binder, IdGen ids, Type<A> binderType, Node.Array rest, Environment environment) {
-        var id = ids.<A>createId();
+        var id = new Id<A>();
         var variable = new VarValue<>(binderType, id);
         var entity = new Entity.TermEntity(variable);
         var newEnv = environment.put(binder, entity);

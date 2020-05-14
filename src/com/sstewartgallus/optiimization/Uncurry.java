@@ -4,7 +4,6 @@ import com.sstewartgallus.ext.java.ObjectValue;
 import com.sstewartgallus.ext.tuples.CurriedApplyThunk;
 import com.sstewartgallus.ext.tuples.HList;
 import com.sstewartgallus.ext.tuples.TupleLambdaThunk;
-import com.sstewartgallus.ext.variables.IdGen;
 import com.sstewartgallus.ext.variables.VarValue;
 import com.sstewartgallus.plato.Term;
 
@@ -12,12 +11,12 @@ public final class Uncurry {
     private Uncurry() {
     }
 
-    public static <A> Term<A> uncurry(Term<A> term, IdGen ids) {
+    public static <A> Term<A> uncurry(Term<A> term) {
         if (term instanceof TupleLambdaThunk<?, ?, A> lambda) {
-            return uncurryLambda(lambda, ids);
+            return uncurryLambda(lambda);
         }
         if (term instanceof CurriedApplyThunk<A> apply) {
-            return uncurryApply(apply, ids);
+            return uncurryApply(apply);
         }
 
         if (term instanceof ObjectValue) {
@@ -31,27 +30,27 @@ public final class Uncurry {
         throw new IllegalArgumentException("Unexpected core list " + term);
     }
 
-    private static <A> Term<A> uncurryApply(CurriedApplyThunk<A> apply, IdGen ids) {
-        var uncurriedBody = uncurryApplyBody(apply.body(), ids);
+    private static <A> Term<A> uncurryApply(CurriedApplyThunk<A> apply) {
+        var uncurriedBody = uncurryApplyBody(apply.body());
         return new CurriedApplyThunk<>(uncurriedBody);
     }
 
-    private static <A> CurriedApplyThunk.Body<A> uncurryApplyBody(CurriedApplyThunk.Body<A> body, IdGen ids) {
+    private static <A> CurriedApplyThunk.Body<A> uncurryApplyBody(CurriedApplyThunk.Body<A> body) {
         if (body instanceof CurriedApplyThunk.MonoBody<A> monoBody) {
-            return new CurriedApplyThunk.MonoBody<>(uncurry(monoBody.body(), ids));
+            return new CurriedApplyThunk.MonoBody<>(uncurry(monoBody.body()));
         }
-        return uncurryApplyBodyApply((CurriedApplyThunk.ApplyBody<?, A>) body, ids);
+        return uncurryApplyBodyApply((CurriedApplyThunk.ApplyBody<?, A>) body);
     }
 
-    private static <A, B> CurriedApplyThunk.Body<B> uncurryApplyBodyApply(CurriedApplyThunk.ApplyBody<A, B> apply, IdGen ids) {
-        var uncurryF = uncurryApplyBody(apply.f(), ids);
-        var uncurryX = uncurry(apply.x(), ids);
+    private static <A, B> CurriedApplyThunk.Body<B> uncurryApplyBodyApply(CurriedApplyThunk.ApplyBody<A, B> apply) {
+        var uncurryF = uncurryApplyBody(apply.f());
+        var uncurryX = uncurry(apply.x());
         return new CurriedApplyThunk.ApplyBody<>(uncurryF, uncurryX);
     }
 
-    private static <A extends HList<A>, B, C> Term<C> uncurryLambda(TupleLambdaThunk<A, B, C> lambda, IdGen ids) {
+    private static <A extends HList<A>, B, C> Term<C> uncurryLambda(TupleLambdaThunk<A, B, C> lambda) {
         var sig = lambda.sig();
         var f = lambda.f();
-        return sig.uncurry(f, ids).toUncurry();
+        return sig.uncurry(f).toUncurry();
     }
 }

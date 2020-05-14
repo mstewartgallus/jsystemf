@@ -2,6 +2,7 @@ package com.sstewartgallus.optiimization;
 
 import com.sstewartgallus.ext.java.ObjectValue;
 import com.sstewartgallus.ext.tuples.CurriedLambdaThunk;
+import com.sstewartgallus.ext.variables.Id;
 import com.sstewartgallus.ext.variables.IdGen;
 import com.sstewartgallus.ext.variables.VarValue;
 import com.sstewartgallus.plato.ApplyThunk;
@@ -79,7 +80,7 @@ public final class Capture {
         var domain = lambda.domain();
         var f = lambda.f();
 
-        var v = ids.<A>createId();
+        var v = new Id<A>();
         var load = new VarValue<>(domain, v);
         var body = f.apply(load);
         var results = captureBody(body, ids);

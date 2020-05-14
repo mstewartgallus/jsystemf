@@ -1,7 +1,7 @@
 package com.sstewartgallus.optiimization;
 
 import com.sstewartgallus.ext.tuples.CurriedLambdaThunk;
-import com.sstewartgallus.ext.variables.IdGen;
+import com.sstewartgallus.ext.variables.Id;
 import com.sstewartgallus.ext.variables.VarValue;
 import com.sstewartgallus.plato.F;
 import com.sstewartgallus.plato.LambdaValue;
@@ -12,26 +12,26 @@ public final class Curry {
     }
 
     // fixme.. avoid the IdGen state capture issues..
-    public static <A> Term<A> curry(Term<A> root, IdGen ids) {
+    public static <A> Term<A> curry(Term<A> root) {
         return root.visit(new Term.Visitor() {
             @Override
             public <T> Term<T> term(Term<T> term) {
                 if (!(term instanceof LambdaValue<?, ?> lambdaValue)) {
                     return term.visitChildren(this);
                 }
-                return (Term) curryLambda(lambdaValue, ids);
+                return (Term) curryLambda(lambdaValue);
             }
         });
     }
 
-    private static <A, B> Term<F<A, B>> curryLambda(LambdaValue<A, B> lambda, IdGen ids) {
+    private static <A, B> Term<F<A, B>> curryLambda(LambdaValue<A, B> lambda) {
         var domain = lambda.domain();
         var f = lambda.f();
 
-        var v = ids.<A>createId();
+        var v = new Id<A>();
         var body = f.apply(new VarValue<>(domain, v));
 
-        var curriedBody = curry(body, ids);
+        var curriedBody = curry(body);
 
         if (curriedBody instanceof CurriedLambdaThunk<B> curriedLambdaValue) {
             var expr = curriedLambdaValue.body();

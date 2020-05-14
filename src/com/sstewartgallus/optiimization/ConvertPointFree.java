@@ -59,7 +59,7 @@ public final class ConvertPointFree {
         var sig = lambda.sig();
         var f = lambda.f();
 
-        var v = ids.<A>createId();
+        var v = new Id<A>();
         var vType = sig.argType();
         var body = pointFree(f.apply(new VarValue<A>(vType, v)), vType, v, ids);
         return new PointFree.K<>(argType, new PointFree.Lambda<>(sig, body));

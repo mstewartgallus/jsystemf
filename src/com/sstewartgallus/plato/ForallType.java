@@ -2,7 +2,6 @@ package com.sstewartgallus.plato;
 
 import com.sstewartgallus.ext.pretty.PrettyType;
 import com.sstewartgallus.ext.variables.Id;
-import com.sstewartgallus.ext.variables.IdGen;
 import com.sstewartgallus.ir.Signature;
 
 import java.util.function.Function;
@@ -26,7 +25,7 @@ public record ForallType<A, B>(Function<Type<A>, Type<B>>f) implements CoreType<
     }
 
     @Override
-    public <Z> Signature<V<Z, V<A, B>>> pointFree(Id<Z> argument, IdGen vars) {
+    public <Z> Signature<V<Z, V<A, B>>> pointFree(Id<Z> argument) {
         throw null;
     }
 }

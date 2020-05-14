@@ -19,7 +19,7 @@ public record VarType<T>(Id<T>variable) implements Type<T> {
     }
 
     @Override
-    public <Z> Signature<V<Z, T>> pointFree(Id<Z> argument, IdGen vars) {
+    public <Z> Signature<V<Z, T>> pointFree(Id<Z> argument) {
         if (variable == argument) {
             return (Signature) new Signature.Identity<Z>();
         }

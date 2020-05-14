@@ -48,22 +48,21 @@ public class Frontend {
         }
     }
 
-    private static Type<?> toType(Node node) {
+    private static Type<?> toType(Node node, Environment env) {
         // fixme.. denormal types are looking more and more plausible...
         if (node instanceof Node.Atom atom) {
-            return lookupType(atom.value());
+            return lookupType(atom.value(), env);
         }
         throw null;
     }
 
-    private static Type<?> lookupType(String str) {
-        return switch (str) {
-            case "I" -> Type.INT;
-
-            default -> {
-                throw new IllegalStateException("Unexpected primHook: " + str);
-            }
-        };
+    private static Type<?> lookupType(String str, Environment environment) {
+        var maybeEntity = environment.get(str);
+        if (maybeEntity.isEmpty()) {
+            throw new IllegalStateException("No binder found for: " + str);
+        }
+        var entity = maybeEntity.get();
+        return ((Entity.TypeEntity) entity).type();
     }
 
     public static Term<?> toTerm(Node.Array source, IdGen ids, Environment environment) {
@@ -76,7 +75,7 @@ public class Frontend {
 
             var rest = new Node.Array(nodes.subList(2, nodes.size()));
 
-            return getTerm(binderName, ids, toType(binderType), rest, environment);
+            return getTerm(binderName, ids, toType(binderType, environment), rest, environment);
         }
         Optional<Term<?>> result = source.nodes().stream().map(node -> {
             if (node instanceof Node.Atom atom) {
@@ -105,7 +104,7 @@ public class Frontend {
     private static <A> Term<?> getTerm(String binder, IdGen ids, Type<A> binderType, Node.Array rest, Environment environment) {
         var id = ids.<A>createId();
         var variable = new VarValue<>(binderType, id);
-        var entity = new Entity(variable);
+        var entity = new Entity.TermEntity(variable);
         var newEnv = environment.put(binder, entity);
 
         var theTerm = toTerm(rest, ids, newEnv);
@@ -130,6 +129,6 @@ public class Frontend {
             throw new IllegalStateException("No binder found for: " + str);
         }
         var entity = maybeEntity.get();
-        return entity.term();
+        return ((Entity.TermEntity) entity).term();
     }
 }

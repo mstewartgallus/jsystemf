@@ -39,23 +39,36 @@ public final class Main {
 
     @PutEnv("+")
     private static final Term<?> ADD = Type.INT.l(x -> Type.INT.l(y -> Prims.add(x, y)));
-    //@Default("<")
+    @PutEnv("I")
+    private static final Type<?> INT_TYPE = Type.INT;
+
+    //@PutEnv("<")
     //private static final Term<?> LESS_THAN = Type.INT.l(x -> Type.INT.l(y -> Prims.lessThan(x, y)));
 
-    private static final Environment defaultEnv =
+    private static final Environment DEFAULT_ENV =
             Arrays.
                     stream(Main.class.getDeclaredFields())
                     .filter(f -> f.isAnnotationPresent(PutEnv.class))
-                    .reduce(Environment.empty(), (env, entity) -> {
-                        var defaultAnnotation = entity.getAnnotation(PutEnv.class);
+                    .reduce(Environment.empty(), (env, field) -> {
+                        var defaultAnnotation = field.getAnnotation(PutEnv.class);
                         var name = defaultAnnotation.value();
+
                         Object value;
                         try {
-                            value = entity.get(null);
+                            value = field.get(null);
                         } catch (IllegalAccessException e) {
                             throw new RuntimeException(e);
                         }
-                        return env.put(name, new Entity((Term<?>) value));
+
+                        Entity entity;
+                        if (value instanceof Term) {
+                            entity = new Entity.TermEntity((Term<?>) value);
+                        } else if (value instanceof Type) {
+                            entity = new Entity.TypeEntity((Type<?>) value);
+                        } else {
+                            throw new RuntimeException("error " + value);
+                        }
+                        return env.put(name, entity);
                     }, Environment::union);
 
     static {
@@ -75,10 +88,9 @@ public final class Main {
 
         var vars = new IdGen();
 
+        output("Environment", DEFAULT_ENV);
 
-        output("Environment", defaultEnv);
-
-        var term = Frontend.toTerm(ast, vars, defaultEnv);
+        var term = Frontend.toTerm(ast, vars, DEFAULT_ENV);
 
         output("System F", term);
 

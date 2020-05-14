@@ -1,5 +1,7 @@
 package com.sstewartgallus.plato;
 
+import com.sstewartgallus.ir.Signature;
+
 import java.util.function.Function;
 
 public record ForallNormal<A, B>(Function<Type<A>, Type<B>>f) implements NormalType<V<A, B>>, CoreType<V<A, B>> {
@@ -30,5 +32,10 @@ public record ForallNormal<A, B>(Function<Type<A>, Type<B>>f) implements NormalT
     @Override
     public <T> Type<V<A, B>> substitute(Id<T> v, Type<T> replacement) {
         throw new UnsupportedOperationException("unimplemented");
+    }
+
+    @Override
+    public <Z> Signature<V<Z, V<A, B>>> pointFree(Id<Z> argument, IdGen vars) {
+        throw null;
     }
 }

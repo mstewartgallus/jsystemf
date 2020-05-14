@@ -54,6 +54,10 @@ public record UncurryLambdaThunk<L extends HList<L>, C, D>(Sig<L, C, D>sig,
             public Type<HList.Nil> argType() {
                 return NilNormal.NIL;
             }
+
+            public String toString() {
+                return ".";
+            }
         }
 
         record Cons<H, T extends HList<T>, C, D>(Type<H>head,
@@ -71,6 +75,11 @@ public record UncurryLambdaThunk<L extends HList<L>, C, D>(Sig<L, C, D>sig,
             @Override
             public Type<F<H, D>> type() {
                 return head.to(tail.type());
+            }
+
+
+            public String toString() {
+                return "(" + head + " Δ " + tail + ")";
             }
         }
     }

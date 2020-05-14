@@ -1,11 +1,9 @@
 package com.sstewartgallus.pass1;
 
-import com.sstewartgallus.plato.Id;
-import com.sstewartgallus.plato.NormalType;
-import com.sstewartgallus.plato.Type;
-import com.sstewartgallus.plato.TypeCheckException;
+import com.sstewartgallus.ir.Signature;
+import com.sstewartgallus.plato.*;
 
-enum NilNormal implements NormalType<HList.Nil> {
+public enum NilNormal implements NormalType<HList.Nil> {
     NIL;
 
     @Override
@@ -19,5 +17,10 @@ enum NilNormal implements NormalType<HList.Nil> {
     @Override
     public <X> Type<HList.Nil> substitute(Id<X> v, Type<X> replacement) {
         return NIL;
+    }
+
+    @Override
+    public <Z> Signature<V<Z, HList.Nil>> pointFree(Id<Z> argument, IdGen vars) {
+        return new Signature.K<>(Signature.NilSig.NIL);
     }
 }

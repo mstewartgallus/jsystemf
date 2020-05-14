@@ -1,13 +1,11 @@
 package com.sstewartgallus.pass1;
 
-import com.sstewartgallus.plato.Id;
-import com.sstewartgallus.plato.NormalType;
-import com.sstewartgallus.plato.Type;
-import com.sstewartgallus.plato.TypeCheckException;
+import com.sstewartgallus.ir.Signature;
+import com.sstewartgallus.plato.*;
 
 import java.util.Objects;
 
-record ConsNormal<H, T extends HList<T>>(Type<H>head, Type<T>tail) implements NormalType<HList.Cons<H, T>> {
+public record ConsNormal<H, T extends HList<T>>(Type<H>head, Type<T>tail) implements NormalType<HList.Cons<H, T>> {
     public ConsNormal {
         Objects.requireNonNull(head);
         Objects.requireNonNull(tail);
@@ -24,6 +22,11 @@ record ConsNormal<H, T extends HList<T>>(Type<H>head, Type<T>tail) implements No
     @Override
     public <X> Type<HList.Cons<H, T>> substitute(Id<X> v, Type<X> replacement) {
         return new ConsNormal<>(head.substitute(v, replacement), tail.substitute(v, replacement));
+    }
+
+    @Override
+    public <Z> Signature<V<Z, HList.Cons<H, T>>> pointFree(Id<Z> argument, IdGen vars) {
+        return new Signature.ConsType<>(head.pointFree(argument, vars), tail.pointFree(argument, vars));
     }
 
     public String toString() {

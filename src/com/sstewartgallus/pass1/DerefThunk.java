@@ -4,7 +4,7 @@ import com.sstewartgallus.plato.*;
 
 import java.util.Objects;
 
-public record DerefThunk<A, B extends HList<B>>(Term<HList.Cons<A, B>>product) implements ThunkTerm<A> {
+public record DerefThunk<B extends HList<B>, A>(Term<HList.Cons<A, B>>product) implements ThunkTerm<A> {
     public DerefThunk {
         Objects.requireNonNull(product);
     }

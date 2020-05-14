@@ -103,7 +103,7 @@ public record TupleLambdaThunk<L extends HList<L>, C, D>(Sig<L, C, D>sig,
             public <X extends HList<X>> Results<HList.Cons<H, X>, C, F<H, D>> cons(Id<H> headId, Results<X, C, D> value) {
                 var tailF = value.f();
                 var sig = new UncurryLambdaThunk.Sig.Cons<>(head, value.sig());
-                return new Results<>(sig, product -> tailF.apply(nextGetter(product)).substitute(headId, new DerefThunk<H, X>(product)));
+                return new Results<>(sig, product -> tailF.apply(nextGetter(product)).substitute(headId, new DerefThunk<X, H>(product)));
             }
         }
     }

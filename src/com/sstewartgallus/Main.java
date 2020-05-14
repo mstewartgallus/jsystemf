@@ -111,13 +111,7 @@ public final class Main {
         var uncurry = Uncurry.uncurry(tuple, vars);
         outputT("Uncurry", uncurry, uncurry.type());
 
-        var captures = Pass2.from(captured, vars);
-        outputT("Explicit Environment", captures, captures.type());
-
-        var uncurried = captures.uncurry(vars);
-        outputT("Uncurried", uncurried, uncurried.type());
-
-        var pointFree = uncurried.pointFree(vars.createId(), vars, TPass0.NilType.NIL);
+        var pointFree = ConvertPointFree.pointFree(uncurry, NilNormal.NIL, vars.createId(), vars);
         outputT("Point Free", pointFree, pointFree.type());
 
         var generic = pointFree.generic(vars.createId(), vars);

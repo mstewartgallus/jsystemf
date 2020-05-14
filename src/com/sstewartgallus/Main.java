@@ -14,8 +14,7 @@ import java.io.Reader;
 import java.io.StreamTokenizer;
 import java.io.StringReader;
 import java.math.BigInteger;
-import java.util.ArrayList;
-import java.util.List;
+import java.util.*;
 import java.util.function.Supplier;
 
 import static java.io.StreamTokenizer.TT_EOF;
@@ -33,7 +32,7 @@ public final class Main {
     static {
         // fixme plan: Source File -> AST -> System F IR -> Category IR -> CPS? -> SSA? -> MethodHandle (or ConstantDesc?)
         // fixme... still need to introduce lazy values and product recursion..
-        var source = "53";
+        var source = "λ (x I) λ (y I) x";
 
         output("Source", source);
 
@@ -45,7 +44,12 @@ public final class Main {
         }
         output("AST", ast);
 
-        var term = toTerm(ast);
+        var vars = new IdGen();
+
+        var environment = new TreeMap<String, Term<?>>();
+        environment.put("+", Type.INT.l(x -> Type.INT.l(y -> Prims.add(x, y))));
+        environment.put("<", Type.INT.l(x -> Type.INT.l(y -> Prims.lessThan(x, y))));
+        var term = toTerm(ast, vars, environment);
 
         output("System F", term);
 
@@ -55,7 +59,6 @@ public final class Main {
             }
         }
 
-        var vars = new IdGen();
 
         try {
             var kValue = Term.apply(Term.apply(Term.apply(Penguin.id(), Type.INT), Prims.of(3)), Prims.of(5));
@@ -178,40 +181,90 @@ public final class Main {
         }
     }
 
-    private static Term<?> toTerm(Node.Array source) {
-        // fixme.. doesn't work for special forms..
-        return source.parse(str -> switch (str) {
-            case "+" -> Type.INT.l(x -> Type.INT.l(y -> Prims.add(x, y)));
-            case "<" -> Type.INT.l(x -> Type.INT.l(y -> Prims.lessThan(x, y)));
-
-            default -> {
-                isNumber:
-                {
-                    BigInteger number;
-                    try {
-                        number = new BigInteger(str);
-                    } catch (NumberFormatException e) {
-                        break isNumber;
-                    }
-
-                    yield Prims.of(number.intValueExact());
-                }
-                throw new IllegalStateException("Unexpected primHook: " + str);
-            }
-        }, (List<Term<?>> terms) -> {
-            Term<?> head = terms.get(0);
-            for (var term : terms.subList(1, terms.size())) {
-                try {
-                    head = apply(head, term);
-                } catch (TypeCheckException e) {
-                    throw new RuntimeException(e);
-                }
-            }
-            return head;
-        });
+    private static Type<?> toType(Node node) {
+        // fixme.. denormal types are looking more and more plausible...
+        if (node instanceof Node.Atom atom) {
+            return lookupType(atom.value());
+        }
+        throw null;
     }
 
-    // FIXME... consider using varhandles for the locals access?
+    private static Type<?> lookupType(String str) {
+        return switch (str) {
+            case "I" -> Type.INT;
+
+            default -> {
+                throw new IllegalStateException("Unexpected primHook: " + str);
+            }
+        };
+    }
+
+    private static Term<?> toTerm(Node.Array source, IdGen ids, Map<String, Term<?>> environment) {
+        var nodes = source.nodes();
+        var nodeZero = nodes.get(0);
+        if (nodeZero instanceof Node.Atom atom && atom.value().equals("λ")) {
+            var binder = ((Node.Array) nodes.get(1)).nodes();
+            var binderName = ((Node.Atom) binder.get(0)).value();
+            var binderType = binder.get(1);
+
+            var rest = new Node.Array(nodes.subList(2, nodes.size()));
+
+            return getTerm(binderName, ids, toType(binderType), rest, environment);
+        }
+        Optional<Term<?>> result = source.nodes().stream().map(node -> {
+            if (node instanceof Node.Atom atom) {
+                return lookupTerm(atom.value(), environment);
+            }
+            return toTerm(source, ids, environment);
+        }).reduce((f, x) -> {
+            var fType = f.type();
+            var xType = x.type();
+
+            if (!(fType instanceof FunctionNormal<?, ?> funType)) {
+                throw new UnsupportedOperationException("applying nonfunction");
+            }
+
+            funType.domain().unify(xType);
+
+            // fixme... do this more safely..
+            return (Term<?>) Term.apply((Term) f, x);
+        });
+        if (result.isEmpty()) {
+            throw new Error("todo handle nil " + source);
+        }
+        return result.get();
+    }
+
+    private static <A> Term<?> getTerm(String binder, IdGen ids, Type<A> binderType, Node.Array rest, Map<String, Term<?>> environment) {
+        var id = ids.<A>createId();
+        var variable = new VarValue<>(binderType, id);
+
+        var newEnv = new TreeMap<>(environment);
+        newEnv.put(binder, variable);
+
+        var theTerm = toTerm(rest, ids, newEnv);
+        return binderType.l(x -> theTerm.substitute(id, x));
+    }
+
+    private static Term<?> lookupTerm(String str, Map<String, Term<?>> environment) {
+        isNumber:
+        {
+            BigInteger number;
+            try {
+                number = new BigInteger(str);
+            } catch (NumberFormatException e) {
+                break isNumber;
+            }
+
+            return Prims.of(number.intValueExact());
+        }
+        var term = environment.get(str);
+        if (null == term) {
+            throw new IllegalStateException("Not a term: " + str);
+        }
+        return term;
+    }
+
     public static void main(String... args) {
         var results = new Object[245];
         for (long ii = 0; ii < Long.MAX_VALUE; ++ii) {

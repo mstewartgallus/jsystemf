@@ -6,17 +6,22 @@ import com.sstewartgallus.plato.Type;
 import com.sstewartgallus.plato.TypeCheckException;
 import com.sstewartgallus.plato.V;
 
+import java.util.Objects;
+
 public record JavaType<A>(Class<A>clazz) implements Type<A> {
 
+    public JavaType {
+        Objects.requireNonNull(clazz);
+    }
+
     public <Y> Type<A> unify(Type<Y> right) throws TypeCheckException {
-        if (this != right) {
+        if (!(right instanceof JavaType<Y> javaType)) {
+            throw new TypeCheckException(this, right);
+        }
+        if (clazz != javaType.clazz) {
             throw new TypeCheckException(this, right);
         }
         return this;
-    }
-
-    public <Z> Type<A> substitute(Id<Z> v, Type<Z> replacement) {
-        return new JavaType<>(clazz);
     }
 
     @Override

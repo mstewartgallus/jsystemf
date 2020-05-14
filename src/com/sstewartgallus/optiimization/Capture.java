@@ -3,7 +3,6 @@ package com.sstewartgallus.optiimization;
 import com.sstewartgallus.ext.java.ObjectValue;
 import com.sstewartgallus.ext.tuples.CurriedLambdaThunk;
 import com.sstewartgallus.ext.variables.Id;
-import com.sstewartgallus.ext.variables.IdGen;
 import com.sstewartgallus.ext.variables.VarValue;
 import com.sstewartgallus.plato.ApplyThunk;
 import com.sstewartgallus.plato.F;
@@ -18,13 +17,13 @@ public final class Capture {
     private Capture() {
     }
 
-    public static <A> Term<A> capture(Term<A> term, IdGen ids) {
-        return captureInternal(term, ids).value;
+    public static <A> Term<A> capture(Term<A> term) {
+        return captureInternal(term).value;
     }
 
-    private static <A> Results<A> captureInternal(Term<A> term, IdGen ids) {
+    private static <A> Results<A> captureInternal(Term<A> term) {
         if (term instanceof CurriedLambdaThunk<A> lambda) {
-            return curryLambda(lambda, ids);
+            return curryLambda(lambda);
         }
 
         if (term instanceof ObjectValue) {
@@ -36,7 +35,7 @@ public final class Capture {
         }
 
         if (term instanceof ApplyThunk<?, A> apply) {
-            return captureApply(apply, ids);
+            return captureApply(apply);
         }
 
         throw new IllegalArgumentException("Unexpected core list " + term);
@@ -48,15 +47,15 @@ public final class Capture {
         return x;
     }
 
-    private static <A, B> Results<B> captureApply(ApplyThunk<A, B> apply, IdGen ids) {
-        var fResults = captureInternal(apply.f(), ids);
-        var xResults = captureInternal(apply.x(), ids);
+    private static <A, B> Results<B> captureApply(ApplyThunk<A, B> apply) {
+        var fResults = captureInternal(apply.f());
+        var xResults = captureInternal(apply.x());
         var captures = union(fResults.captured, xResults.captured);
         return new Results<>(captures, new ApplyThunk<>(fResults.value, xResults.value));
     }
 
-    private static <A> Results<A> curryLambda(CurriedLambdaThunk<A> lambda, IdGen ids) {
-        var results = captureBody(lambda.body(), ids);
+    private static <A> Results<A> curryLambda(CurriedLambdaThunk<A> lambda) {
+        var results = captureBody(lambda.body());
         var captured = new TreeSet<>(results.captured);
 
         List<VarValue<?>> free = captured.stream().sorted().collect(Collectors.toUnmodifiableList());
@@ -65,25 +64,25 @@ public final class Capture {
         return new Results<>(captured, helper(free, 0, chunk));
     }
 
-    private static <A> BodyResults<A> captureBody(CurriedLambdaThunk.Body<A> body, IdGen ids) {
+    private static <A> BodyResults<A> captureBody(CurriedLambdaThunk.Body<A> body) {
         if (body instanceof CurriedLambdaThunk.MainBody<A> mainBody) {
-            var results = captureInternal(mainBody.body(), ids);
+            var results = captureInternal(mainBody.body());
             return new BodyResults<>(results.captured, new CurriedLambdaThunk.MainBody<>(results.value));
         }
 
         var lambda = (CurriedLambdaThunk.LambdaBody<?, ?>) body;
         // fixme...
-        return (BodyResults) captureLambda(lambda, ids);
+        return (BodyResults) captureLambda(lambda);
     }
 
-    private static <A, B> BodyResults<F<A, B>> captureLambda(CurriedLambdaThunk.LambdaBody<A, B> lambda, IdGen ids) {
+    private static <A, B> BodyResults<F<A, B>> captureLambda(CurriedLambdaThunk.LambdaBody<A, B> lambda) {
         var domain = lambda.domain();
         var f = lambda.f();
 
         var v = new Id<A>();
         var load = new VarValue<>(domain, v);
         var body = f.apply(load);
-        var results = captureBody(body, ids);
+        var results = captureBody(body);
         Set<VarValue<?>> captures = new TreeSet<>(results.captured);
         captures.remove(load);
 

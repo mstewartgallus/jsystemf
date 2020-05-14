@@ -4,7 +4,6 @@ package com.sstewartgallus;
 import com.sstewartgallus.ext.tuples.HList;
 import com.sstewartgallus.ext.tuples.NilNormal;
 import com.sstewartgallus.ext.variables.Id;
-import com.sstewartgallus.ext.variables.IdGen;
 import com.sstewartgallus.frontend.Entity;
 import com.sstewartgallus.frontend.Environment;
 import com.sstewartgallus.frontend.Frontend;
@@ -89,11 +88,9 @@ public final class Main {
         }
         output("AST", ast);
 
-        var vars = new IdGen();
-
         output("Environment", DEFAULT_ENV);
 
-        var term = Frontend.toTerm(ast, vars, DEFAULT_ENV);
+        var term = Frontend.toTerm(ast, DEFAULT_ENV);
 
         output("System F", term);
 
@@ -103,7 +100,7 @@ public final class Main {
         var curry = Curry.curry(term);
         outputT("Curried", curry, curry.type());
 
-        var captured = Capture.capture(curry, vars);
+        var captured = Capture.capture(curry);
         outputT("Partial Application", captured, captured.type());
 
         var applyCurried = CurryApply.curryApply(curry);
@@ -115,7 +112,7 @@ public final class Main {
         var uncurry = Uncurry.uncurry(tuple);
         outputT("Uncurry", uncurry, uncurry.type());
 
-        var pointFree = ConvertPointFree.pointFree(uncurry, NilNormal.NIL, new Id<HList.Nil>(), vars);
+        var pointFree = ConvertPointFree.pointFree(uncurry, NilNormal.NIL, new Id<HList.Nil>());
         outputT("Point Free", pointFree, pointFree.type());
 
         var generic = pointFree.generic(new Id<Object>());

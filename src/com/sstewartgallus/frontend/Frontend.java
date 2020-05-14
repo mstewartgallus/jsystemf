@@ -1,7 +1,6 @@
 package com.sstewartgallus.frontend;
 
 import com.sstewartgallus.ext.variables.Id;
-import com.sstewartgallus.ext.variables.IdGen;
 import com.sstewartgallus.ext.variables.VarType;
 import com.sstewartgallus.ext.variables.VarValue;
 import com.sstewartgallus.plato.FunctionType;
@@ -71,7 +70,7 @@ public class Frontend {
         return ((Entity.TypeEntity) entity).type();
     }
 
-    public static Term<?> toTerm(Node.Array source, IdGen ids, Environment environment) {
+    public static Term<?> toTerm(Node.Array source, Environment environment) {
         var nodes = source.nodes();
         var nodeZero = nodes.get(0);
         // fixme... put special forms in the environment as well...
@@ -84,7 +83,7 @@ public class Frontend {
 
                     var rest = new Node.Array(nodes.subList(2, nodes.size()));
 
-                    return getTerm(binderName, ids, toType(binderType, environment), rest, environment);
+                    return getTerm(binderName, toType(binderType, environment), rest, environment);
                 }
                 case "∀" -> {
                     var binder = ((Node.Atom) nodes.get(1)).value();
@@ -95,7 +94,7 @@ public class Frontend {
                     var entity = new Entity.TypeEntity(variable);
                     var newEnv = environment.put(binder, entity);
 
-                    var theTerm = toTerm(rest, ids, newEnv);
+                    var theTerm = toTerm(rest, newEnv);
                     return Term.v(x -> theTerm.substitute(id, x));
                 }
             }
@@ -105,7 +104,7 @@ public class Frontend {
             if (node instanceof Node.Atom atom) {
                 return lookupTerm(atom.value(), environment);
             }
-            return toTerm(source, ids, environment);
+            return toTerm(source, environment);
         }).reduce((f, x) -> {
             var fType = f.type();
             var xType = x.type();
@@ -125,13 +124,13 @@ public class Frontend {
         return result.get();
     }
 
-    private static <A> Term<?> getTerm(String binder, IdGen ids, Type<A> binderType, Node.Array rest, Environment environment) {
+    private static <A> Term<?> getTerm(String binder, Type<A> binderType, Node.Array rest, Environment environment) {
         var id = new Id<A>();
         var variable = new VarValue<>(binderType, id);
         var entity = new Entity.TermEntity(variable);
         var newEnv = environment.put(binder, entity);
 
-        var theTerm = toTerm(rest, ids, newEnv);
+        var theTerm = toTerm(rest, newEnv);
         return binderType.l(x -> theTerm.substitute(id, x));
     }
 

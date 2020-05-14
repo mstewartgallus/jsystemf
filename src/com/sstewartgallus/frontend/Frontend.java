@@ -30,27 +30,34 @@ public class Frontend {
 
         List<Node> words = new ArrayList<>();
         var wordsStack = new ArrayList<List<Node>>();
+        loop:
         for (; ; ) {
+            Node newNode;
             switch (tokenizer.nextToken()) {
                 case TT_EOF -> {
-                    if (!wordsStack.isEmpty()) {
-                        throw new IllegalStateException("mid brace");
-                    }
-                    return Node.of(words);
+                    break loop;
                 }
-                case TT_WORD -> words.add(Node.of(tokenizer.sval));
+                case TT_WORD -> {
+                    newNode = Node.of(tokenizer.sval);
+                }
                 case '(' -> {
                     wordsStack.add(words);
                     words = new ArrayList<>();
+                    continue;
                 }
                 case ')' -> {
-                    var node = Node.of(words);
-                    words = wordsStack.remove(0);
-                    words.add(node);
+                    newNode = Node.of(words);
+                    words = wordsStack.remove(wordsStack.size() - 1);
                 }
                 default -> throw new IllegalStateException("other " + (char) tokenizer.ttype);
             }
+            words.add(newNode);
         }
+
+        if (!wordsStack.isEmpty()) {
+            throw new IllegalStateException("mid brace");
+        }
+        return Node.of(words);
     }
 
     private static Type<?> toType(Node node, Environment env) {
@@ -103,7 +110,7 @@ public class Frontend {
             if (node instanceof Node.Atom atom) {
                 return lookupTerm(atom.value(), environment);
             }
-            return toTerm(source, environment);
+            return toTerm((Node.Array)node, environment);
         }).reduce((f, x) -> {
             var fType = f.type();
             var xType = x.type();

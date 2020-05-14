@@ -1,5 +1,6 @@
 package com.sstewartgallus.frontend;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -9,7 +10,7 @@ public interface Node {
     }
 
     static Array of(List<Node> nodes) {
-        return new Array(nodes);
+        return new Array(new ArrayList<>(nodes));
     }
 
     record Array(List<Node>nodes) implements Node {

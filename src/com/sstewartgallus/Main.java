@@ -1,7 +1,8 @@
 package com.sstewartgallus;
 
 
-import com.sstewartgallus.extensions.tuples.NilNormal;
+import com.sstewartgallus.ext.tuples.NilNormal;
+import com.sstewartgallus.ext.variables.IdGen;
 import com.sstewartgallus.frontend.Entity;
 import com.sstewartgallus.frontend.Environment;
 import com.sstewartgallus.frontend.Frontend;

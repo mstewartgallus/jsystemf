@@ -1,5 +1,8 @@
 package com.sstewartgallus.plato;
 
+import com.sstewartgallus.ext.variables.Id;
+import com.sstewartgallus.ext.variables.IdGen;
+import com.sstewartgallus.ext.variables.VarType;
 import com.sstewartgallus.ir.Signature;
 
 import java.util.function.Function;

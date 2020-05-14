@@ -1,4 +1,4 @@
-package com.sstewartgallus.extensions.tuples;
+package com.sstewartgallus.ext.tuples;
 
 import com.sstewartgallus.plato.Type;
 import com.sstewartgallus.plato.ValueTerm;

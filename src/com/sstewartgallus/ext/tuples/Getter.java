@@ -1,6 +1,10 @@
-package com.sstewartgallus.extensions.tuples;
+package com.sstewartgallus.ext.tuples;
 
-import com.sstewartgallus.plato.*;
+import com.sstewartgallus.ext.variables.Id;
+import com.sstewartgallus.plato.Term;
+import com.sstewartgallus.plato.ThunkTerm;
+import com.sstewartgallus.plato.Type;
+import com.sstewartgallus.plato.TypeCheckException;
 
 public interface Getter<A extends HList<A>> extends ThunkTerm<A> {
     record Get<A extends HList<A>, B extends HList<B>>(Term<A>list, Index<A, B>index) implements Getter<B> {

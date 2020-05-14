@@ -1,8 +1,11 @@
-package com.sstewartgallus.plato;
+package com.sstewartgallus.ext.java;
+
+import com.sstewartgallus.plato.Type;
+import com.sstewartgallus.plato.ValueTerm;
 
 import java.util.Objects;
 
-public record PureValue<A>(Type<A>type, A value) implements ValueTerm<A>, CoreTerm<A> {
+public record PureValue<A>(Type<A>type, A value) implements ValueTerm<A> {
     public PureValue {
         Objects.requireNonNull(type);
         Objects.requireNonNull(value);
@@ -12,5 +15,4 @@ public record PureValue<A>(Type<A>type, A value) implements ValueTerm<A>, CoreTe
     public String toString() {
         return Objects.toString(value);
     }
-
 }

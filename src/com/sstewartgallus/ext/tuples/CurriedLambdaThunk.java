@@ -1,5 +1,7 @@
-package com.sstewartgallus.extensions.tuples;
+package com.sstewartgallus.ext.tuples;
 
+import com.sstewartgallus.ext.variables.Id;
+import com.sstewartgallus.ext.variables.VarValue;
 import com.sstewartgallus.plato.*;
 
 import java.util.Objects;

@@ -1,7 +1,10 @@
-package com.sstewartgallus.extensions;
+package com.sstewartgallus.ext;
 
-import com.sstewartgallus.plato.*;
-import com.sstewartgallus.primitives.Prims;
+import com.sstewartgallus.ext.variables.Id;
+import com.sstewartgallus.plato.Term;
+import com.sstewartgallus.plato.ThunkTerm;
+import com.sstewartgallus.plato.Type;
+import com.sstewartgallus.plato.TypeCheckException;
 
 import java.util.Objects;
 
@@ -29,6 +32,7 @@ public record AddThunk(Term<Integer>left, Term<Integer>right) implements ThunkTe
 
     @Override
     public Term<Integer> stepThunk() {
-        return Prims.of(Interpreter.normalize(left).extract() + Interpreter.normalize(right).extract());
+        throw null;
+        // return Prims.of(Interpreter.normalize(left).extract() + Interpreter.normalize(right).extract());
     }
 }

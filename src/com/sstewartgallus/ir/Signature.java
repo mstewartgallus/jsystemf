@@ -1,6 +1,6 @@
 package com.sstewartgallus.ir;
 
-import com.sstewartgallus.extensions.tuples.HList;
+import com.sstewartgallus.ext.tuples.HList;
 import com.sstewartgallus.plato.F;
 import com.sstewartgallus.plato.V;
 

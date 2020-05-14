@@ -1,5 +1,7 @@
 package com.sstewartgallus.plato;
 
+import com.sstewartgallus.ext.variables.Id;
+
 import java.util.function.Function;
 
 // https://gitlab.haskell.org/ghc/ghc/-/wikis/commentary/compiler/core-syn-type
@@ -27,13 +29,11 @@ import java.util.function.Function;
 // https://github.com/DanBurton/Blog/blob/master/Literate%20Haskell/SystemF.lhs
 
 /**
- * The high level syntax for a System F list in my little language.
+ * The high level syntax for the core System F terms in my little language.
  * <p>
  * This is intended to be pristine source language untainted by compiler stuff.
  * <p>
  * Any processing should happen AFTER this step.
- *
- * @param <L>
  */
 public interface Term<L> {
     static <A, B> Term<B> apply(Term<V<A, B>> f, Type<A> x) {
@@ -46,10 +46,6 @@ public interface Term<L> {
 
     static <A, B> Term<V<A, B>> v(Function<Type<A>, Term<B>> f) {
         return new TypeLambdaValue<>(f);
-    }
-
-    static <T> Term<T> pure(Type<T> type, T value) {
-        return new PureValue<>(type, value);
     }
 
     Type<L> type() throws TypeCheckException;

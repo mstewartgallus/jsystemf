@@ -1,10 +1,15 @@
 package com.sstewartgallus.ir;
 
-import com.sstewartgallus.extensions.tuples.ConsNormal;
-import com.sstewartgallus.extensions.tuples.HList;
-import com.sstewartgallus.extensions.tuples.Index;
-import com.sstewartgallus.extensions.tuples.UncurryLambdaThunk;
-import com.sstewartgallus.plato.*;
+import com.sstewartgallus.ext.tuples.ConsNormal;
+import com.sstewartgallus.ext.tuples.HList;
+import com.sstewartgallus.ext.tuples.Index;
+import com.sstewartgallus.ext.tuples.UncurryLambdaThunk;
+import com.sstewartgallus.ext.variables.Id;
+import com.sstewartgallus.ext.variables.IdGen;
+import com.sstewartgallus.plato.F;
+import com.sstewartgallus.plato.FunctionType;
+import com.sstewartgallus.plato.Type;
+import com.sstewartgallus.plato.V;
 
 public interface PointFree<A> {
     <Z> Generic<V<Z, A>> generic(Id<Z> argument, IdGen vars);

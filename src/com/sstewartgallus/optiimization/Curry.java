@@ -1,6 +1,9 @@
 package com.sstewartgallus.optiimization;
 
-import com.sstewartgallus.extensions.tuples.CurriedLambdaThunk;
+import com.sstewartgallus.ext.java.PureValue;
+import com.sstewartgallus.ext.tuples.CurriedLambdaThunk;
+import com.sstewartgallus.ext.variables.IdGen;
+import com.sstewartgallus.ext.variables.VarValue;
 import com.sstewartgallus.plato.*;
 
 public final class Curry {

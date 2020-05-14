@@ -1,8 +1,15 @@
 package com.sstewartgallus.optiimization;
 
-import com.sstewartgallus.extensions.tuples.*;
+import com.sstewartgallus.ext.java.PureValue;
+import com.sstewartgallus.ext.tuples.*;
+import com.sstewartgallus.ext.variables.Id;
+import com.sstewartgallus.ext.variables.IdGen;
+import com.sstewartgallus.ext.variables.VarValue;
 import com.sstewartgallus.ir.PointFree;
-import com.sstewartgallus.plato.*;
+import com.sstewartgallus.plato.CoreTerm;
+import com.sstewartgallus.plato.F;
+import com.sstewartgallus.plato.Term;
+import com.sstewartgallus.plato.Type;
 
 public final class ConvertPointFree {
     private ConvertPointFree() {

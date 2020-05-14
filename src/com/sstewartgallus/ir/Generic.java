@@ -1,7 +1,7 @@
 package com.sstewartgallus.ir;
 
-import com.sstewartgallus.extensions.tuples.HList;
-import com.sstewartgallus.extensions.tuples.Index;
+import com.sstewartgallus.ext.tuples.HList;
+import com.sstewartgallus.ext.tuples.Index;
 import com.sstewartgallus.mh.Arguments;
 import com.sstewartgallus.mh.TypedMethodHandle;
 import com.sstewartgallus.plato.F;

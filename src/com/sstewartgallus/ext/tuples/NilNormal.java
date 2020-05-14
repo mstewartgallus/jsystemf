@@ -1,7 +1,11 @@
-package com.sstewartgallus.extensions.tuples;
+package com.sstewartgallus.ext.tuples;
 
+import com.sstewartgallus.ext.variables.Id;
+import com.sstewartgallus.ext.variables.IdGen;
 import com.sstewartgallus.ir.Signature;
-import com.sstewartgallus.plato.*;
+import com.sstewartgallus.plato.Type;
+import com.sstewartgallus.plato.TypeCheckException;
+import com.sstewartgallus.plato.V;
 
 public enum NilNormal implements Type<HList.Nil> {
     NIL;

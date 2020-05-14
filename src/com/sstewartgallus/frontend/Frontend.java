@@ -1,6 +1,11 @@
 package com.sstewartgallus.frontend;
 
-import com.sstewartgallus.plato.*;
+import com.sstewartgallus.ext.variables.IdGen;
+import com.sstewartgallus.ext.variables.VarType;
+import com.sstewartgallus.ext.variables.VarValue;
+import com.sstewartgallus.plato.FunctionType;
+import com.sstewartgallus.plato.Term;
+import com.sstewartgallus.plato.Type;
 import com.sstewartgallus.primitives.Prims;
 
 import java.io.IOException;

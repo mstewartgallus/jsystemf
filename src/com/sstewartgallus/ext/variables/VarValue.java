@@ -1,4 +1,9 @@
-package com.sstewartgallus.plato;
+package com.sstewartgallus.ext.variables;
+
+import com.sstewartgallus.plato.CoreTerm;
+import com.sstewartgallus.plato.Term;
+import com.sstewartgallus.plato.Type;
+import com.sstewartgallus.plato.ValueTerm;
 
 import java.util.Objects;
 

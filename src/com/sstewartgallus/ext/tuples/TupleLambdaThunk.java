@@ -1,5 +1,8 @@
-package com.sstewartgallus.extensions.tuples;
+package com.sstewartgallus.ext.tuples;
 
+import com.sstewartgallus.ext.variables.Id;
+import com.sstewartgallus.ext.variables.IdGen;
+import com.sstewartgallus.ext.variables.VarValue;
 import com.sstewartgallus.plato.*;
 
 import java.util.Objects;
@@ -109,7 +112,7 @@ public record TupleLambdaThunk<L extends HList<L>, C, D>(Sig<L, C, D>sig,
     }
 
     public record Results<L extends HList<L>, C, D>(
-            com.sstewartgallus.extensions.tuples.UncurryLambdaThunk.Sig<L, C, D>sig,
+            com.sstewartgallus.ext.tuples.UncurryLambdaThunk.Sig<L, C, D>sig,
             Function<Getter<L>, Term<C>>f) {
         public Results {
             Objects.requireNonNull(sig);

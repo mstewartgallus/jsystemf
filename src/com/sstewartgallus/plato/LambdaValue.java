@@ -1,5 +1,8 @@
 package com.sstewartgallus.plato;
 
+import com.sstewartgallus.ext.variables.Id;
+import com.sstewartgallus.ext.variables.VarValue;
+
 import java.util.Objects;
 import java.util.function.Function;
 

@@ -1,9 +1,15 @@
-package com.sstewartgallus.plato;
+package com.sstewartgallus.ext.java;
 
+import com.sstewartgallus.ext.variables.Id;
+import com.sstewartgallus.ext.variables.IdGen;
 import com.sstewartgallus.ir.Signature;
+import com.sstewartgallus.plato.Type;
+import com.sstewartgallus.plato.TypeCheckException;
+import com.sstewartgallus.plato.V;
 
 // fixme... rename/retype, not clear enough this creates a new type...
-public record PureType<A>(Class<A>clazz) implements CoreType<A>, Type<A> {
+// fixme... doesn't need to be core !
+public record PureType<A>(Class<A>clazz) implements Type<A> {
 
     public <Y> Type<A> unify(Type<Y> right) throws TypeCheckException {
         if (this != right) {

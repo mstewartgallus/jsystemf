@@ -1,9 +1,13 @@
 package com.sstewartgallus.optiimization;
 
-import com.sstewartgallus.extensions.tuples.CurriedApplyThunk;
-import com.sstewartgallus.extensions.tuples.HList;
-import com.sstewartgallus.extensions.tuples.TupleLambdaThunk;
-import com.sstewartgallus.plato.*;
+import com.sstewartgallus.ext.java.PureValue;
+import com.sstewartgallus.ext.tuples.CurriedApplyThunk;
+import com.sstewartgallus.ext.tuples.HList;
+import com.sstewartgallus.ext.tuples.TupleLambdaThunk;
+import com.sstewartgallus.ext.variables.IdGen;
+import com.sstewartgallus.ext.variables.VarValue;
+import com.sstewartgallus.plato.CoreTerm;
+import com.sstewartgallus.plato.Term;
 
 public final class Uncurry {
     private Uncurry() {

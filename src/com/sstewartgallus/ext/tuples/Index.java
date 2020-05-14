@@ -1,6 +1,6 @@
-package com.sstewartgallus.extensions.tuples;
+package com.sstewartgallus.ext.tuples;
 
-import com.sstewartgallus.plato.Id;
+import com.sstewartgallus.ext.variables.Id;
 import com.sstewartgallus.plato.Type;
 
 public interface Index<A extends HList<A>, B extends HList<B>> {

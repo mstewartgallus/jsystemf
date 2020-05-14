@@ -1,4 +1,4 @@
-package com.sstewartgallus.plato;
+package com.sstewartgallus.ext.variables;
 
 public record Id<A>(int number) implements Comparable<Id<?>> {
     public String toString() {

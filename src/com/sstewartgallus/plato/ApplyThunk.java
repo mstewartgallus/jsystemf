@@ -1,5 +1,7 @@
 package com.sstewartgallus.plato;
 
+import com.sstewartgallus.ext.variables.Id;
+
 import java.util.Objects;
 
 public record ApplyThunk<A, B>(Term<F<A, B>>f, Term<A>x) implements ThunkTerm<B>, CoreTerm<B> {
@@ -35,13 +37,6 @@ public record ApplyThunk<A, B>(Term<F<A, B>>f, Term<A>x) implements ThunkTerm<B>
         var range = funType.range();
 
         var fNorm = Interpreter.normalize(f);
-        // fixme... how will this compile ?
-        if (fNorm instanceof PureValue<F<A, B>> pure) {
-            var fValue = pure.value();
-            var xNorm = Interpreter.normalize(x);
-            var extract = xNorm.extract();
-            return new PureValue<B>(range, fValue.apply(extract));
-        }
         return ((LambdaValue<A, B>) fNorm).apply(x);
     }
 

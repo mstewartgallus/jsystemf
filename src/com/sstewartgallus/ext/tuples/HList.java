@@ -1,4 +1,4 @@
-package com.sstewartgallus.extensions.tuples;
+package com.sstewartgallus.ext.tuples;
 
 public interface HList<H extends HList<H>> {
     enum Nil implements HList<Nil> {

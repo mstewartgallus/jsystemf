@@ -1,6 +1,7 @@
 package com.sstewartgallus;
 
 
+import com.sstewartgallus.frontend.Entity;
 import com.sstewartgallus.frontend.Environment;
 import com.sstewartgallus.frontend.Frontend;
 import com.sstewartgallus.frontend.Node;
@@ -13,9 +14,20 @@ import com.sstewartgallus.runtime.ValueInvoker;
 
 import java.io.IOException;
 import java.io.StringReader;
+import java.lang.annotation.ElementType;
+import java.lang.annotation.Retention;
+import java.lang.annotation.RetentionPolicy;
+import java.lang.annotation.Target;
+import java.util.Arrays;
 import java.util.function.Supplier;
 
 import static java.lang.invoke.MethodHandles.lookup;
+
+@Target(ElementType.FIELD)
+@Retention(RetentionPolicy.RUNTIME)
+@interface PutEnv {
+    String value();
+}
 
 public final class Main {
     public static final int INDENT = 26;
@@ -24,6 +36,27 @@ public final class Main {
     private static final TypeApply TP = ValueInvoker.newInstance(lookup(), TypeApply.class);
     private static final Apply AP = ValueInvoker.newInstance(lookup(), Apply.class);
     private static final ApplyInt API = ValueInvoker.newInstance(lookup(), ApplyInt.class);
+
+    @PutEnv("+")
+    private static final Term<?> ADD = Type.INT.l(x -> Type.INT.l(y -> Prims.add(x, y)));
+    //@Default("<")
+    //private static final Term<?> LESS_THAN = Type.INT.l(x -> Type.INT.l(y -> Prims.lessThan(x, y)));
+
+    private static final Environment defaultEnv =
+            Arrays.
+                    stream(Main.class.getDeclaredFields())
+                    .filter(f -> f.isAnnotationPresent(PutEnv.class))
+                    .reduce(Environment.empty(), (env, entity) -> {
+                        var defaultAnnotation = entity.getAnnotation(PutEnv.class);
+                        var name = defaultAnnotation.value();
+                        Object value;
+                        try {
+                            value = entity.get(null);
+                        } catch (IllegalAccessException e) {
+                            throw new RuntimeException(e);
+                        }
+                        return env.put(name, new Entity((Term<?>) value));
+                    }, Environment::union);
 
     static {
         // fixme plan: Source File -> AST -> System F IR -> Category IR -> CPS? -> SSA? -> MethodHandle (or ConstantDesc?)
@@ -42,11 +75,10 @@ public final class Main {
 
         var vars = new IdGen();
 
-        var environment = Environment
-                .empty()
-                .put("+", Type.INT.l(x -> Type.INT.l(y -> Prims.add(x, y))))
-                .put("<", Type.INT.l(x -> Type.INT.l(y -> Prims.lessThan(x, y))));
-        var term = Frontend.toTerm(ast, vars, environment);
+
+        output("Environment", defaultEnv);
+
+        var term = Frontend.toTerm(ast, vars, defaultEnv);
 
         output("System F", term);
 
@@ -55,7 +87,6 @@ public final class Main {
                 return Term.v(t -> t.l(x -> t.l(y -> x)));
             }
         }
-
 
         try {
             var kValue = Term.apply(Term.apply(Term.apply(Penguin.id(), Type.INT), Prims.of(3)), Prims.of(5));

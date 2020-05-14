@@ -105,8 +105,8 @@ public class Frontend {
     private static <A> Term<?> getTerm(String binder, IdGen ids, Type<A> binderType, Node.Array rest, Environment environment) {
         var id = ids.<A>createId();
         var variable = new VarValue<>(binderType, id);
-
-        var newEnv = environment.put(binder, variable);
+        var entity = new Entity(variable);
+        var newEnv = environment.put(binder, entity);
 
         var theTerm = toTerm(rest, ids, newEnv);
         return binderType.l(x -> theTerm.substitute(id, x));
@@ -124,10 +124,12 @@ public class Frontend {
 
             return Prims.of(number.intValueExact());
         }
-        var term = environment.get(str);
-        if (term.isEmpty()) {
+
+        var maybeEntity = environment.get(str);
+        if (maybeEntity.isEmpty()) {
             throw new IllegalStateException("No binder found for: " + str);
         }
-        return term.get();
+        var entity = maybeEntity.get();
+        return entity.term();
     }
 }

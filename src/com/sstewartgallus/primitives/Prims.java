@@ -1,5 +1,6 @@
 package com.sstewartgallus.primitives;
 
+import com.sstewartgallus.pass1.AddThunk;
 import com.sstewartgallus.plato.Term;
 import com.sstewartgallus.plato.Type;
 
@@ -13,7 +14,7 @@ public final class Prims {
     }
 
     public static Term<Integer> add(Term<Integer> left, Term<Integer> right) {
-        throw new UnsupportedOperationException("unimplemented");
+        return new AddThunk(left, right);
     }
 
     public static Term<Boolean> lessThan(Term<Integer> left, Term<Integer> right) {

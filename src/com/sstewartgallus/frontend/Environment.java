@@ -1,15 +1,13 @@
 package com.sstewartgallus.frontend;
 
-import com.sstewartgallus.plato.Term;
-
 import java.util.Map;
 import java.util.Optional;
 import java.util.TreeMap;
 
 public final class Environment {
-    private final Map<String, Term<?>> map;
+    private final Map<String, Entity> map;
 
-    private Environment(Map<String, Term<?>> map) {
+    private Environment(Map<String, Entity> map) {
         this.map = map;
     }
 
@@ -17,17 +15,28 @@ public final class Environment {
         return new Environment(new TreeMap<>());
     }
 
-    public Environment put(String str, Term<?> term) {
-        var newMap = new TreeMap<>(map);
-        newMap.put(str, term);
+    // fixme... error on collisions or something....
+    public static Environment union(Environment left, Environment right) {
+        var newMap = new TreeMap<>(left.map);
+        newMap.putAll(right.map);
         return new Environment(newMap);
     }
 
-    public Optional<Term<?>> get(String str) {
+    public Environment put(String str, Entity entity) {
+        var newMap = new TreeMap<>(map);
+        newMap.put(str, entity);
+        return new Environment(newMap);
+    }
+
+    public Optional<Entity> get(String str) {
         var value = map.get(str);
         if (value == null) {
             return Optional.empty();
         }
         return Optional.of(value);
+    }
+
+    public String toString() {
+        return map.toString();
     }
 }

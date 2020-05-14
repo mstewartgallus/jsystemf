@@ -9,6 +9,10 @@ public record CurriedApplyThunk<A>(Body<A>body) implements ThunkTerm<A> {
         Objects.requireNonNull(body);
     }
 
+    public Term<A> visitChildren(Visitor visitor) {
+        return new CurriedApplyThunk<>(body.visitChildren(visitor));
+    }
+
     @Override
     public Type<A> type() throws TypeCheckException {
         return body.type();
@@ -28,6 +32,8 @@ public record CurriedApplyThunk<A>(Body<A>body) implements ThunkTerm<A> {
         Type<A> type() throws TypeCheckException;
 
         Term<A> stepThunk();
+
+        Body<A> visitChildren(Visitor visitor);
     }
 
     public static record ApplyBody<A, B>(Body<F<A, B>>f, Term<A>x) implements Body<B> {
@@ -47,6 +53,11 @@ public record CurriedApplyThunk<A>(Body<A>body) implements ThunkTerm<A> {
         }
 
         @Override
+        public Body<B> visitChildren(Visitor visitor) {
+            return new ApplyBody<>(f.visitChildren(visitor), visitor.term(x));
+        }
+
+        @Override
         public String toString() {
             return f + " " + x;
         }
@@ -55,6 +66,11 @@ public record CurriedApplyThunk<A>(Body<A>body) implements ThunkTerm<A> {
     public record MonoBody<A>(Term<A>body) implements Body<A> {
         public MonoBody {
             Objects.requireNonNull(body);
+        }
+
+        @Override
+        public Body<A> visitChildren(Visitor visitor) {
+            return new MonoBody<>(visitor.term(body));
         }
 
         @Override

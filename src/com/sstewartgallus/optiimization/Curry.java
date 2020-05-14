@@ -11,7 +11,6 @@ public final class Curry {
     private Curry() {
     }
 
-    // fixme.. avoid the IdGen state capture issues..
     public static <A> Term<A> curry(Term<A> root) {
         return root.visit(new Term.Visitor() {
             @Override

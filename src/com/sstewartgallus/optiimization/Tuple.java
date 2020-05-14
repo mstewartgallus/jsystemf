@@ -1,7 +1,5 @@
 package com.sstewartgallus.optiimization;
 
-import com.sstewartgallus.ext.java.ObjectValue;
-import com.sstewartgallus.ext.tuples.CurriedApplyThunk;
 import com.sstewartgallus.ext.tuples.CurriedLambdaThunk;
 import com.sstewartgallus.ext.tuples.HList;
 import com.sstewartgallus.ext.tuples.TupleLambdaThunk;
@@ -15,41 +13,16 @@ public final class Tuple {
     private Tuple() {
     }
 
-    public static <A> Term<A> uncurry(Term<A> term) {
-        if (term instanceof CurriedLambdaThunk<A> lambda) {
-            return uncurryLambda(lambda);
-        }
-        if (term instanceof CurriedApplyThunk<A> apply) {
-            return uncurryApply(apply);
-        }
-
-        if (term instanceof ObjectValue) {
-            return term;
-        }
-
-        if (term instanceof VarValue<A>) {
-            return term;
-        }
-
-        throw new IllegalArgumentException("Unexpected core list " + term);
-    }
-
-    private static <A> Term<A> uncurryApply(CurriedApplyThunk<A> apply) {
-        var uncurriedBody = uncurryApplyBody(apply.body());
-        return new CurriedApplyThunk<>(uncurriedBody);
-    }
-
-    private static <A> CurriedApplyThunk.Body<A> uncurryApplyBody(CurriedApplyThunk.Body<A> body) {
-        if (body instanceof CurriedApplyThunk.MonoBody<A> monoBody) {
-            return new CurriedApplyThunk.MonoBody<>(uncurry(monoBody.body()));
-        }
-        return uncurryApplyBodyApply((CurriedApplyThunk.ApplyBody<?, A>) body);
-    }
-
-    private static <A, B> CurriedApplyThunk.Body<B> uncurryApplyBodyApply(CurriedApplyThunk.ApplyBody<A, B> apply) {
-        var uncurryF = uncurryApplyBody(apply.f());
-        var uncurryX = uncurry(apply.x());
-        return new CurriedApplyThunk.ApplyBody<>(uncurryF, uncurryX);
+    public static <A> Term<A> uncurry(Term<A> root) {
+        return root.visit(new Term.Visitor() {
+            @Override
+            public <T> Term<T> term(Term<T> term) {
+                if (!(term instanceof CurriedLambdaThunk<T> lambdaThunk)) {
+                    return term.visitChildren(this);
+                }
+                return uncurryLambda(lambdaThunk);
+            }
+        });
     }
 
     private static <A> Term<A> uncurryLambda(CurriedLambdaThunk<A> lambda) {

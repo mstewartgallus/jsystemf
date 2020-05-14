@@ -1,6 +1,5 @@
 package com.sstewartgallus.optiimization;
 
-import com.sstewartgallus.ext.java.ObjectValue;
 import com.sstewartgallus.ext.tuples.CurriedLambdaThunk;
 import com.sstewartgallus.ext.variables.Id;
 import com.sstewartgallus.ext.variables.VarValue;
@@ -8,6 +7,7 @@ import com.sstewartgallus.plato.ApplyThunk;
 import com.sstewartgallus.plato.F;
 import com.sstewartgallus.plato.Term;
 
+import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 import java.util.TreeSet;
@@ -17,41 +17,8 @@ public final class Capture {
     private Capture() {
     }
 
-    public static <A> Term<A> capture(Term<A> term) {
-        return captureInternal(term).value;
-    }
-
-    private static <A> Results<A> captureInternal(Term<A> term) {
-        if (term instanceof CurriedLambdaThunk<A> lambda) {
-            return curryLambda(lambda);
-        }
-
-        if (term instanceof ObjectValue) {
-            return new Results<>(Set.of(), term);
-        }
-
-        if (term instanceof VarValue<A> v) {
-            return new Results<>(Set.of(v), v);
-        }
-
-        if (term instanceof ApplyThunk<?, A> apply) {
-            return captureApply(apply);
-        }
-
-        throw new IllegalArgumentException("Unexpected core list " + term);
-    }
-
-    private static <A> Set<A> union(Set<A> left, Set<A> right) {
-        var x = new TreeSet<>(left);
-        x.addAll(right);
-        return x;
-    }
-
-    private static <A, B> Results<B> captureApply(ApplyThunk<A, B> apply) {
-        var fResults = captureInternal(apply.f());
-        var xResults = captureInternal(apply.x());
-        var captures = union(fResults.captured, xResults.captured);
-        return new Results<>(captures, new ApplyThunk<>(fResults.value, xResults.value));
+    public static <A> Term<A> capture(Term<A> root) {
+        return root.visit(new CurryVisitor());
     }
 
     private static <A> Results<A> curryLambda(CurriedLambdaThunk<A> lambda) {
@@ -66,8 +33,9 @@ public final class Capture {
 
     private static <A> BodyResults<A> captureBody(CurriedLambdaThunk.Body<A> body) {
         if (body instanceof CurriedLambdaThunk.MainBody<A> mainBody) {
-            var results = captureInternal(mainBody.body());
-            return new BodyResults<>(results.captured, new CurriedLambdaThunk.MainBody<>(results.value));
+            var curryVisitor = new CurryVisitor();
+            var results = mainBody.body().visit(curryVisitor);
+            return new BodyResults<>(curryVisitor.captured, new CurriedLambdaThunk.MainBody<>(results));
         }
 
         var lambda = (CurriedLambdaThunk.LambdaBody<?, ?>) body;
@@ -100,6 +68,26 @@ public final class Capture {
     private static <A, B> Term<A> helper(List<VarValue<?>> free, int ii, VarValue<B> freeVar, CurriedLambdaThunk.Body<A> body) {
         return new ApplyThunk<>(helper(free, ii + 1, new CurriedLambdaThunk.LambdaBody<>(freeVar.type(), x -> body.substitute(freeVar.variable(), x))),
                 freeVar);
+    }
+
+    static final class CurryVisitor extends Term.Visitor {
+        final Set<VarValue<?>> captured = new HashSet<>();
+
+        @Override
+        public <T> Term<T> term(Term<T> term) {
+            if (term instanceof VarValue<T> v) {
+                captured.add(v);
+                return v;
+            }
+
+            if (!(term instanceof CurriedLambdaThunk<T> thunk)) {
+                var child = new CurryVisitor();
+                var result = term.visitChildren(child);
+                captured.addAll(child.captured);
+                return result;
+            }
+            return curryLambda(thunk).value;
+        }
     }
 
     record Results<L>(Set<VarValue<?>>captured, Term<L>value) {

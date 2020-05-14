@@ -54,6 +54,10 @@ public interface Term<L> {
 
     Type<L> type() throws TypeCheckException;
 
+    default <X> Term<L> substitute(Id<X> variable, Type<X> replacement) {
+        throw new UnsupportedOperationException(getClass().toString());
+    }
+
     default <X> Term<L> substitute(Id<X> variable, Term<X> replacement) {
         throw new UnsupportedOperationException(getClass().toString());
     }

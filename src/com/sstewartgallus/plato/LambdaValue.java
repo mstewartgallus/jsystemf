@@ -45,6 +45,11 @@ public record LambdaValue<A, B>(Type<A>domain,
     }
 
     @Override
+    public <X> Term<F<A, B>> substitute(Id<X> v, Type<X> replacement) {
+        return domain.substitute(v, replacement).l(x -> f.apply(x).substitute(v, replacement));
+    }
+
+    @Override
     public <X> Term<F<A, B>> substitute(Id<X> v, Term<X> replacement) {
         return domain.l(x -> f.apply(x).substitute(v, replacement));
     }

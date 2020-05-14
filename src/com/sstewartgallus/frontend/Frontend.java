@@ -68,15 +68,33 @@ public class Frontend {
     public static Term<?> toTerm(Node.Array source, IdGen ids, Environment environment) {
         var nodes = source.nodes();
         var nodeZero = nodes.get(0);
-        if (nodeZero instanceof Node.Atom atom && atom.value().equals("λ")) {
-            var binder = ((Node.Array) nodes.get(1)).nodes();
-            var binderName = ((Node.Atom) binder.get(0)).value();
-            var binderType = binder.get(1);
+        // fixme... put special forms in the environment as well...
+        if (nodeZero instanceof Node.Atom atom) {
+            switch (atom.value()) {
+                case "λ" -> {
+                    var binder = ((Node.Array) nodes.get(1)).nodes();
+                    var binderName = ((Node.Atom) binder.get(0)).value();
+                    var binderType = binder.get(1);
 
-            var rest = new Node.Array(nodes.subList(2, nodes.size()));
+                    var rest = new Node.Array(nodes.subList(2, nodes.size()));
 
-            return getTerm(binderName, ids, toType(binderType, environment), rest, environment);
+                    return getTerm(binderName, ids, toType(binderType, environment), rest, environment);
+                }
+                case "∀" -> {
+                    var binder = ((Node.Atom) nodes.get(1)).value();
+                    var rest = new Node.Array(nodes.subList(2, nodes.size()));
+
+                    var id = ids.createId();
+                    var variable = new VarType<>(id);
+                    var entity = new Entity.TypeEntity(variable);
+                    var newEnv = environment.put(binder, entity);
+
+                    var theTerm = toTerm(rest, ids, newEnv);
+                    return Term.v(x -> theTerm.substitute(id, x));
+                }
+            }
         }
+
         Optional<Term<?>> result = source.nodes().stream().map(node -> {
             if (node instanceof Node.Atom atom) {
                 return lookupTerm(atom.value(), environment);
@@ -129,6 +147,9 @@ public class Frontend {
             throw new IllegalStateException("No binder found for: " + str);
         }
         var entity = maybeEntity.get();
-        return ((Entity.TermEntity) entity).term();
+        if (!(entity instanceof Entity.TermEntity termEntity)) {
+            throw new RuntimeException("Not a term " + entity);
+        }
+        return termEntity.term();
     }
 }

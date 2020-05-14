@@ -72,7 +72,6 @@ public final class Main {
                     }, Environment::union);
 
     static {
-        // fixme plan: Source File -> AST -> System F IR -> Category IR -> CPS? -> SSA? -> MethodHandle (or ConstantDesc?)
         // fixme... still need to introduce lazy values and product recursion..
         var source = "λ (x I) λ (y I) x";
 
@@ -94,66 +93,44 @@ public final class Main {
 
         output("System F", term);
 
-        record Penguin() {
-            static <A> Term<V<A, F<A, F<A, A>>>> id() {
-                return Term.v(t -> t.l(x -> t.l(y -> x)));
-            }
-        }
+        var interpreterOutput = Interpreter.normalize(term);
+        outputT("Interpreter Output", interpreterOutput, interpreterOutput.type());
 
-        try {
-            var kValue = Term.apply(Term.apply(Term.apply(Penguin.id(), Type.INT), Prims.of(3)), Prims.of(5));
-            outputT("System F", Penguin.id(), Penguin.id().type());
+        var curry = Curry.curry(term, vars);
+        outputT("Curried", curry, curry.type());
 
-            var norm = Interpreter.normalize(kValue);
-            outputT("System F", norm, norm.type());
-        } catch (TypeCheckException e) {
-            throw new RuntimeException(e);
-        }
+        var captured = Capture.capture(curry, vars);
+        outputT("Partial Application", captured, captured.type());
 
-        var expr = Term.apply(Type.INT.l(x -> Type.INT.l(y -> x)), Prims.of(4));
-        try {
-            outputT("System F", expr, expr.type());
+        var applyCurried = CurryApply.curryApply(curry, vars);
+        outputT("Apply Curried", applyCurried, applyCurried.type());
 
-            var interpreterOutput = Interpreter.normalize(expr);
-            outputT("Interpreter Output", interpreterOutput, interpreterOutput.type());
+        var tuple = Tuple.uncurry(applyCurried, vars);
+        outputT("Tuple", tuple, tuple.type());
 
-            var curry = Curry.curry(expr, vars);
-            outputT("Curried", curry, curry.type());
+        var uncurry = Uncurry.uncurry(tuple, vars);
+        outputT("Uncurry", uncurry, uncurry.type());
 
-            var captured = Capture.capture(curry, vars);
-            outputT("Partial Application", captured, captured.type());
+        var captures = Pass2.from(captured, vars);
+        outputT("Explicit Environment", captures, captures.type());
 
-            var applyCurried = CurryApply.curryApply(curry, vars);
-            outputT("Apply Curried", applyCurried, applyCurried.type());
+        var uncurried = captures.uncurry(vars);
+        outputT("Uncurried", uncurried, uncurried.type());
 
-            var tuple = Tuple.uncurry(applyCurried, vars);
-            outputT("Tuple", tuple, tuple.type());
+        var pointFree = uncurried.pointFree(vars.createId(), vars, TPass0.NilType.NIL);
+        outputT("Point Free", pointFree, pointFree.type());
 
-            var uncurry = Uncurry.uncurry(tuple, vars);
-            outputT("Uncurry", uncurry, uncurry.type());
+        var generic = pointFree.generic(vars.createId(), vars);
+        outputT("Generic", generic, generic.signature());
 
-            var captures = Pass2.from(captured, vars);
-            outputT("Explicit Environment", captures, captures.type());
+        // fixme.. hack
+        var main = Generic.compile(lookup(), (Generic) generic);
+        output("Main", main);
 
-            var uncurried = captures.uncurry(vars);
-            outputT("Uncurried", uncurried, uncurried.type());
+        var bar = API.apply((Value<F<Integer, F<Integer, Integer>>>) main, 3, 5);
+        output("Result", bar);
 
-            var pointFree = uncurried.pointFree(vars.createId(), vars, TPass0.NilType.NIL);
-            outputT("Point Free", pointFree, pointFree.type());
-
-            var generic = pointFree.<Void>generic(vars.createId(), vars);
-            outputT("Generic", generic, generic.signature());
-
-            var main = Generic.compile(lookup(), generic);
-            output("Main", main);
-
-            var bar = API.apply(main, 3);
-            output("Result", bar);
-
-            TO_EXEC = () -> API.apply(main, 3);
-        } catch (TypeCheckException e) {
-            throw new RuntimeException(e);
-        }
+        TO_EXEC = () -> API.apply((Value<F<Integer, F<Integer, Integer>>>) main, 3, 3);
     }
 
     static void output(String stage, Object results) {
@@ -194,7 +171,7 @@ public final class Main {
 
     @FunctionalInterface
     public interface ApplyInt {
-        int apply(Value<F<Integer, Integer>> f, int y);
+        int apply(Value<F<Integer, F<Integer, Integer>>> f, int x, int y);
     }
 
 }

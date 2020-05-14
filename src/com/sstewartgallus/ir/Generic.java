@@ -34,8 +34,8 @@ public interface Generic<A> {
     }
 
     // fixme... what really want instead of Void is a T such that Type<T> only has one inhabitant...
-    static <B> Value<B> compile(Lookup lookup, Generic<V<Void, F<HList.Nil, B>>> generic) {
-        var chunk = Generic.compile(lookup, generic, new Signature.Pure<>(Void.class));
+    static <B> Value<B> compile(Lookup lookup, Generic<V<Object, F<HList.Nil, B>>> generic) {
+        var chunk = Generic.compile(lookup, generic, new Signature.Pure<>(Object.class));
 
         var handle = chunk.intro();
 

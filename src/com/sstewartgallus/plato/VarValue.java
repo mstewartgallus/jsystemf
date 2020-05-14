@@ -21,6 +21,12 @@ public record VarValue<A>(Type<A>type, Id<A>variable) implements ValueTerm<A>, C
         return "v" + variable;
     }
 
+    @Override
+    public <X> Term<A> substitute(Id<X> v, Type<X> replacement) {
+        return new VarValue<>(type.substitute(v, replacement), variable);
+    }
+
+    @Override
     public <X> Term<A> substitute(Id<X> argument, Term<X> replacement) {
         if (variable.equals(argument)) {
             return (Term) replacement;

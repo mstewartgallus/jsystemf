@@ -33,6 +33,7 @@ public record TupleLambdaThunk<L extends HList<L>, C, D>(Sig<L, C, D>sig,
         return "(" + sig.stringify(f, new IdGen()) + ")";
     }
 
+
     public interface Sig<T extends HList<T>, C, D> {
 
         Term<D> stepThunk(Function<T, Term<C>> f);
@@ -41,7 +42,7 @@ public record TupleLambdaThunk<L extends HList<L>, C, D>(Sig<L, C, D>sig,
 
         String stringify(Function<T, Term<C>> f, IdGen ids);
 
-        UncurryLambdaThunk<?, C, D> uncurry(Function<T, Term<C>> f, IdGen ids);
+        Results<?, C, D> uncurry(Function<T, Term<C>> f, IdGen ids);
 
         record Zero<A>(Type<A>type) implements Sig<HList.Nil, A, A> {
             @Override
@@ -55,21 +56,24 @@ public record TupleLambdaThunk<L extends HList<L>, C, D>(Sig<L, C, D>sig,
             }
 
             @Override
-            public UncurryLambdaThunk<HList.Nil, A, A> uncurry(Function<HList.Nil, Term<A>> f, IdGen ids) {
+            public Results<HList.Nil, A, A> uncurry(Function<HList.Nil, Term<A>> f, IdGen ids) {
                 var body = f.apply(HList.Nil.NIL);
-                return new UncurryLambdaThunk<>(new UncurryLambdaThunk.Sig.Zero<>(type), nil -> body);
+                return new Results<>(new UncurryLambdaThunk.Sig.Zero<>(type), nil -> body);
             }
         }
 
         record Cons<H, T extends HList<T>, C, D>(Type<H>head,
                                                  Sig<T, C, D>tail) implements Sig<HList.Cons<Term<H>, T>, C, F<H, D>> {
-            // fixme... index instead of head and tail...
-            private static <H, T extends HList<T>> Term<H> head(Term<HList.Cons<H, T>> product) {
-                return new HeadThunk<>(product);
+
+            private static <H, X extends HList<X>> Getter<X> nextGetter(Getter<HList.Cons<H, X>> product) {
+                var get = (Getter.Get<?, HList.Cons<H, X>>) product;
+                return nextGetter(get);
             }
 
-            private static <H, T extends HList<T>> Term<T> tail(Term<HList.Cons<H, T>> product) {
-                return new TailThunk<>(product);
+            private static <T extends HList<T>, H, X extends HList<X>> Getter<X> nextGetter(Getter.Get<T, HList.Cons<H, X>> get) {
+                var list = get.list();
+                var index = new IndexTuple.Next<>(get.index());
+                return new Getter.Get<>(list, index);
             }
 
             @Override
@@ -89,18 +93,32 @@ public record TupleLambdaThunk<L extends HList<L>, C, D>(Sig<L, C, D>sig,
             }
 
             @Override
-            public UncurryLambdaThunk<?, C, F<H, D>> uncurry(Function<HList.Cons<Term<H>, T>, Term<C>> f, IdGen ids) {
+            public Results<?, C, F<H, D>> uncurry(Function<HList.Cons<Term<H>, T>, Term<C>> f, IdGen ids) {
                 var headId = ids.<H>createId();
                 var headVar = new VarValue<>(head, headId);
                 var value = tail.uncurry(t -> f.apply(new HList.Cons<>(headVar, t)), ids);
                 return cons(headId, value);
             }
 
-            public <X extends HList<X>> UncurryLambdaThunk<HList.Cons<H, X>, C, F<H, D>> cons(Id<H> headId, UncurryLambdaThunk<X, C, D> value) {
+            public <X extends HList<X>> Results<HList.Cons<H, X>, C, F<H, D>> cons(Id<H> headId, Results<X, C, D> value) {
                 var tailF = value.f();
                 var sig = new UncurryLambdaThunk.Sig.Cons<>(head, value.sig());
-                return new UncurryLambdaThunk<>(sig, (Term<HList.Cons<H, X>> product) -> tailF.apply(tail(product)).substitute(headId, head(product)));
+                return new Results<>(sig, product -> tailF.apply(nextGetter(product)).substitute(headId, new DerefThunk<H, X>(product)));
             }
         }
     }
+
+    public record Results<L extends HList<L>, C, D>(
+            com.sstewartgallus.pass1.UncurryLambdaThunk.Sig<L, C, D>sig,
+            Function<Getter<L>, Term<C>>f) {
+        public Results {
+            Objects.requireNonNull(sig);
+            Objects.requireNonNull(f);
+        }
+
+        UncurryLambdaThunk<L, C, D> toUncurry() {
+            return new UncurryLambdaThunk<>(sig, x -> f.apply(new Getter.Get<>(x, new IndexTuple.Zip<>(x.type()))));
+        }
+    }
+
 }

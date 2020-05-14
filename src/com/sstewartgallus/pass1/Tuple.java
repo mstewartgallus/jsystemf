@@ -15,7 +15,7 @@ public final class Tuple {
         }
 
         if (!(term instanceof CoreTerm<A> core)) {
-            throw new IllegalArgumentException("Unexpected term " + term);
+            throw new IllegalArgumentException("Unexpected list " + term);
         }
 
         if (core instanceof PureValue) {
@@ -26,7 +26,7 @@ public final class Tuple {
             return core;
         }
 
-        throw new IllegalArgumentException("Unexpected core term " + term);
+        throw new IllegalArgumentException("Unexpected core list " + term);
     }
 
     private static <A> Term<A> uncurryApply(CurriedApplyThunk<A> apply, IdGen ids) {

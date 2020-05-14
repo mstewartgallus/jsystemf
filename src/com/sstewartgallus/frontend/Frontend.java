@@ -148,7 +148,7 @@ public class Frontend {
         }
         var entity = maybeEntity.get();
         if (!(entity instanceof Entity.TermEntity termEntity)) {
-            throw new RuntimeException("Not a term " + entity);
+            throw new RuntimeException("Not a list " + entity);
         }
         return termEntity.term();
     }

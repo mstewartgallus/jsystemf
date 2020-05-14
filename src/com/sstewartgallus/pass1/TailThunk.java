@@ -4,7 +4,8 @@ import com.sstewartgallus.plato.*;
 
 import java.util.Objects;
 
-public record TailThunk<A, B extends HList<B>>(Term<HList.Cons<A, B>>product) implements ThunkTerm<B> {
+// fixme... extract to interface....
+public record TailThunk<A, B extends HList<B>>(Term<HList.Cons<A, B>>product) implements ThunkTerm<B>, Getter<B> {
     public TailThunk {
         Objects.requireNonNull(product);
     }

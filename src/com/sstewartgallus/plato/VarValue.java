@@ -2,11 +2,11 @@ package com.sstewartgallus.plato;
 
 import java.util.Objects;
 
-// fixme... should be a nonpure extension to the term language...
+// fixme... should be a nonpure extension to the list language...
 // fixme... is it a thunk or a value?
 
 /**
- * NOT a core term of the language...
+ * NOT a core list of the language...
  *
  * @param <A>
  */

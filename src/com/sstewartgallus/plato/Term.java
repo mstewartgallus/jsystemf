@@ -27,7 +27,7 @@ import java.util.function.Function;
 // https://github.com/DanBurton/Blog/blob/master/Literate%20Haskell/SystemF.lhs
 
 /**
- * The high level syntax for a System F term in my little language.
+ * The high level syntax for a System F list in my little language.
  * <p>
  * This is intended to be pristine source language untainted by compiler stuff.
  * <p>

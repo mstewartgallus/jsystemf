@@ -4,8 +4,8 @@ import com.sstewartgallus.plato.*;
 
 import java.util.Objects;
 
-public record HeadThunk<A, B extends HList<B>>(Term<HList.Cons<A, B>>product) implements ThunkTerm<A> {
-    public HeadThunk {
+public record DerefThunk<A, B extends HList<B>>(Term<HList.Cons<A, B>>product) implements ThunkTerm<A> {
+    public DerefThunk {
         Objects.requireNonNull(product);
     }
 
@@ -22,6 +22,6 @@ public record HeadThunk<A, B extends HList<B>>(Term<HList.Cons<A, B>>product) im
 
     @Override
     public String toString() {
-        return "(head " + product + ")";
+        return "(get " + product + ")";
     }
 }

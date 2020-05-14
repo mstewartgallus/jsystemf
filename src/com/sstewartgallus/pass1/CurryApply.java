@@ -23,7 +23,7 @@ public final class CurryApply {
             return curryApply(apply, ids);
         }
 
-        throw new IllegalArgumentException("Unexpected core term " + term);
+        throw new IllegalArgumentException("Unexpected core list " + term);
     }
 
     private static <A, B> Term<B> curryApply(ApplyThunk<A, B> apply, IdGen ids) {

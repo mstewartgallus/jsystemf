@@ -21,7 +21,7 @@ public final class Capture {
         }
 
         if (!(term instanceof CoreTerm<A> core)) {
-            throw new IllegalArgumentException("Unexpected term " + term);
+            throw new IllegalArgumentException("Unexpected list " + term);
         }
 
         if (core instanceof PureValue) {
@@ -36,7 +36,7 @@ public final class Capture {
             return captureApply(apply, ids);
         }
 
-        throw new IllegalArgumentException("Unexpected core term " + term);
+        throw new IllegalArgumentException("Unexpected core list " + term);
     }
 
     private static <A> Set<A> union(Set<A> left, Set<A> right) {

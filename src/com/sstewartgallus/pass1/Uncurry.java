@@ -15,7 +15,7 @@ public final class Uncurry {
         }
 
         if (!(term instanceof CoreTerm<A> core)) {
-            throw new IllegalArgumentException("Unexpected term " + term);
+            throw new IllegalArgumentException("Unexpected list " + term);
         }
 
         if (core instanceof PureValue) {
@@ -26,7 +26,7 @@ public final class Uncurry {
             return core;
         }
 
-        throw new IllegalArgumentException("Unexpected core term " + term);
+        throw new IllegalArgumentException("Unexpected core list " + term);
     }
 
     private static <A> Term<A> uncurryApply(CurriedApplyThunk<A> apply, IdGen ids) {
@@ -50,6 +50,6 @@ public final class Uncurry {
     private static <A extends HList<A>, B, C> Term<C> uncurryLambda(TupleLambdaThunk<A, B, C> lambda, IdGen ids) {
         var sig = lambda.sig();
         var f = lambda.f();
-        return sig.uncurry(f, ids);
+        return sig.uncurry(f, ids).toUncurry();
     }
 }

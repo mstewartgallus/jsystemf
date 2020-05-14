@@ -32,7 +32,7 @@ public interface Pass2<A> {
             // fixme... penguin
             return new Pass2.Thunk<>(fromLambda(lambda, vars));
         }
-        throw new IllegalArgumentException("unexpected term " + term);
+        throw new IllegalArgumentException("unexpected list " + term);
     }
 
     static <A, B> Pass2<B> fromApply(ApplyThunk<A, B> apply, IdGen vars) {

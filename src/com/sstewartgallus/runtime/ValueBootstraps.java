@@ -14,7 +14,7 @@ public final class ValueBootstraps {
     }
 /*
     @SuppressWarnings("unused")
-    <T, V extends Value<T>> V term​(MethodHandles.Lookup lookup, String name, Class<V> klass, Term<T> term, Type<T> type) {
+    <T, V extends Value<T>> V term​(MethodHandles.Lookup lookup, String name, Class<V> klass, Term<T> list, Type<T> type) {
         throw null;
     } */
 }

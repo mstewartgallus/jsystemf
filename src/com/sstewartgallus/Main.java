@@ -1,7 +1,9 @@
 package com.sstewartgallus;
 
 
-import com.sstewartgallus.ast.Node;
+import com.sstewartgallus.frontend.Environment;
+import com.sstewartgallus.frontend.Frontend;
+import com.sstewartgallus.frontend.Node;
 import com.sstewartgallus.ir.Generic;
 import com.sstewartgallus.pass1.*;
 import com.sstewartgallus.plato.*;
@@ -10,15 +12,9 @@ import com.sstewartgallus.runtime.Value;
 import com.sstewartgallus.runtime.ValueInvoker;
 
 import java.io.IOException;
-import java.io.Reader;
-import java.io.StreamTokenizer;
 import java.io.StringReader;
-import java.math.BigInteger;
-import java.util.*;
 import java.util.function.Supplier;
 
-import static java.io.StreamTokenizer.TT_EOF;
-import static java.io.StreamTokenizer.TT_WORD;
 import static java.lang.invoke.MethodHandles.lookup;
 
 public final class Main {
@@ -38,7 +34,7 @@ public final class Main {
 
         Node.Array ast;
         try {
-            ast = parse(new StringReader(source));
+            ast = Frontend.parse(new StringReader(source));
         } catch (IOException e) {
             throw new RuntimeException(e);
         }
@@ -46,10 +42,11 @@ public final class Main {
 
         var vars = new IdGen();
 
-        var environment = new TreeMap<String, Term<?>>();
-        environment.put("+", Type.INT.l(x -> Type.INT.l(y -> Prims.add(x, y))));
-        environment.put("<", Type.INT.l(x -> Type.INT.l(y -> Prims.lessThan(x, y))));
-        var term = toTerm(ast, vars, environment);
+        var environment = Environment
+                .empty()
+                .put("+", Type.INT.l(x -> Type.INT.l(y -> Prims.add(x, y))))
+                .put("<", Type.INT.l(x -> Type.INT.l(y -> Prims.lessThan(x, y))));
+        var term = Frontend.toTerm(ast, vars, environment);
 
         output("System F", term);
 
@@ -116,21 +113,6 @@ public final class Main {
         }
     }
 
-    // fixme.. arguments check more safely...
-    static <A> Term<?> apply(Term<?> f, Term<A> x) throws TypeCheckException {
-        var fType = f.type();
-        var xType = x.type();
-
-        if (!(fType instanceof FunctionNormal<?, ?> funType)) {
-            throw new UnsupportedOperationException("applying nonfunction");
-        }
-
-        funType.domain().unify(xType);
-
-        // fixme... do this more safely..
-        return Term.apply((Term) f, x);
-    }
-
     static void output(String stage, Object results) {
         outputT(stage, results, "-");
     }
@@ -146,123 +128,6 @@ public final class Main {
             y = INDENT_2;
         }
         System.err.println(stage + " ".repeat(x) + "\t" + resultsStr + " ".repeat(y) + ":" + "\t" + type);
-    }
-
-    private static Node.Array parse(Reader reader) throws IOException {
-        var tokenizer = new StreamTokenizer(reader);
-        tokenizer.resetSyntax();
-        tokenizer.wordChars(0, Integer.MAX_VALUE);
-        tokenizer.whitespaceChars(' ', ' ');
-        tokenizer.ordinaryChar('(');
-        tokenizer.ordinaryChar(')');
-
-        List<Node> words = new ArrayList<>();
-        var wordsStack = new ArrayList<List<Node>>();
-        for (; ; ) {
-            switch (tokenizer.nextToken()) {
-                case TT_EOF -> {
-                    if (!wordsStack.isEmpty()) {
-                        throw new IllegalStateException("mid brace");
-                    }
-                    return Node.of(words);
-                }
-                case TT_WORD -> words.add(Node.of(tokenizer.sval));
-                case '(' -> {
-                    wordsStack.add(words);
-                    words = new ArrayList<>();
-                }
-                case ')' -> {
-                    var node = Node.of(words);
-                    words = wordsStack.remove(0);
-                    words.add(node);
-                }
-                default -> throw new IllegalStateException("other " + (char) tokenizer.ttype);
-            }
-        }
-    }
-
-    private static Type<?> toType(Node node) {
-        // fixme.. denormal types are looking more and more plausible...
-        if (node instanceof Node.Atom atom) {
-            return lookupType(atom.value());
-        }
-        throw null;
-    }
-
-    private static Type<?> lookupType(String str) {
-        return switch (str) {
-            case "I" -> Type.INT;
-
-            default -> {
-                throw new IllegalStateException("Unexpected primHook: " + str);
-            }
-        };
-    }
-
-    private static Term<?> toTerm(Node.Array source, IdGen ids, Map<String, Term<?>> environment) {
-        var nodes = source.nodes();
-        var nodeZero = nodes.get(0);
-        if (nodeZero instanceof Node.Atom atom && atom.value().equals("λ")) {
-            var binder = ((Node.Array) nodes.get(1)).nodes();
-            var binderName = ((Node.Atom) binder.get(0)).value();
-            var binderType = binder.get(1);
-
-            var rest = new Node.Array(nodes.subList(2, nodes.size()));
-
-            return getTerm(binderName, ids, toType(binderType), rest, environment);
-        }
-        Optional<Term<?>> result = source.nodes().stream().map(node -> {
-            if (node instanceof Node.Atom atom) {
-                return lookupTerm(atom.value(), environment);
-            }
-            return toTerm(source, ids, environment);
-        }).reduce((f, x) -> {
-            var fType = f.type();
-            var xType = x.type();
-
-            if (!(fType instanceof FunctionNormal<?, ?> funType)) {
-                throw new UnsupportedOperationException("applying nonfunction");
-            }
-
-            funType.domain().unify(xType);
-
-            // fixme... do this more safely..
-            return (Term<?>) Term.apply((Term) f, x);
-        });
-        if (result.isEmpty()) {
-            throw new Error("todo handle nil " + source);
-        }
-        return result.get();
-    }
-
-    private static <A> Term<?> getTerm(String binder, IdGen ids, Type<A> binderType, Node.Array rest, Map<String, Term<?>> environment) {
-        var id = ids.<A>createId();
-        var variable = new VarValue<>(binderType, id);
-
-        var newEnv = new TreeMap<>(environment);
-        newEnv.put(binder, variable);
-
-        var theTerm = toTerm(rest, ids, newEnv);
-        return binderType.l(x -> theTerm.substitute(id, x));
-    }
-
-    private static Term<?> lookupTerm(String str, Map<String, Term<?>> environment) {
-        isNumber:
-        {
-            BigInteger number;
-            try {
-                number = new BigInteger(str);
-            } catch (NumberFormatException e) {
-                break isNumber;
-            }
-
-            return Prims.of(number.intValueExact());
-        }
-        var term = environment.get(str);
-        if (null == term) {
-            throw new IllegalStateException("Not a term: " + str);
-        }
-        return term;
     }
 
     public static void main(String... args) {

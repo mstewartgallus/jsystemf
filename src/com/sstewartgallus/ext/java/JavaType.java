@@ -7,9 +7,7 @@ import com.sstewartgallus.plato.Type;
 import com.sstewartgallus.plato.TypeCheckException;
 import com.sstewartgallus.plato.V;
 
-// fixme... rename/retype, not clear enough this creates a new type...
-// fixme... doesn't need to be core !
-public record PureType<A>(Class<A>clazz) implements Type<A> {
+public record JavaType<A>(Class<A>clazz) implements Type<A> {
 
     public <Y> Type<A> unify(Type<Y> right) throws TypeCheckException {
         if (this != right) {
@@ -20,7 +18,7 @@ public record PureType<A>(Class<A>clazz) implements Type<A> {
 
     @Override
     public <Z> Type<A> substitute(Id<Z> v, Type<Z> replacement) {
-        return new PureType<>(clazz);
+        return new JavaType<>(clazz);
     }
 
     @Override

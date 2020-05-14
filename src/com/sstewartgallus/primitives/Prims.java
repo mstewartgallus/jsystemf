@@ -1,9 +1,8 @@
 package com.sstewartgallus.primitives;
 
 import com.sstewartgallus.ext.AddThunk;
-import com.sstewartgallus.ext.java.PureValue;
+import com.sstewartgallus.ext.java.IntValue;
 import com.sstewartgallus.plato.Term;
-import com.sstewartgallus.plato.Type;
 
 public final class Prims {
 
@@ -11,7 +10,7 @@ public final class Prims {
     }
 
     public static Term<Integer> of(int value) {
-        return new PureValue<>(Type.INT, value);
+        return new IntValue(value);
     }
 
     public static Term<Integer> add(Term<Integer> left, Term<Integer> right) {

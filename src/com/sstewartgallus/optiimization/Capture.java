@@ -1,6 +1,6 @@
 package com.sstewartgallus.optiimization;
 
-import com.sstewartgallus.ext.java.PureValue;
+import com.sstewartgallus.ext.java.ObjectValue;
 import com.sstewartgallus.ext.tuples.CurriedLambdaThunk;
 import com.sstewartgallus.ext.variables.IdGen;
 import com.sstewartgallus.ext.variables.VarValue;
@@ -31,7 +31,7 @@ public final class Capture {
             throw new IllegalArgumentException("Unexpected list " + term);
         }
 
-        if (core instanceof PureValue) {
+        if (core instanceof ObjectValue) {
             return new Results<>(Set.of(), core);
         }
 

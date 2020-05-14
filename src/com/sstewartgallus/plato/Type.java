@@ -1,6 +1,6 @@
 package com.sstewartgallus.plato;
 
-import com.sstewartgallus.ext.java.PureType;
+import com.sstewartgallus.ext.java.JavaType;
 import com.sstewartgallus.ext.variables.Id;
 import com.sstewartgallus.ext.variables.IdGen;
 import com.sstewartgallus.ir.Signature;
@@ -13,7 +13,7 @@ import java.util.function.Function;
  * Any processing should happen AFTER this step.
  */
 public interface Type<X> {
-    Type<Integer> INT = new PureType<>(int.class);
+    Type<Integer> INT = new JavaType<>(int.class);
 
     static <A, B> Type<V<A, B>> v(Function<Type<A>, Type<B>> f) {
         return new ForallType<>(f);

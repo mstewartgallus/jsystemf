@@ -1,6 +1,6 @@
 package com.sstewartgallus.optiimization;
 
-import com.sstewartgallus.ext.java.PureValue;
+import com.sstewartgallus.ext.java.ObjectValue;
 import com.sstewartgallus.ext.tuples.CurriedLambdaThunk;
 import com.sstewartgallus.ext.variables.IdGen;
 import com.sstewartgallus.ext.variables.VarValue;
@@ -15,7 +15,7 @@ public final class Curry {
             return term;
         }
 
-        if (core instanceof PureValue || core instanceof VarValue) {
+        if (core instanceof ObjectValue || core instanceof VarValue) {
             return core;
         }
 

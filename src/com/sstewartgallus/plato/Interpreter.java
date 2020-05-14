@@ -12,6 +12,7 @@ public final class Interpreter {
 
     // fixme... pass in a context?
     // fixme... just make part of the data type?
+    // fixme... move else where?
     public static <A> ValueTerm<A> normalize(Term<A> term) {
         while (term instanceof ThunkTerm<A> thunk) {
             term = thunk.stepThunk();

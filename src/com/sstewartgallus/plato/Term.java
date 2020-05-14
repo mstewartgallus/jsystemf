@@ -4,38 +4,18 @@ import com.sstewartgallus.ext.variables.Id;
 
 import java.util.function.Function;
 
-// https://gitlab.haskell.org/ghc/ghc/-/wikis/commentary/compiler/core-syn-type
-// arguments CoreExpr = Expr Var
-
-// data Expr b	-- "b" for the arguments of binders,
-//   = Var	  Id
-//   | Lit   Literal
-//   | App   (Expr b) (Arg b)
-//   | Lam   b (Expr b)
-//   | Let   (Bind b) (Expr b)
-//   | Case  (Expr b) b Type [Alt b]
-//   | Cast  (Expr b) Coercion
-//   | Tick  (Tickish Id) (Expr b)
-//   | Type  Type
-
-// arguments Arg b = Expr b
-// arguments Alt b = (AltCon, [b], Expr b)
-
-// data AltCon = DataAlt DataCon | LitAlt  Literal | DEFAULT
-
-// data Bind b = NonRec b (Expr b) | Rec [(b, (Expr b))]
-
-
-// https://github.com/DanBurton/Blog/blob/master/Literate%20Haskell/SystemF.lhs
-
 /**
  * The high level syntax for the core System F terms in my little language.
  * <p>
  * This is intended to be pristine source language untainted by compiler stuff.
  * <p>
  * Any processing should happen AFTER this step.
+ * <p>
+ * See https://gitlab.haskell.org/ghc/ghc/-/wikis/commentary/compiler/core-syn-type
+ * and https://github.com/DanBurton/Blog/blob/master/Literate%20Haskell/SystemF.lhs
+ * for inspiration.
  */
-public interface Term<L> {
+public interface Term<A> {
     static <A, B> Term<B> apply(Term<V<A, B>> f, Type<A> x) {
         return new TypeApplyThunk<>(f, x);
     }
@@ -48,14 +28,14 @@ public interface Term<L> {
         return new TypeLambdaValue<>(f);
     }
 
-    Type<L> type() throws TypeCheckException;
+    Type<A> type() throws TypeCheckException;
 
     // fixme... see if it is possible to make variable substitution not part of the core language
-    default <X> Term<L> substitute(Id<X> variable, Type<X> replacement) {
+    default <X> Term<A> substitute(Id<X> variable, Type<X> replacement) {
         throw new UnsupportedOperationException(getClass().toString());
     }
 
-    default <X> Term<L> substitute(Id<X> variable, Term<X> replacement) {
+    default <X> Term<A> substitute(Id<X> variable, Term<X> replacement) {
         throw new UnsupportedOperationException(getClass().toString());
     }
 }

@@ -1,6 +1,6 @@
 package com.sstewartgallus.optiimization;
 
-import com.sstewartgallus.ext.java.PureValue;
+import com.sstewartgallus.ext.java.ObjectValue;
 import com.sstewartgallus.ext.tuples.CurriedApplyThunk;
 import com.sstewartgallus.ext.tuples.HList;
 import com.sstewartgallus.ext.tuples.TupleLambdaThunk;
@@ -25,7 +25,7 @@ public final class Uncurry {
             throw new IllegalArgumentException("Unexpected list " + term);
         }
 
-        if (core instanceof PureValue) {
+        if (core instanceof ObjectValue) {
             return core;
         }
 

@@ -1,6 +1,6 @@
 package com.sstewartgallus.optiimization;
 
-import com.sstewartgallus.ext.java.PureValue;
+import com.sstewartgallus.ext.java.ObjectValue;
 import com.sstewartgallus.ext.tuples.*;
 import com.sstewartgallus.ext.variables.Id;
 import com.sstewartgallus.ext.variables.IdGen;
@@ -31,7 +31,7 @@ public final class ConvertPointFree {
             throw new IllegalArgumentException("Unexpected term " + term);
         }
 
-        if (core instanceof PureValue<A> pure) {
+        if (core instanceof ObjectValue<A> pure) {
             // fixme..
             return new PointFree.K<>(argType, null);
         }

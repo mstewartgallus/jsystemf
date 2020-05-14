@@ -83,7 +83,10 @@ public final class Main {
             var applyCurried = CurryApply.curryApply(curry, vars);
             outputT("Apply Curried", applyCurried, applyCurried.type());
 
-            var uncurry = Uncurry.uncurry(applyCurried, vars);
+            var tuple = Tuple.uncurry(applyCurried, vars);
+            outputT("Tuple", tuple, tuple.type());
+
+            var uncurry = Uncurry.uncurry(tuple, vars);
             outputT("Uncurry", uncurry, uncurry.type());
 
             var captures = Pass2.from(captured, vars);
@@ -158,7 +161,7 @@ public final class Main {
                     if (!wordsStack.isEmpty()) {
                         throw new IllegalStateException("mid brace");
                     }
-                    return Node.of(words.toArray(Node[]::new));
+                    return Node.of(words);
                 }
                 case TT_WORD -> words.add(Node.of(tokenizer.sval));
                 case '(' -> {
@@ -166,7 +169,7 @@ public final class Main {
                     words = new ArrayList<>();
                 }
                 case ')' -> {
-                    var node = Node.of(words.toArray(Node[]::new));
+                    var node = Node.of(words);
                     words = wordsStack.remove(0);
                     words.add(node);
                 }
@@ -176,8 +179,7 @@ public final class Main {
     }
 
     private static Term<?> toTerm(Node.Array source) {
-        // fixme.. doesn'arguments work for special forms..
-
+        // fixme.. doesn't work for special forms..
         return source.parse(str -> switch (str) {
             case "+" -> Type.INT.l(x -> Type.INT.l(y -> Prims.add(x, y)));
             case "<" -> Type.INT.l(x -> Type.INT.l(y -> Prims.lessThan(x, y)));
@@ -196,17 +198,17 @@ public final class Main {
                 }
                 throw new IllegalStateException("Unexpected primHook: " + str);
             }
-        }, (Term<?>[] terms) -> {
-            Term<?> head = terms[0];
-            for (var ii = 1; ii < terms.length; ++ii) {
+        }, (List<Term<?>> terms) -> {
+            Term<?> head = terms.get(0);
+            for (var term : terms.subList(1, terms.size())) {
                 try {
-                    head = apply(head, terms[ii]);
+                    head = apply(head, term);
                 } catch (TypeCheckException e) {
                     throw new RuntimeException(e);
                 }
             }
             return head;
-        }, Term[]::new);
+        });
     }
 
     // FIXME... consider using varhandles for the locals access?

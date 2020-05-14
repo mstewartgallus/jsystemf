@@ -1,5 +1,6 @@
 package com.sstewartgallus.ext.java;
 
+import com.sstewartgallus.plato.Term;
 import com.sstewartgallus.plato.Type;
 import com.sstewartgallus.plato.TypeCheckException;
 import com.sstewartgallus.plato.ValueTerm;
@@ -15,5 +16,10 @@ public record IntValue(int value) implements ValueTerm<Integer>, JavaTerm<Intege
     @Override
     public Type<Integer> type() throws TypeCheckException {
         return new JavaType<>(int.class);
+    }
+
+    @Override
+    public Term<Integer> visitChildren(Visitor visitor) {
+        return this;
     }
 }

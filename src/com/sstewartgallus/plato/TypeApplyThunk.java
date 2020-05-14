@@ -8,8 +8,9 @@ public record TypeApplyThunk<A, B>(Term<V<A, B>>f, Type<A>x) implements ThunkTer
         Objects.requireNonNull(x);
     }
 
+    @Override
     public Term<B> visitChildren(Visitor visitor) {
-        return new TypeApplyThunk<>(f.visitChildren(visitor), x);
+        return new TypeApplyThunk<>(visitor.term(f), visitor.type(x));
     }
 
     @Override

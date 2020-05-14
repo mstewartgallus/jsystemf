@@ -15,6 +15,11 @@ public record AddThunk(Term<Integer>left, Term<Integer>right) implements ThunkTe
     }
 
     @Override
+    public Term<Integer> visitChildren(Visitor visitor) {
+        return new AddThunk(visitor.term(left), visitor.term(right));
+    }
+
+    @Override
     public Type<Integer> type() throws TypeCheckException {
         return Type.INT;
     }

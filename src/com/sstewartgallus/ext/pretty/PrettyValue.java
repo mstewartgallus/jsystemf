@@ -48,6 +48,11 @@ public final class PrettyValue<A> implements ThunkTerm<A>, AutoCloseable {
     }
 
     @Override
+    public Term<A> visitChildren(Visitor visitor) {
+        throw new UnsupportedOperationException("only supports toString");
+    }
+
+    @Override
     public Term<A> stepThunk() {
         throw new UnsupportedOperationException("only supports toString");
     }

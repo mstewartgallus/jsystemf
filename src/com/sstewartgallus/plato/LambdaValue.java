@@ -13,7 +13,7 @@ public record LambdaValue<A, B>(Type<A>domain,
     }
 
     public Term<F<A, B>> visitChildren(Visitor visitor) {
-        return new LambdaValue<>(domain, x -> visitor.term(f.apply(x)));
+        return new LambdaValue<>(visitor.type(domain), x -> visitor.term(f.apply(x)));
     }
 
     @Override

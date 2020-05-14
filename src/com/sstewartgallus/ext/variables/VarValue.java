@@ -27,6 +27,11 @@ public final class VarValue<A> implements ValueTerm<A>, Comparable<VarValue<?>> 
     }
 
     @Override
+    public Term<A> visitChildren(Visitor visitor) {
+        return new VarValue<>(visitor.type(type), variable);
+    }
+
+    @Override
     public String toString() {
         return "v" + variable;
     }

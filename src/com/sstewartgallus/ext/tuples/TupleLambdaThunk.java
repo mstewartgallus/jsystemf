@@ -22,6 +22,11 @@ public record TupleLambdaThunk<L extends HList<L>, C, D>(Sig<L, C, D>sig,
     }
 
     @Override
+    public Term<D> visitChildren(Visitor visitor) {
+        throw new UnsupportedOperationException("Unimplemented");
+    }
+
+    @Override
     public Term<D> stepThunk() {
         return sig.stepThunk(f);
     }

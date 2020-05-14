@@ -11,6 +11,11 @@ public record TypeLambdaValue<A, B>(Function<Type<A>, Term<B>>f) implements Valu
     }
 
     @Override
+    public Term<V<A, B>> visitChildren(Visitor visitor) {
+        return new TypeLambdaValue<>(x -> visitor.term(f.apply(x)));
+    }
+
+    @Override
     public Type<V<A, B>> type() {
         return Type.v(x -> f.apply(x).type());
     }

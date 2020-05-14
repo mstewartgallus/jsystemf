@@ -14,6 +14,11 @@ public record TupleApplyThunk<A, B>(Term<A>f, Arg<A, B>x) implements ThunkTerm<B
     }
 
     @Override
+    public Term<B> visitChildren(Visitor visitor) {
+        throw null;
+    }
+
+    @Override
     public Type<B> type() throws TypeCheckException {
         // fixme...
         throw null;

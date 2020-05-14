@@ -32,9 +32,7 @@ public interface Term<A> {
         return visitor.term(this);
     }
 
-    default Term<A> visitChildren(Visitor visitor) {
-        return this;
-    }
+    Term<A> visitChildren(Visitor visitor);
 
     abstract class Visitor {
         public <T> Type<T> type(Type<T> type) {

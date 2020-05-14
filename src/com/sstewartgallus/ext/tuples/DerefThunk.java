@@ -10,6 +10,11 @@ public record DerefThunk<B extends HList<B>, A>(Term<Cons<A, B>>product) impleme
     }
 
     @Override
+    public Term<A> visitChildren(Visitor visitor) {
+        return new DerefThunk<>(visitor.term(product));
+    }
+
+    @Override
     public Type<A> type() throws TypeCheckException {
         return ((ConsType<A, B>) product.type()).head();
     }

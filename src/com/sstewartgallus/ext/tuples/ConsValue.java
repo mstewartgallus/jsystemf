@@ -14,10 +14,16 @@ public record ConsValue<H, T extends HList<T>>(Term<H>head, Term<T>tail) impleme
     }
 
     @Override
+    public Term<Cons<H, T>> visitChildren(Visitor visitor) {
+        return new ConsValue<>(visitor.term(head), visitor.term(tail));
+    }
+
+    @Override
     public Type<Cons<H, T>> type() throws TypeCheckException {
         return new ConsType<>(head.type(), tail.type());
     }
 
+    @Override
     public String toString() {
         return "(" + head + " Δ " + tail + ")";
     }

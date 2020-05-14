@@ -9,6 +9,11 @@ public interface Getter<A extends HList<A>> extends ThunkTerm<A> {
     record Get<A extends HList<A>, B extends HList<B>>(Term<A>list, Index<A, B>index) implements Getter<B> {
 
         @Override
+        public Term<B> visitChildren(Visitor visitor) {
+            throw new UnsupportedOperationException("unimplemented");
+        }
+
+        @Override
         public Term<B> stepThunk() {
             // fixme... implement later...
             throw null;

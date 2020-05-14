@@ -1,6 +1,7 @@
 package com.sstewartgallus.ext.tuples;
 
 import com.sstewartgallus.ext.pretty.PrettyValue;
+import com.sstewartgallus.ext.variables.Id;
 import com.sstewartgallus.ext.variables.VarValue;
 import com.sstewartgallus.plato.*;
 
@@ -17,6 +18,11 @@ import java.util.function.Function;
 public record CurriedLambdaThunk<A>(Body<A>body) implements ThunkTerm<A> {
     public CurriedLambdaThunk {
         Objects.requireNonNull(body);
+    }
+
+    @Override
+    public Term<A> visitChildren(Visitor visitor) {
+        return new CurriedLambdaThunk<A>(body.visit(visitor));
     }
 
     @Override
@@ -40,6 +46,8 @@ public record CurriedLambdaThunk<A>(Body<A>body) implements ThunkTerm<A> {
         Term<A> toTerm();
 
         <X> Body<A> substitute(VarValue<X> v, Term<X> replacement);
+
+        Body<A> visit(Visitor visitor);
     }
 
     public static record LambdaBody<A, B>(Type<A>domain,
@@ -68,6 +76,13 @@ public record CurriedLambdaThunk<A>(Body<A>body) implements ThunkTerm<A> {
         }
 
         @Override
+        public Body<F<A, B>> visit(Visitor visitor) {
+            var v = new VarValue<>(domain, new Id<>());
+            var body = f.apply(v).visit(visitor);
+            return new LambdaBody<>(visitor.type(domain), x -> body.substitute(v, x));
+        }
+
+        @Override
         public String toString() {
             try (var pretty = PrettyValue.generate(domain)) {
                 var body = f.apply(pretty);
@@ -79,6 +94,11 @@ public record CurriedLambdaThunk<A>(Body<A>body) implements ThunkTerm<A> {
     public record MainBody<A>(Term<A>body) implements Body<A> {
         public MainBody {
             Objects.requireNonNull(body);
+        }
+
+        @Override
+        public Body<A> visit(Visitor visitor) {
+            return new MainBody<>(visitor.term(body));
         }
 
         @Override

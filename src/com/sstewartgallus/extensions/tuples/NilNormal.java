@@ -1,4 +1,4 @@
-package com.sstewartgallus.pass1;
+package com.sstewartgallus.extensions.tuples;
 
 import com.sstewartgallus.ir.Signature;
 import com.sstewartgallus.plato.*;

@@ -1,4 +1,4 @@
-package com.sstewartgallus.pass1;
+package com.sstewartgallus.extensions;
 
 import com.sstewartgallus.plato.*;
 import com.sstewartgallus.primitives.Prims;
@@ -18,12 +18,13 @@ public record AddThunk(Term<Integer>left, Term<Integer>right) implements ThunkTe
     }
 
     @Override
-    public <X> Term<Integer> substitute(Id<X> v, Term<X> replacement) {
-        return new AddThunk(left.substitute(v, replacement), right.substitute(v, replacement));
-    }
-
     public String toString() {
         return "(+ " + left + " " + right + ")";
+    }
+
+    @Override
+    public <X> Term<Integer> substitute(Id<X> v, Term<X> replacement) {
+        return new AddThunk(left.substitute(v, replacement), right.substitute(v, replacement));
     }
 
     @Override

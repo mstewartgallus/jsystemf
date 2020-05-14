@@ -1,9 +1,9 @@
-package com.sstewartgallus.pass1;
+package com.sstewartgallus.extensions.tuples;
 
 import com.sstewartgallus.plato.*;
 
 public interface Getter<A extends HList<A>> extends ThunkTerm<A> {
-    record Get<A extends HList<A>, B extends HList<B>>(Term<A>list, IndexTuple<A, B>index) implements Getter<B> {
+    record Get<A extends HList<A>, B extends HList<B>>(Term<A>list, Index<A, B>index) implements Getter<B> {
 
         @Override
         public Term<B> stepThunk() {

@@ -1,5 +1,6 @@
-package com.sstewartgallus.pass1;
+package com.sstewartgallus.optiimization;
 
+import com.sstewartgallus.extensions.tuples.CurriedLambdaThunk;
 import com.sstewartgallus.plato.*;
 
 public final class Curry {

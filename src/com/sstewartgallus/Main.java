@@ -1,12 +1,13 @@
 package com.sstewartgallus;
 
 
+import com.sstewartgallus.extensions.tuples.NilNormal;
 import com.sstewartgallus.frontend.Entity;
 import com.sstewartgallus.frontend.Environment;
 import com.sstewartgallus.frontend.Frontend;
 import com.sstewartgallus.frontend.Node;
 import com.sstewartgallus.ir.Generic;
-import com.sstewartgallus.pass1.*;
+import com.sstewartgallus.optiimization.*;
 import com.sstewartgallus.plato.*;
 import com.sstewartgallus.primitives.Prims;
 import com.sstewartgallus.runtime.Value;

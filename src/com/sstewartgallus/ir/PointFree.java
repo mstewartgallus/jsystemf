@@ -1,9 +1,9 @@
 package com.sstewartgallus.ir;
 
-import com.sstewartgallus.pass1.ConsNormal;
-import com.sstewartgallus.pass1.HList;
-import com.sstewartgallus.pass1.IndexTuple;
-import com.sstewartgallus.pass1.UncurryLambdaThunk;
+import com.sstewartgallus.extensions.tuples.ConsNormal;
+import com.sstewartgallus.extensions.tuples.HList;
+import com.sstewartgallus.extensions.tuples.Index;
+import com.sstewartgallus.extensions.tuples.UncurryLambdaThunk;
 import com.sstewartgallus.plato.*;
 
 public interface PointFree<A> {
@@ -34,7 +34,7 @@ public interface PointFree<A> {
     }
 
     record Get<A extends HList<A>, B extends HList<B>, X>(Type<A>domain,
-                                                          IndexTuple<A, HList.Cons<X, B>>ix) implements PointFree<F<A, X>> {
+                                                          Index<A, HList.Cons<X, B>>ix) implements PointFree<F<A, X>> {
 
         public <V> Generic<com.sstewartgallus.plato.V<V, F<A, X>>> generic(Id<V> argument, IdGen vars) {
             var sig = type().pointFree(argument, vars);

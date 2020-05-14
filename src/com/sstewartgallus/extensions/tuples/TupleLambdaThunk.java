@@ -1,4 +1,4 @@
-package com.sstewartgallus.pass1;
+package com.sstewartgallus.extensions.tuples;
 
 import com.sstewartgallus.plato.*;
 
@@ -72,7 +72,7 @@ public record TupleLambdaThunk<L extends HList<L>, C, D>(Sig<L, C, D>sig,
 
             private static <T extends HList<T>, H, X extends HList<X>> Getter<X> nextGetter(Getter.Get<T, HList.Cons<H, X>> get) {
                 var list = get.list();
-                var index = new IndexTuple.Next<>(get.index());
+                var index = new Index.Next<>(get.index());
                 return new Getter.Get<>(list, index);
             }
 
@@ -109,15 +109,15 @@ public record TupleLambdaThunk<L extends HList<L>, C, D>(Sig<L, C, D>sig,
     }
 
     public record Results<L extends HList<L>, C, D>(
-            com.sstewartgallus.pass1.UncurryLambdaThunk.Sig<L, C, D>sig,
+            com.sstewartgallus.extensions.tuples.UncurryLambdaThunk.Sig<L, C, D>sig,
             Function<Getter<L>, Term<C>>f) {
         public Results {
             Objects.requireNonNull(sig);
             Objects.requireNonNull(f);
         }
 
-        UncurryLambdaThunk<L, C, D> toUncurry() {
-            return new UncurryLambdaThunk<>(sig, x -> f.apply(new Getter.Get<>(x, new IndexTuple.Zip<>(x.type()))));
+        public UncurryLambdaThunk<L, C, D> toUncurry() {
+            return new UncurryLambdaThunk<>(sig, x -> f.apply(new Getter.Get<>(x, new Index.Zip<>(x.type()))));
         }
     }
 

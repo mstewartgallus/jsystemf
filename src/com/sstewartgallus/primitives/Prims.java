@@ -1,6 +1,6 @@
 package com.sstewartgallus.primitives;
 
-import com.sstewartgallus.pass1.AddThunk;
+import com.sstewartgallus.extensions.AddThunk;
 import com.sstewartgallus.plato.Term;
 import com.sstewartgallus.plato.Type;
 

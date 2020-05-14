@@ -1,9 +1,9 @@
 package com.sstewartgallus.ir;
 
+import com.sstewartgallus.extensions.tuples.HList;
+import com.sstewartgallus.extensions.tuples.Index;
 import com.sstewartgallus.mh.Arguments;
 import com.sstewartgallus.mh.TypedMethodHandle;
-import com.sstewartgallus.pass1.HList;
-import com.sstewartgallus.pass1.IndexTuple;
 import com.sstewartgallus.plato.E;
 import com.sstewartgallus.plato.F;
 import com.sstewartgallus.plato.Type;
@@ -158,7 +158,7 @@ public interface Generic<A> {
 
     record Get<L, X, A extends HList<A>, B extends HList<B>>(Signature<V<L, F<A, X>>>signature,
                                                              Signature<V<L, A>>value,
-                                                             IndexTuple<A, HList.Cons<X, B>>ix) implements GenericV<L, F<A, X>> {
+                                                             Index<A, HList.Cons<X, B>>ix) implements GenericV<L, F<A, X>> {
         public Chunk<F<A, X>> compile(Lookup lookup, Signature<L> klass) {
             var domain = Signature.apply(value, klass).flatten();
             var num = ix.reify();

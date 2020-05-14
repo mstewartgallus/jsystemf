@@ -1,12 +1,12 @@
 package com.sstewartgallus.ext.variables;
 
-public record Id<A>(int number) implements Comparable<Id<?>> {
+public final class Id<A> implements Comparable<Id<?>> {
     public String toString() {
-        return String.valueOf(number);
+        return String.valueOf(hashCode());
     }
 
     @Override
     public int compareTo(Id<?> var) {
-        return var.number - number;
+        return var.hashCode() - hashCode();
     }
 }

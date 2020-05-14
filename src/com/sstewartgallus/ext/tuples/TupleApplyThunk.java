@@ -1,6 +1,9 @@
 package com.sstewartgallus.ext.tuples;
 
-import com.sstewartgallus.plato.*;
+import com.sstewartgallus.plato.Term;
+import com.sstewartgallus.plato.ThunkTerm;
+import com.sstewartgallus.plato.Type;
+import com.sstewartgallus.plato.TypeCheckException;
 
 import java.util.Objects;
 
@@ -8,11 +11,6 @@ public record TupleApplyThunk<A, B>(Term<A>f, Arg<A, B>x) implements ThunkTerm<B
     public TupleApplyThunk {
         Objects.requireNonNull(f);
         Objects.requireNonNull(x);
-    }
-
-    private static <A, B, C> Term<C> applyParam(LambdaValue<A, B> f, Arg.Add<A, B, C> x) {
-        var result = f.apply(x.argument());
-        return new TupleApplyThunk<>(result, x.tail());
     }
 
     @Override

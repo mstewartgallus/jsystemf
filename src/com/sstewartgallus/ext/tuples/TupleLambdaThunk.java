@@ -1,5 +1,6 @@
 package com.sstewartgallus.ext.tuples;
 
+import com.sstewartgallus.ext.pretty.PrettyValue;
 import com.sstewartgallus.ext.variables.Id;
 import com.sstewartgallus.ext.variables.IdGen;
 import com.sstewartgallus.ext.variables.VarValue;
@@ -91,8 +92,9 @@ public record TupleLambdaThunk<L extends HList<L>, C, D>(Sig<L, C, D>sig,
 
             @Override
             public String stringify(Function<HList.Cons<Term<H>, T>, Term<C>> f, IdGen ids) {
-                var v = new VarValue<>(head, ids.createId());
-                return "{" + v + ": " + head + "} Δ " + tail.stringify(t -> f.apply(new HList.Cons<>(v, t)), ids);
+                try (var pretty = PrettyValue.generate(head)) {
+                    return "{" + pretty + ": " + head + "} Δ " + tail.stringify(t -> f.apply(new HList.Cons<>(pretty, t)), ids);
+                }
             }
 
             @Override

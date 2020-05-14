@@ -39,4 +39,16 @@ public interface Term<A> {
     default <X> Term<A> substitute(Id<X> variable, Term<X> replacement) {
         throw new UnsupportedOperationException(getClass().toString());
     }
+
+    default Term<A> visit(Visitor visitor) {
+        return visitor.term(this).visitChildren(visitor);
+    }
+
+    default Term<A> visitChildren(Visitor visitor) {
+        return this;
+    }
+
+    abstract class Visitor {
+        public abstract <T> Term<T> term(Term<T> term);
+    }
 }

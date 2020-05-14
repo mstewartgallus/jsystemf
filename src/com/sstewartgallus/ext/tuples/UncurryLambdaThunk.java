@@ -1,7 +1,7 @@
 package com.sstewartgallus.ext.tuples;
 
+import com.sstewartgallus.ext.pretty.PrettyValue;
 import com.sstewartgallus.ext.variables.Id;
-import com.sstewartgallus.ext.variables.VarValue;
 import com.sstewartgallus.plato.*;
 
 import java.util.Objects;
@@ -32,10 +32,11 @@ public record UncurryLambdaThunk<L extends HList<L>, C, D>(Sig<L, C, D>sig,
 
     @Override
     public String toString() {
-        var t = sig.argType();
-        // fixme...
-        var v = new VarValue<>(t, new Id<>(0));
-        return "({" + v + ": " + t + "} → " + f.apply(v) + ")";
+        var domain = sig.argType();
+        try (var pretty = PrettyValue.generate(domain)) {
+            var body = f.apply(pretty);
+            return "({" + pretty + ": " + domain + "} → " + body + ")";
+        }
     }
 
     public interface Sig<T extends HList<T>, C, D> {

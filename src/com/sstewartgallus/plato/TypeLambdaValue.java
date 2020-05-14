@@ -1,7 +1,6 @@
 package com.sstewartgallus.plato;
 
-import com.sstewartgallus.ext.variables.Id;
-import com.sstewartgallus.ext.variables.VarType;
+import com.sstewartgallus.ext.pretty.PrettyType;
 
 import java.util.Objects;
 import java.util.function.Function;
@@ -12,16 +11,15 @@ public record TypeLambdaValue<A, B>(Function<Type<A>, Term<B>>f) implements Valu
     }
 
     @Override
-    public Type<V<A, B>> type() throws TypeCheckException {
-        // fixme... pass in the variable generator?
-        var v = new Id<A>(0);
-        var body = f.apply(new VarType<>(v)).type();
-        return Type.v(x -> body.substitute(v, x));
+    public Type<V<A, B>> type() {
+        return Type.v(x -> f.apply(x).type());
     }
 
     @Override
     public String toString() {
-        var dummy = new VarType<>(new Id<A>(0));
-        return "{forall " + dummy + ". " + f.apply(dummy) + "}";
+        try (var pretty = PrettyType.<A>generate()) {
+            var body = f.apply(pretty);
+            return "(∀" + pretty + " → " + body + ")";
+        }
     }
 }

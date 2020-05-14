@@ -10,6 +10,10 @@ public record ApplyThunk<A, B>(Term<F<A, B>>f, Term<A>x) implements ThunkTerm<B>
         Objects.requireNonNull(x);
     }
 
+    public Term<B> visitChildren(Visitor visitor) {
+        return new ApplyThunk<>(visitor.term(f), visitor.term(x));
+    }
+
     @Override
     public Type<B> type() throws TypeCheckException {
         var fType = f.type();

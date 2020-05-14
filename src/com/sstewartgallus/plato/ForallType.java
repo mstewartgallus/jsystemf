@@ -1,30 +1,18 @@
 package com.sstewartgallus.plato;
 
+import com.sstewartgallus.ext.pretty.PrettyType;
 import com.sstewartgallus.ext.variables.Id;
 import com.sstewartgallus.ext.variables.IdGen;
-import com.sstewartgallus.ext.variables.VarType;
 import com.sstewartgallus.ir.Signature;
 
 import java.util.function.Function;
 
 public record ForallType<A, B>(Function<Type<A>, Type<B>>f) implements CoreType<V<A, B>>, Type<V<A, B>> {
-    private static final ThreadLocal<Integer> DEPTH = ThreadLocal.withInitial(() -> 0);
-
     public String toString() {
-        var depth = DEPTH.get();
-        DEPTH.set(depth + 1);
-
-        String str;
-        try {
-            var t = new VarType<>(new Id<A>(depth));
-            str = "{forall " + t + ". " + f.apply(t) + "}";
-        } finally {
-            DEPTH.set(depth);
-            if (depth == 0) {
-                DEPTH.remove();
-            }
+        try (var pretty = PrettyType.<A>generate()) {
+            var body = f.apply(pretty);
+            return "(∀" + pretty + " → " + body + ")";
         }
-        return str;
     }
 
     @Override

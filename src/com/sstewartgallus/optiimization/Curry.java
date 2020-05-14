@@ -3,7 +3,6 @@ package com.sstewartgallus.optiimization;
 import com.sstewartgallus.ext.tuples.CurriedLambdaThunk;
 import com.sstewartgallus.ext.variables.IdGen;
 import com.sstewartgallus.ext.variables.VarValue;
-import com.sstewartgallus.plato.ApplyThunk;
 import com.sstewartgallus.plato.F;
 import com.sstewartgallus.plato.LambdaValue;
 import com.sstewartgallus.plato.Term;
@@ -12,21 +11,17 @@ public final class Curry {
     private Curry() {
     }
 
-    public static <A> Term<A> curry(Term<A> term, IdGen ids) {
-        if (term instanceof ApplyThunk<?, A> apply) {
-            return curryApply(apply, ids);
-        }
-
-        if (term instanceof LambdaValue<?, ?> lambda) {
-            // fixme...
-            return (Term) curryLambda(lambda, ids);
-        }
-
-        return term;
-    }
-
-    private static <A, B> Term<B> curryApply(ApplyThunk<A, B> apply, IdGen ids) {
-        return new ApplyThunk<>(curry(apply.f(), ids), curry(apply.x(), ids));
+    // fixme.. avoid the IdGen state capture issues..
+    public static <A> Term<A> curry(Term<A> root, IdGen ids) {
+        return root.visit(new Term.Visitor() {
+            @Override
+            public <T> Term<T> term(Term<T> term) {
+                if (!(term instanceof LambdaValue<?, ?> lambdaValue)) {
+                    return term.visitChildren(this);
+                }
+                return (Term) curryLambda(lambdaValue, ids);
+            }
+        });
     }
 
     private static <A, B> Term<F<A, B>> curryLambda(LambdaValue<A, B> lambda, IdGen ids) {

@@ -8,6 +8,10 @@ public record TypeApplyThunk<A, B>(Term<V<A, B>>f, Type<A>x) implements ThunkTer
         Objects.requireNonNull(x);
     }
 
+    public Term<B> visitChildren(Visitor visitor) {
+        return new TypeApplyThunk<>(f.visitChildren(visitor), x);
+    }
+
     @Override
     public Type<B> type() throws TypeCheckException {
         return ((ForallType<A, B>) f.type()).f().apply(x);

@@ -5,7 +5,13 @@ import com.sstewartgallus.plato.Term;
 import com.sstewartgallus.plato.Type;
 import com.sstewartgallus.plato.V;
 
-public record VarType<T>(Id<T>variable) implements Type<T> {
+public final class VarType<T> implements Type<T> {
+    private final Id<T> variable;
+
+    public VarType() {
+        variable = new Id<>();
+    }
+
     @Override
     public String toString() {
         return "t" + variable;

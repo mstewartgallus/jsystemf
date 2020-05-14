@@ -89,13 +89,12 @@ public class Frontend {
                     var binder = ((Node.Atom) nodes.get(1)).value();
                     var rest = new Node.Array(nodes.subList(2, nodes.size()));
 
-                    var id = new Id<Object>();
-                    var variable = new VarType<>(id);
+                    var variable = new VarType<>();
                     var entity = new Entity.TypeEntity(variable);
                     var newEnv = environment.put(binder, entity);
 
                     var theTerm = toTerm(rest, newEnv);
-                    return Term.v(x -> new VarType<>(id).substituteIn(theTerm, x));
+                    return Term.v(x -> variable.substituteIn(theTerm, x));
                 }
             }
         }

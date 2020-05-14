@@ -18,11 +18,6 @@ public enum NilType implements Type<Nil> {
     }
 
     @Override
-    public <X> Type<Nil> substitute(Id<X> v, Type<X> replacement) {
-        return NIL;
-    }
-
-    @Override
     public <Z> Signature<V<Z, Nil>> pointFree(Id<Z> argument) {
         return new Signature.K<>(Signature.NilSig.NIL);
     }

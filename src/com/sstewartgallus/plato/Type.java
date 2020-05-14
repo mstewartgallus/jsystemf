@@ -2,7 +2,6 @@ package com.sstewartgallus.plato;
 
 import com.sstewartgallus.ext.java.JavaType;
 import com.sstewartgallus.ext.variables.Id;
-import com.sstewartgallus.ext.variables.VarType;
 import com.sstewartgallus.ir.Signature;
 
 import java.util.function.Function;
@@ -28,10 +27,6 @@ public interface Type<X> {
 
     default <B> Type<F<X, B>> to(Type<B> range) {
         return new FunctionType<>(this, range);
-    }
-
-    default <T> Type<X> substitute(Id<T> v, Type<T> replacement) {
-        return new VarType<>(v).substituteIn(this, replacement);
     }
 
     <Z> Signature<V<Z, X>> pointFree(Id<Z> argument);

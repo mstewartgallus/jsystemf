@@ -1,10 +1,10 @@
 package com.sstewartgallus.ext.tuples;
 
-import com.sstewartgallus.ext.variables.Id;
+import com.sstewartgallus.ext.variables.VarType;
 import com.sstewartgallus.plato.Type;
 
 public interface Index<A extends HList<A>, B extends HList<B>> {
-    default <V> Index<A, B> substitute(Id<V> argument, Type<V> replacement) {
+    default <V> Index<A, B> substitute(VarType<V> argument, Type<V> replacement) {
         throw null;
     }
 

@@ -2,6 +2,7 @@ package com.sstewartgallus.ext.variables;
 
 import com.sstewartgallus.plato.Term;
 import com.sstewartgallus.plato.Type;
+import com.sstewartgallus.plato.TypeCheckException;
 import com.sstewartgallus.plato.ValueTerm;
 
 import java.util.Objects;
@@ -14,10 +15,15 @@ import java.util.Objects;
  *
  * @param <A>
  */
-public record VarValue<A>(Type<A>type, Id<A>variable) implements ValueTerm<A>, Comparable<VarValue<?>> {
-    public VarValue {
+public final class VarValue<A> implements ValueTerm<A>, Comparable<VarValue<?>> {
+    private final Type<A> type;
+    private final Id<A> variable;
+
+    public VarValue(Type<A> type, Id<A> variable) {
         Objects.requireNonNull(type);
         Objects.requireNonNull(variable);
+        this.type = type;
+        this.variable = variable;
     }
 
     @Override
@@ -44,5 +50,14 @@ public record VarValue<A>(Type<A>type, Id<A>variable) implements ValueTerm<A>, C
     @Override
     public int compareTo(VarValue<?> o) {
         return variable.compareTo(o.variable);
+    }
+
+    @Override
+    public Type<A> type() throws TypeCheckException {
+        return type;
+    }
+
+    public Id<A> variable() {
+        return variable;
     }
 }

@@ -13,11 +13,6 @@ public record FunctionType<A, B>(Type<A>domain, Type<B>range) implements CoreTyp
     }
 
     @Override
-    public <Z> Type<F<A, B>> substitute(Id<Z> v, Type<Z> replacement) {
-        return new FunctionType<>(domain.substitute(v, replacement), range.substitute(v, replacement));
-    }
-
-    @Override
     public <Z> Signature<V<Z, F<A, B>>> pointFree(Id<Z> argument) {
         return new Signature.Function<>(domain.pointFree(argument), range.pointFree(argument));
     }

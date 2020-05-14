@@ -23,11 +23,6 @@ public record ConsType<H, T extends HList<T>>(Type<H>head, Type<T>tail) implemen
     }
 
     @Override
-    public <X> Type<Cons<H, T>> substitute(Id<X> v, Type<X> replacement) {
-        return new ConsType<>(head.substitute(v, replacement), tail.substitute(v, replacement));
-    }
-
-    @Override
     public <Z> Signature<V<Z, Cons<H, T>>> pointFree(Id<Z> argument) {
         return new Signature.ConsType<>(head.pointFree(argument), tail.pointFree(argument));
     }

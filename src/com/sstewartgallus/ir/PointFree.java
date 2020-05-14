@@ -2,6 +2,7 @@ package com.sstewartgallus.ir;
 
 import com.sstewartgallus.ext.tuples.*;
 import com.sstewartgallus.ext.variables.Id;
+import com.sstewartgallus.ext.variables.VarType;
 import com.sstewartgallus.plato.F;
 import com.sstewartgallus.plato.FunctionType;
 import com.sstewartgallus.plato.Type;
@@ -10,7 +11,7 @@ import com.sstewartgallus.plato.V;
 public interface PointFree<A> {
     <Z> Generic<V<Z, A>> generic(Id<Z> argument);
 
-    <Z> PointFree<A> substitute(Id<Z> argument, Type<Z> replacement);
+    <Z> PointFree<A> substitute(VarType<Z> argument, Type<Z> replacement);
 
     Type<A> type();
 
@@ -24,8 +25,8 @@ public interface PointFree<A> {
             return new GenericV.K<>(sig, domain.pointFree(argument), value.generic(argument));
         }
 
-        public <V> PointFree<F<A, B>> substitute(Id<V> argument, Type<V> replacement) {
-            return new K<>(domain.substitute(argument, replacement), value);
+        public <V> PointFree<F<A, B>> substitute(VarType<V> argument, Type<V> replacement) {
+            return new K<>(argument.substituteIn(domain, replacement), value);
         }
 
         @Override
@@ -42,8 +43,8 @@ public interface PointFree<A> {
             return new GenericV.Get<>(sig, domain.pointFree(argument), ix);
         }
 
-        public <V> PointFree<F<A, X>> substitute(Id<V> argument, Type<V> replacement) {
-            return new Get<>(domain.substitute(argument, replacement), ix.substitute(argument, replacement));
+        public <V> PointFree<F<A, X>> substitute(VarType<V> argument, Type<V> replacement) {
+            return new Get<>(argument.substituteIn(domain, replacement), ix.substitute(argument, replacement));
         }
 
         public Type<F<A, X>> type() {
@@ -65,7 +66,7 @@ public interface PointFree<A> {
         }
 
         @Override
-        public <V> PointFree<F<Z, B>> substitute(Id<V> argument, Type<V> replacement) {
+        public <V> PointFree<F<Z, B>> substitute(VarType<V> argument, Type<V> replacement) {
             return new Call<>(f.substitute(argument, replacement), x.substitute(argument, replacement));
         }
 
@@ -93,7 +94,7 @@ public interface PointFree<A> {
         }
 
         @Override
-        public <X> PointFree<R> substitute(Id<X> argument, Type<X> replacement) {
+        public <X> PointFree<R> substitute(VarType<X> argument, Type<X> replacement) {
             throw null;
         }
 

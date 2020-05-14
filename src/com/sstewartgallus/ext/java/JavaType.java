@@ -15,7 +15,6 @@ public record JavaType<A>(Class<A>clazz) implements Type<A> {
         return this;
     }
 
-    @Override
     public <Z> Type<A> substitute(Id<Z> v, Type<Z> replacement) {
         return new JavaType<>(clazz);
     }

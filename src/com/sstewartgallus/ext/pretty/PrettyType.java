@@ -36,11 +36,6 @@ public final class PrettyType<A> implements Type<A>, AutoCloseable {
     }
 
     @Override
-    public <T> Type<A> substitute(Id<T> v, Type<T> replacement) {
-        throw null;
-    }
-
-    @Override
     public <Z> Signature<V<Z, A>> pointFree(Id<Z> argument) {
         throw null;
     }

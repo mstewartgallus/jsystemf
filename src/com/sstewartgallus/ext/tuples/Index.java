@@ -32,14 +32,14 @@ public interface Index<A extends HList<A>, B extends HList<B>> {
     }
 
     record Next<X, A extends HList<A>, B extends HList<B>>(
-            Index<A, HList.Cons<X, B>>f) implements Index<A, B> {
+            Index<A, Cons<X, B>>f) implements Index<A, B> {
         public String toString() {
             return Integer.toString(reify());
         }
 
         @Override
         public Type<B> range() {
-            return ((ConsNormal<X, B>) f.range()).tail();
+            return ((ConsType<X, B>) f.range()).tail();
         }
     }
 }

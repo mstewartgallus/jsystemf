@@ -6,11 +6,11 @@ import com.sstewartgallus.plato.Type;
 import com.sstewartgallus.plato.TypeCheckException;
 import com.sstewartgallus.plato.V;
 
-public enum NilNormal implements Type<HList.Nil> {
+public enum NilType implements Type<Nil> {
     NIL;
 
     @Override
-    public <Y> Type<HList.Nil> unify(Type<Y> right) throws TypeCheckException {
+    public <Y> Type<Nil> unify(Type<Y> right) throws TypeCheckException {
         if (right == NIL) {
             return NIL;
         }
@@ -18,12 +18,12 @@ public enum NilNormal implements Type<HList.Nil> {
     }
 
     @Override
-    public <X> Type<HList.Nil> substitute(Id<X> v, Type<X> replacement) {
+    public <X> Type<Nil> substitute(Id<X> v, Type<X> replacement) {
         return NIL;
     }
 
     @Override
-    public <Z> Signature<V<Z, HList.Nil>> pointFree(Id<Z> argument) {
+    public <Z> Signature<V<Z, Nil>> pointFree(Id<Z> argument) {
         return new Signature.K<>(Signature.NilSig.NIL);
     }
 }

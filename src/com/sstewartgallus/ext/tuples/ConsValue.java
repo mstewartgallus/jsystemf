@@ -8,19 +8,19 @@ import com.sstewartgallus.plato.ValueTerm;
 
 import java.util.Objects;
 
-public record ConsValue<H, T extends HList<T>>(Term<H>head, Term<T>tail) implements ValueTerm<HList.Cons<H, T>> {
+public record ConsValue<H, T extends HList<T>>(Term<H>head, Term<T>tail) implements ValueTerm<Cons<H, T>> {
     public ConsValue {
         Objects.requireNonNull(head);
         Objects.requireNonNull(tail);
     }
 
     @Override
-    public Type<HList.Cons<H, T>> type() throws TypeCheckException {
-        return new ConsNormal<>(head.type(), tail.type());
+    public Type<Cons<H, T>> type() throws TypeCheckException {
+        return new ConsType<>(head.type(), tail.type());
     }
 
     @Override
-    public <X> Term<HList.Cons<H, T>> substitute(Id<X> v, Term<X> replacement) {
+    public <X> Term<Cons<H, T>> substitute(Id<X> v, Term<X> replacement) {
         return new ConsValue<>(head.substitute(v, replacement), tail.substitute(v, replacement));
     }
 

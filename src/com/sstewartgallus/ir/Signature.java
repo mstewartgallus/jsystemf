@@ -1,6 +1,8 @@
 package com.sstewartgallus.ir;
 
+import com.sstewartgallus.ext.tuples.Cons;
 import com.sstewartgallus.ext.tuples.HList;
+import com.sstewartgallus.ext.tuples.Nil;
 import com.sstewartgallus.plato.F;
 import com.sstewartgallus.plato.V;
 
@@ -19,7 +21,7 @@ public interface Signature<A> {
         return List.of(erase());
     }
 
-    enum NilSig implements Signature<HList.Nil> {
+    enum NilSig implements Signature<Nil> {
         NIL;
 
         @Override
@@ -104,8 +106,8 @@ public interface Signature<A> {
     }
 
     record ConsType<X, H, T extends HList<T>>(Signature<V<X, H>>head,
-                                              Signature<V<X, T>>tail) implements SigV<X, HList.Cons<H, T>> {
-        public Signature<HList.Cons<H, T>> apply(Signature<X> input) {
+                                              Signature<V<X, T>>tail) implements SigV<X, Cons<H, T>> {
+        public Signature<Cons<H, T>> apply(Signature<X> input) {
             return new Signature.ConsTypeGround<>(Signature.apply(head, input), Signature.apply(tail, input));
         }
 
@@ -137,7 +139,7 @@ public interface Signature<A> {
     }
 
     record ConsTypeGround<H, T extends HList<T>>(Signature<H>head,
-                                                 Signature<T>tail) implements Signature<HList.Cons<H, T>> {
+                                                 Signature<T>tail) implements Signature<Cons<H, T>> {
 
         public String toString() {
             var builder = new StringBuilder();

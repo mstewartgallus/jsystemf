@@ -3,11 +3,11 @@ package com.sstewartgallus.ext.tuples;
 import com.sstewartgallus.plato.Type;
 import com.sstewartgallus.plato.ValueTerm;
 
-public enum NilValue implements ValueTerm<HList.Nil> {
+public enum NilValue implements ValueTerm<Nil> {
     NIL;
 
     @Override
-    public Type<HList.Nil> type() {
-        return NilNormal.NIL;
+    public Type<Nil> type() {
+        return NilType.NIL;
     }
 }

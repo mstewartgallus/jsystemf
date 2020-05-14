@@ -1,5 +1,6 @@
 package com.sstewartgallus.optiimization;
 
+import com.sstewartgallus.ext.tuples.Cons;
 import com.sstewartgallus.ext.tuples.CurriedLambdaThunk;
 import com.sstewartgallus.ext.tuples.HList;
 import com.sstewartgallus.ext.tuples.TupleLambdaThunk;
@@ -62,8 +63,8 @@ public final class Tuple {
     private static <X extends HList<X>, C, B, A> Term<F<B, A>> cons(Type<B> domain, Id<B> head, TupleLambdaThunk<X, F<B, C>, A> tuple) {
         var tupleF = tuple.f();
         var env = tuple.sig();
-        TupleLambdaThunk.Sig<HList.Cons<Term<B>, X>, F<B, C>, F<B, A>> sig = new TupleLambdaThunk.Sig.Cons<B, X, F<B, C>, A>(domain, env);
-        return new TupleLambdaThunk<HList.Cons<Term<B>, X>, F<B, C>, F<B, A>>(sig, p -> {
+        TupleLambdaThunk.Sig<Cons<Term<B>, X>, F<B, C>, F<B, A>> sig = new TupleLambdaThunk.Sig.Cons<B, X, F<B, C>, A>(domain, env);
+        return new TupleLambdaThunk<Cons<Term<B>, X>, F<B, C>, F<B, A>>(sig, p -> {
             Term<B> h = p.head();
             X t = p.tail();
             return tupleF.apply(t).substitute(head, h);

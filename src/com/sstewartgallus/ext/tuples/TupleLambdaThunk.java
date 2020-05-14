@@ -47,41 +47,41 @@ public record TupleLambdaThunk<L extends HList<L>, C, D>(Sig<L, C, D>sig,
 
         Results<?, C, D> uncurry(Function<T, Term<C>> f);
 
-        record Zero<A>(Type<A>type) implements Sig<HList.Nil, A, A> {
+        record Zero<A>(Type<A>type) implements Sig<Nil, A, A> {
             @Override
-            public Term<A> stepThunk(Function<HList.Nil, Term<A>> f) {
-                return f.apply(HList.Nil.NIL);
+            public Term<A> stepThunk(Function<Nil, Term<A>> f) {
+                return f.apply(Nil.NIL);
             }
 
             @Override
-            public String stringify(Function<HList.Nil, Term<A>> f) {
-                return ". → " + f.apply(HList.Nil.NIL).toString();
+            public String stringify(Function<Nil, Term<A>> f) {
+                return ". → " + f.apply(Nil.NIL).toString();
             }
 
             @Override
-            public Results<HList.Nil, A, A> uncurry(Function<HList.Nil, Term<A>> f) {
-                var body = f.apply(HList.Nil.NIL);
+            public Results<Nil, A, A> uncurry(Function<Nil, Term<A>> f) {
+                var body = f.apply(Nil.NIL);
                 return new Results<>(new UncurryLambdaThunk.Sig.Zero<>(type), nil -> body);
             }
         }
 
         record Cons<H, T extends HList<T>, C, D>(Type<H>head,
-                                                 Sig<T, C, D>tail) implements Sig<HList.Cons<Term<H>, T>, C, F<H, D>> {
+                                                 Sig<T, C, D>tail) implements Sig<com.sstewartgallus.ext.tuples.Cons<Term<H>, T>, C, F<H, D>> {
 
-            private static <H, X extends HList<X>> Getter<X> nextGetter(Getter<HList.Cons<H, X>> product) {
-                var get = (Getter.Get<?, HList.Cons<H, X>>) product;
+            private static <H, X extends HList<X>> Getter<X> nextGetter(Getter<com.sstewartgallus.ext.tuples.Cons<H, X>> product) {
+                var get = (Getter.Get<?, com.sstewartgallus.ext.tuples.Cons<H, X>>) product;
                 return nextGetter(get);
             }
 
-            private static <T extends HList<T>, H, X extends HList<X>> Getter<X> nextGetter(Getter.Get<T, HList.Cons<H, X>> get) {
+            private static <T extends HList<T>, H, X extends HList<X>> Getter<X> nextGetter(Getter.Get<T, com.sstewartgallus.ext.tuples.Cons<H, X>> get) {
                 var list = get.list();
                 var index = new Index.Next<>(get.index());
                 return new Getter.Get<>(list, index);
             }
 
             @Override
-            public Term<F<H, D>> stepThunk(Function<HList.Cons<Term<H>, T>, Term<C>> f) {
-                return head.l(h -> tail.stepThunk(t -> f.apply(new HList.Cons<>(h, t))));
+            public Term<F<H, D>> stepThunk(Function<com.sstewartgallus.ext.tuples.Cons<Term<H>, T>, Term<C>> f) {
+                return head.l(h -> tail.stepThunk(t -> f.apply(new com.sstewartgallus.ext.tuples.Cons<>(h, t))));
             }
 
             @Override
@@ -90,21 +90,21 @@ public record TupleLambdaThunk<L extends HList<L>, C, D>(Sig<L, C, D>sig,
             }
 
             @Override
-            public String stringify(Function<HList.Cons<Term<H>, T>, Term<C>> f) {
+            public String stringify(Function<com.sstewartgallus.ext.tuples.Cons<Term<H>, T>, Term<C>> f) {
                 try (var pretty = PrettyValue.generate(head)) {
-                    return "{" + pretty + ": " + head + "} Δ " + tail.stringify(t -> f.apply(new HList.Cons<>(pretty, t)));
+                    return "{" + pretty + ": " + head + "} Δ " + tail.stringify(t -> f.apply(new com.sstewartgallus.ext.tuples.Cons<>(pretty, t)));
                 }
             }
 
             @Override
-            public Results<?, C, F<H, D>> uncurry(Function<HList.Cons<Term<H>, T>, Term<C>> f) {
+            public Results<?, C, F<H, D>> uncurry(Function<com.sstewartgallus.ext.tuples.Cons<Term<H>, T>, Term<C>> f) {
                 var headId = new Id<H>();
                 var headVar = new VarValue<>(head, headId);
-                var value = tail.uncurry(t -> f.apply(new HList.Cons<>(headVar, t)));
+                var value = tail.uncurry(t -> f.apply(new com.sstewartgallus.ext.tuples.Cons<>(headVar, t)));
                 return cons(headId, value);
             }
 
-            public <X extends HList<X>> Results<HList.Cons<H, X>, C, F<H, D>> cons(Id<H> headId, Results<X, C, D> value) {
+            public <X extends HList<X>> Results<com.sstewartgallus.ext.tuples.Cons<H, X>, C, F<H, D>> cons(Id<H> headId, Results<X, C, D> value) {
                 var tailF = value.f();
                 var sig = new UncurryLambdaThunk.Sig.Cons<>(head, value.sig());
                 return new Results<>(sig, product -> tailF.apply(nextGetter(product)).substitute(headId, new DerefThunk<X, H>(product)));

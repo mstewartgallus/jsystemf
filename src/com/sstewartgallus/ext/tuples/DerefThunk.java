@@ -4,14 +4,14 @@ import com.sstewartgallus.plato.*;
 
 import java.util.Objects;
 
-public record DerefThunk<B extends HList<B>, A>(Term<HList.Cons<A, B>>product) implements ThunkTerm<A> {
+public record DerefThunk<B extends HList<B>, A>(Term<Cons<A, B>>product) implements ThunkTerm<A> {
     public DerefThunk {
         Objects.requireNonNull(product);
     }
 
     @Override
     public Type<A> type() throws TypeCheckException {
-        return ((ConsNormal<A, B>) product.type()).head();
+        return ((ConsType<A, B>) product.type()).head();
     }
 
     @Override

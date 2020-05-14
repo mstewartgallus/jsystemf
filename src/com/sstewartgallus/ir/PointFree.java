@@ -1,9 +1,6 @@
 package com.sstewartgallus.ir;
 
-import com.sstewartgallus.ext.tuples.ConsNormal;
-import com.sstewartgallus.ext.tuples.HList;
-import com.sstewartgallus.ext.tuples.Index;
-import com.sstewartgallus.ext.tuples.UncurryLambdaThunk;
+import com.sstewartgallus.ext.tuples.*;
 import com.sstewartgallus.ext.variables.Id;
 import com.sstewartgallus.plato.F;
 import com.sstewartgallus.plato.FunctionType;
@@ -38,7 +35,7 @@ public interface PointFree<A> {
     }
 
     record Get<A extends HList<A>, B extends HList<B>, X>(Type<A>domain,
-                                                          Index<A, HList.Cons<X, B>>ix) implements PointFree<F<A, X>> {
+                                                          Index<A, Cons<X, B>>ix) implements PointFree<F<A, X>> {
 
         public <V> Generic<com.sstewartgallus.plato.V<V, F<A, X>>> generic(Id<V> argument) {
             var sig = type().pointFree(argument);
@@ -50,7 +47,7 @@ public interface PointFree<A> {
         }
 
         public Type<F<A, X>> type() {
-            return new FunctionType<>(domain, ((ConsNormal<X, B>) ix.range()).head());
+            return new FunctionType<>(domain, ((ConsType<X, B>) ix.range()).head());
         }
 
         public String toString() {

@@ -47,15 +47,15 @@ public record UncurryLambdaThunk<L extends HList<L>, C, D>(Sig<L, C, D>sig,
 
         Type<D> type();
 
-        record Zero<A>(Type<A>type) implements Sig<HList.Nil, A, A> {
+        record Zero<A>(Type<A>type) implements Sig<Nil, A, A> {
             @Override
-            public Term<A> stepThunk(Function<Term<HList.Nil>, Term<A>> f) {
+            public Term<A> stepThunk(Function<Term<Nil>, Term<A>> f) {
                 return f.apply(NilValue.NIL);
             }
 
             @Override
-            public Type<HList.Nil> argType() {
-                return NilNormal.NIL;
+            public Type<Nil> argType() {
+                return NilType.NIL;
             }
 
             public String toString() {
@@ -64,15 +64,15 @@ public record UncurryLambdaThunk<L extends HList<L>, C, D>(Sig<L, C, D>sig,
         }
 
         record Cons<H, T extends HList<T>, C, D>(Type<H>head,
-                                                 Sig<T, C, D>tail) implements Sig<HList.Cons<H, T>, C, F<H, D>> {
+                                                 Sig<T, C, D>tail) implements Sig<com.sstewartgallus.ext.tuples.Cons<H, T>, C, F<H, D>> {
             @Override
-            public Term<F<H, D>> stepThunk(Function<Term<HList.Cons<H, T>>, Term<C>> f) {
+            public Term<F<H, D>> stepThunk(Function<Term<com.sstewartgallus.ext.tuples.Cons<H, T>>, Term<C>> f) {
                 return head.l(h -> tail.stepThunk(t -> f.apply(new ConsValue<>(h, t))));
             }
 
             @Override
-            public Type<HList.Cons<H, T>> argType() {
-                return new ConsNormal<>(head, tail.argType());
+            public Type<com.sstewartgallus.ext.tuples.Cons<H, T>> argType() {
+                return new ConsType<>(head, tail.argType());
             }
 
             @Override

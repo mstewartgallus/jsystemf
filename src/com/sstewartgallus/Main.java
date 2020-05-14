@@ -1,8 +1,8 @@
 package com.sstewartgallus;
 
 
-import com.sstewartgallus.ext.tuples.HList;
-import com.sstewartgallus.ext.tuples.NilNormal;
+import com.sstewartgallus.ext.tuples.Nil;
+import com.sstewartgallus.ext.tuples.NilType;
 import com.sstewartgallus.ext.variables.Id;
 import com.sstewartgallus.frontend.Entity;
 import com.sstewartgallus.frontend.Environment;
@@ -112,7 +112,7 @@ public final class Main {
         var uncurry = Uncurry.uncurry(tuple);
         outputT("Uncurry", uncurry, uncurry.type());
 
-        var pointFree = ConvertPointFree.pointFree(uncurry, NilNormal.NIL, new Id<HList.Nil>());
+        var pointFree = ConvertPointFree.pointFree(uncurry, NilType.NIL, new Id<Nil>());
         outputT("Point Free", pointFree, pointFree.type());
 
         var generic = pointFree.generic(new Id<Object>());

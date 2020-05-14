@@ -42,11 +42,11 @@ public final class ConvertPointFree {
 
     private static <T extends HList<T>, X, A extends HList<A>, B extends HList<B>> PointFree<F<T, X>> pointFreeGet(DerefThunk<B, X> get, Type<T> argType, Id<T> id) {
         // fixme... be safer..
-        var product = (Getter.Get<T, HList.Cons<X, B>>) get.product();
+        var product = (Getter.Get<T, Cons<X, B>>) get.product();
         return getPointFree(product);
     }
 
-    private static <X, A extends HList<A>, B extends HList<B>> PointFree.Get<A, B, X> getPointFree(Getter.Get<A, HList.Cons<X, B>> product) {
+    private static <X, A extends HList<A>, B extends HList<B>> PointFree.Get<A, B, X> getPointFree(Getter.Get<A, Cons<X, B>> product) {
         return new PointFree.Get<A, B, X>(product.list().type(), product.index());
     }
 

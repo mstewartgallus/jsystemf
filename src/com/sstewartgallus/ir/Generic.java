@@ -1,7 +1,9 @@
 package com.sstewartgallus.ir;
 
+import com.sstewartgallus.ext.tuples.Cons;
 import com.sstewartgallus.ext.tuples.HList;
 import com.sstewartgallus.ext.tuples.Index;
+import com.sstewartgallus.ext.tuples.Nil;
 import com.sstewartgallus.mh.Arguments;
 import com.sstewartgallus.mh.TypedMethodHandle;
 import com.sstewartgallus.plato.F;
@@ -33,7 +35,7 @@ public interface Generic<A> {
     }
 
     // fixme... what really want instead of Void is a T such that Type<T> only has one inhabitant...
-    static <B> Value<B> compile(Lookup lookup, Generic<V<Object, F<HList.Nil, B>>> generic) {
+    static <B> Value<B> compile(Lookup lookup, Generic<V<Object, F<Nil, B>>> generic) {
         var chunk = Generic.compile(lookup, generic, new Signature.Pure<>(Object.class));
 
         var handle = chunk.intro();
@@ -143,7 +145,7 @@ public interface Generic<A> {
 
     record Get<L, X, A extends HList<A>, B extends HList<B>>(Signature<V<L, F<A, X>>>signature,
                                                              Signature<V<L, A>>value,
-                                                             Index<A, HList.Cons<X, B>>ix) implements GenericV<L, F<A, X>> {
+                                                             Index<A, Cons<X, B>>ix) implements GenericV<L, F<A, X>> {
         public Chunk<F<A, X>> compile(Lookup lookup, Signature<L> klass) {
             var domain = Signature.apply(value, klass).flatten();
             var num = ix.reify();

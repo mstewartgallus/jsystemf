@@ -6,7 +6,6 @@ import com.sstewartgallus.ext.tuples.CurriedLambdaThunk;
 import com.sstewartgallus.ext.variables.IdGen;
 import com.sstewartgallus.ext.variables.VarValue;
 import com.sstewartgallus.plato.ApplyThunk;
-import com.sstewartgallus.plato.CoreTerm;
 import com.sstewartgallus.plato.F;
 import com.sstewartgallus.plato.Term;
 
@@ -19,19 +18,15 @@ public final class CurryApply {
             return curryLambda(lambda, ids);
         }
 
-        if (!(term instanceof CoreTerm<A> core)) {
+        if (term instanceof ObjectValue || term instanceof VarValue) {
             return term;
         }
 
-        if (core instanceof ObjectValue || core instanceof VarValue) {
-            return core;
-        }
-
-        if (core instanceof ApplyThunk<?, A> apply) {
+        if (term instanceof ApplyThunk<?, A> apply) {
             return curryApply(apply, ids);
         }
 
-        throw new IllegalArgumentException("Unexpected core list " + term);
+        return term;
     }
 
     private static <A, B> Term<B> curryApply(ApplyThunk<A, B> apply, IdGen ids) {

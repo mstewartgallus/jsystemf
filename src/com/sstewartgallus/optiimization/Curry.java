@@ -1,34 +1,28 @@
 package com.sstewartgallus.optiimization;
 
-import com.sstewartgallus.ext.java.ObjectValue;
 import com.sstewartgallus.ext.tuples.CurriedLambdaThunk;
 import com.sstewartgallus.ext.variables.IdGen;
 import com.sstewartgallus.ext.variables.VarValue;
-import com.sstewartgallus.plato.*;
+import com.sstewartgallus.plato.ApplyThunk;
+import com.sstewartgallus.plato.F;
+import com.sstewartgallus.plato.LambdaValue;
+import com.sstewartgallus.plato.Term;
 
 public final class Curry {
     private Curry() {
     }
 
     public static <A> Term<A> curry(Term<A> term, IdGen ids) {
-        if (!(term instanceof CoreTerm<A> core)) {
-            return term;
-        }
-
-        if (core instanceof ObjectValue || core instanceof VarValue) {
-            return core;
-        }
-
-        if (core instanceof ApplyThunk<?, A> apply) {
+        if (term instanceof ApplyThunk<?, A> apply) {
             return curryApply(apply, ids);
         }
 
-        if (core instanceof LambdaValue<?, ?> lambda) {
+        if (term instanceof LambdaValue<?, ?> lambda) {
             // fixme...
             return (Term) curryLambda(lambda, ids);
         }
 
-        throw new IllegalArgumentException("Unexpected core list " + term);
+        return term;
     }
 
     private static <A, B> Term<B> curryApply(ApplyThunk<A, B> apply, IdGen ids) {

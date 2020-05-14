@@ -6,7 +6,6 @@ import com.sstewartgallus.ext.variables.Id;
 import com.sstewartgallus.ext.variables.IdGen;
 import com.sstewartgallus.ext.variables.VarValue;
 import com.sstewartgallus.ir.PointFree;
-import com.sstewartgallus.plato.CoreTerm;
 import com.sstewartgallus.plato.F;
 import com.sstewartgallus.plato.Term;
 import com.sstewartgallus.plato.Type;
@@ -27,17 +26,13 @@ public final class ConvertPointFree {
             return pointFreeGet(get, ids, argType, id);
         }
 
-        if (!(term instanceof CoreTerm<A> core)) {
-            throw new IllegalArgumentException("Unexpected term " + term);
-        }
-
-        if (core instanceof ObjectValue<A> pure) {
+        if (term instanceof ObjectValue<A> pure) {
             // fixme..
             return new PointFree.K<>(argType, null);
         }
 
-        if (core instanceof VarValue<A>) {
-            if (((VarValue<A>) core).variable().equals(id)) {
+        if (term instanceof VarValue<A> varValue) {
+            if (varValue.variable().equals(id)) {
                 return null;
             }
             throw new Error("todo");

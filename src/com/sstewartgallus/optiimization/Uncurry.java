@@ -6,7 +6,6 @@ import com.sstewartgallus.ext.tuples.HList;
 import com.sstewartgallus.ext.tuples.TupleLambdaThunk;
 import com.sstewartgallus.ext.variables.IdGen;
 import com.sstewartgallus.ext.variables.VarValue;
-import com.sstewartgallus.plato.CoreTerm;
 import com.sstewartgallus.plato.Term;
 
 public final class Uncurry {
@@ -21,16 +20,12 @@ public final class Uncurry {
             return uncurryApply(apply, ids);
         }
 
-        if (!(term instanceof CoreTerm<A> core)) {
-            throw new IllegalArgumentException("Unexpected list " + term);
+        if (term instanceof ObjectValue) {
+            return term;
         }
 
-        if (core instanceof ObjectValue) {
-            return core;
-        }
-
-        if (core instanceof VarValue<A>) {
-            return core;
+        if (term instanceof VarValue<A>) {
+            return term;
         }
 
         throw new IllegalArgumentException("Unexpected core list " + term);

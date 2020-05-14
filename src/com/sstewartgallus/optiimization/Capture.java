@@ -5,7 +5,6 @@ import com.sstewartgallus.ext.tuples.CurriedLambdaThunk;
 import com.sstewartgallus.ext.variables.IdGen;
 import com.sstewartgallus.ext.variables.VarValue;
 import com.sstewartgallus.plato.ApplyThunk;
-import com.sstewartgallus.plato.CoreTerm;
 import com.sstewartgallus.plato.F;
 import com.sstewartgallus.plato.Term;
 
@@ -27,19 +26,15 @@ public final class Capture {
             return curryLambda(lambda, ids);
         }
 
-        if (!(term instanceof CoreTerm<A> core)) {
-            throw new IllegalArgumentException("Unexpected list " + term);
+        if (term instanceof ObjectValue) {
+            return new Results<>(Set.of(), term);
         }
 
-        if (core instanceof ObjectValue) {
-            return new Results<>(Set.of(), core);
+        if (term instanceof VarValue<A> v) {
+            return new Results<>(Set.of(v), v);
         }
 
-        if (core instanceof VarValue<A> v) {
-            return new Results<>(Set.of(v), core);
-        }
-
-        if (core instanceof ApplyThunk<?, A> apply) {
+        if (term instanceof ApplyThunk<?, A> apply) {
             return captureApply(apply, ids);
         }
 

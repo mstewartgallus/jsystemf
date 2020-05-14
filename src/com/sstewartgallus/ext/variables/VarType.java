@@ -1,11 +1,10 @@
 package com.sstewartgallus.ext.variables;
 
 import com.sstewartgallus.ir.Signature;
-import com.sstewartgallus.plato.CoreType;
 import com.sstewartgallus.plato.Type;
 import com.sstewartgallus.plato.V;
 
-public record VarType<T>(Id<T>variable) implements CoreType<T> {
+public record VarType<T>(Id<T>variable) implements Type<T> {
     @Override
     public String toString() {
         return "t" + variable;

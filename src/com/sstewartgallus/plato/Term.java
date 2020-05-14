@@ -31,6 +31,7 @@ public interface Term<A> {
     Type<A> type() throws TypeCheckException;
 
     // fixme... see if it is possible to make variable substitution not part of the core language
+    // fixme.. I think I need some kind of visitor API or something...
     default <X> Term<A> substitute(Id<X> variable, Type<X> replacement) {
         throw new UnsupportedOperationException(getClass().toString());
     }

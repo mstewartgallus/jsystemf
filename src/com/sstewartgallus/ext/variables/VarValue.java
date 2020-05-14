@@ -1,6 +1,5 @@
 package com.sstewartgallus.ext.variables;
 
-import com.sstewartgallus.plato.CoreTerm;
 import com.sstewartgallus.plato.Term;
 import com.sstewartgallus.plato.Type;
 import com.sstewartgallus.plato.ValueTerm;
@@ -15,7 +14,7 @@ import java.util.Objects;
  *
  * @param <A>
  */
-public record VarValue<A>(Type<A>type, Id<A>variable) implements ValueTerm<A>, CoreTerm<A>, Comparable<VarValue<?>> {
+public record VarValue<A>(Type<A>type, Id<A>variable) implements ValueTerm<A>, Comparable<VarValue<?>> {
     public VarValue {
         Objects.requireNonNull(type);
         Objects.requireNonNull(variable);

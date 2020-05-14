@@ -38,7 +38,7 @@ public record CurriedApplyThunk<A>(Body<A>body) implements ThunkTerm<A> {
 
         @Override
         public Type<B> type() throws TypeCheckException {
-            return ((FunctionNormal<A, B>) f.type()).range();
+            return ((FunctionType<A, B>) f.type()).range();
         }
 
         @Override

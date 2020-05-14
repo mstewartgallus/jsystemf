@@ -15,7 +15,7 @@ public record LambdaValue<A, B>(Type<A>domain,
     @Override
     public Type<F<A, B>> type() throws TypeCheckException {
         var range = f.apply(new VarValue<>(domain, new Id<>(0))).type();
-        return new FunctionNormal<>(domain, range);
+        return new FunctionType<>(domain, range);
     }
 
     @Override

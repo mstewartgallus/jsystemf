@@ -10,7 +10,7 @@ public record TypeApplyThunk<A, B>(Term<V<A, B>>f, Type<A>x) implements ThunkTer
 
     @Override
     public Type<B> type() throws TypeCheckException {
-        return ((ForallNormal<A, B>) f.type()).f().apply(x);
+        return ((ForallType<A, B>) f.type()).f().apply(x);
     }
 
     @Override

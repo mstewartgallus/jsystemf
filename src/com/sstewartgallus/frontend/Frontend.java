@@ -104,7 +104,7 @@ public class Frontend {
             var fType = f.type();
             var xType = x.type();
 
-            if (!(fType instanceof FunctionNormal<?, ?> funType)) {
+            if (!(fType instanceof FunctionType<?, ?> funType)) {
                 throw new UnsupportedOperationException("applying nonfunction");
             }
 

@@ -4,7 +4,6 @@ import com.sstewartgallus.extensions.tuples.HList;
 import com.sstewartgallus.extensions.tuples.Index;
 import com.sstewartgallus.mh.Arguments;
 import com.sstewartgallus.mh.TypedMethodHandle;
-import com.sstewartgallus.plato.E;
 import com.sstewartgallus.plato.F;
 import com.sstewartgallus.plato.Type;
 import com.sstewartgallus.plato.V;
@@ -109,20 +108,6 @@ public interface Generic<A> {
             var handle = Generic.compile(lookup, value, klass).intro();
             handle = dropArguments(handle, 0, d);
             return new Chunk<>(handle);
-        }
-    }
-
-    record CurryType<Z, X, A, B>(Signature<V<Z, F<X, V<A, B>>>>signature,
-                                 Generic<V<E<Z, A>, F<X, B>>>f) implements GenericV<Z, F<X, V<A, B>>> {
-        public String toString() {
-            return "(curry-type " + f + ")";
-        }
-
-        public Chunk<F<X, V<A, B>>> compile(MethodHandles.Lookup lookup, Signature<Z> klass) {
-            // fixme... need to accept a klass arguments at runtime I think...
-            // fixme... createa  E<Z,A> from Z ?
-            throw new UnsupportedOperationException("unimplemented");
-            //  return f.compile(lookup, klass);
         }
     }
 

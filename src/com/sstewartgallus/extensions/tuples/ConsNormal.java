@@ -5,7 +5,7 @@ import com.sstewartgallus.plato.*;
 
 import java.util.Objects;
 
-public record ConsNormal<H, T extends HList<T>>(Type<H>head, Type<T>tail) implements NormalType<HList.Cons<H, T>> {
+public record ConsNormal<H, T extends HList<T>>(Type<H>head, Type<T>tail) implements Type<HList.Cons<H, T>> {
     public ConsNormal {
         Objects.requireNonNull(head);
         Objects.requireNonNull(tail);

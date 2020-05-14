@@ -29,7 +29,7 @@ public interface PointFree<A> {
 
         @Override
         public Type<F<A, B>> type() {
-            return new FunctionNormal<>(domain, value.type());
+            return new FunctionType<>(domain, value.type());
         }
     }
 
@@ -46,7 +46,7 @@ public interface PointFree<A> {
         }
 
         public Type<F<A, X>> type() {
-            return new FunctionNormal<>(domain, ((ConsNormal<X, B>) ix.range()).head());
+            return new FunctionType<>(domain, ((ConsNormal<X, B>) ix.range()).head());
         }
 
         public String toString() {
@@ -59,7 +59,7 @@ public interface PointFree<A> {
         @Override
         public <V> Generic<com.sstewartgallus.plato.V<V, F<Z, B>>> generic(Id<V> argument, IdGen vars) {
             var sig = type().pointFree(argument, vars);
-            var domain = ((FunctionNormal<Z, F<A, B>>) f.type()).domain();
+            var domain = ((FunctionType<Z, F<A, B>>) f.type()).domain();
             return new GenericV.Call<>(sig, domain.pointFree(argument, vars), f.generic(argument, vars), x.generic(argument, vars));
         }
 
@@ -70,9 +70,9 @@ public interface PointFree<A> {
 
         @Override
         public Type<F<Z, B>> type() {
-            var domain = ((FunctionNormal<Z, F<A, B>>) f.type()).domain();
-            var range = ((FunctionNormal<A, B>) ((FunctionNormal<Z, F<A, B>>) f.type()).range()).range();
-            return new FunctionNormal<>(domain, range);
+            var domain = ((FunctionType<Z, F<A, B>>) f.type()).domain();
+            var range = ((FunctionType<A, B>) ((FunctionType<Z, F<A, B>>) f.type()).range()).range();
+            return new FunctionType<>(domain, range);
         }
 
         public String toString() {
@@ -84,7 +84,7 @@ public interface PointFree<A> {
                                             PointFree<F<A, B>>body) implements PointFree<R> {
         @Override
         public <X> Generic<V<X, R>> generic(Id<X> argument, IdGen vars) {
-            var bodyT = (FunctionNormal<A, B>) body.type();
+            var bodyT = (FunctionType<A, B>) body.type();
             return new GenericV.Lambda<>(
                     type().pointFree(argument, vars),
                     bodyT.domain().pointFree(argument, vars), bodyT.range().pointFree(argument, vars),

@@ -3,7 +3,7 @@ package com.sstewartgallus.extensions.tuples;
 import com.sstewartgallus.ir.Signature;
 import com.sstewartgallus.plato.*;
 
-public enum NilNormal implements NormalType<HList.Nil> {
+public enum NilNormal implements Type<HList.Nil> {
     NIL;
 
     @Override

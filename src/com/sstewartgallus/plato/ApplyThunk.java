@@ -12,7 +12,7 @@ public record ApplyThunk<A, B>(Term<F<A, B>>f, Term<A>x) implements ThunkTerm<B>
     public Type<B> type() throws TypeCheckException {
         var fType = f.type();
 
-        var funType = (FunctionNormal<A, B>) fType;
+        var funType = (FunctionType<A, B>) fType;
         var range = funType.range();
 
         var argType = x.type();
@@ -31,7 +31,7 @@ public record ApplyThunk<A, B>(Term<F<A, B>>f, Term<A>x) implements ThunkTerm<B>
     public Term<B> stepThunk() {
         var fType = f.type();
 
-        var funType = (FunctionNormal<A, B>) fType;
+        var funType = (FunctionType<A, B>) fType;
         var range = funType.range();
 
         var fNorm = Interpreter.normalize(f);

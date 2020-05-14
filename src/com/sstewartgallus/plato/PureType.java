@@ -3,7 +3,7 @@ package com.sstewartgallus.plato;
 import com.sstewartgallus.ir.Signature;
 
 // fixme... rename/retype, not clear enough this creates a new type...
-public record PureNormal<A>(Class<A>clazz) implements NormalType<A>, CoreType<A> {
+public record PureType<A>(Class<A>clazz) implements CoreType<A>, Type<A> {
 
     public <Y> Type<A> unify(Type<Y> right) throws TypeCheckException {
         if (this != right) {
@@ -14,7 +14,7 @@ public record PureNormal<A>(Class<A>clazz) implements NormalType<A>, CoreType<A>
 
     @Override
     public <Z> Type<A> substitute(Id<Z> v, Type<Z> replacement) {
-        return new PureNormal<>(clazz);
+        return new PureType<>(clazz);
     }
 
     @Override

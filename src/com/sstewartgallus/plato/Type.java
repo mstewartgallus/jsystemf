@@ -10,10 +10,10 @@ import java.util.function.Function;
  * Any processing should happen AFTER this step.
  */
 public interface Type<X> {
-    Type<Integer> INT = new PureNormal<>(int.class);
+    Type<Integer> INT = new PureType<>(int.class);
 
     static <A, B> Type<V<A, B>> v(Function<Type<A>, Type<B>> f) {
-        return new ForallNormal<>(f);
+        return new ForallType<>(f);
     }
 
     // fixme... rethink unification...
@@ -24,7 +24,7 @@ public interface Type<X> {
     }
 
     default <B> Type<F<X, B>> to(Type<B> range) {
-        return new FunctionNormal<>(this, range);
+        return new FunctionType<>(this, range);
     }
 
     <T> Type<X> substitute(Id<T> v, Type<T> replacement);

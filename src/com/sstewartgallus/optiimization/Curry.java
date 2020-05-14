@@ -27,8 +27,8 @@ public final class Curry {
         var domain = lambda.domain();
         var f = lambda.f();
 
-        var v = new Id<A>();
-        var body = f.apply(new VarValue<>(domain, v));
+        var v = new VarValue<>(domain, new Id<>());
+        var body = f.apply(v);
 
         var curriedBody = curry(body);
 
@@ -37,6 +37,6 @@ public final class Curry {
             return new CurriedLambdaThunk<>(new CurriedLambdaThunk.LambdaBody<>(domain, x -> expr.substitute(v, x)));
         }
 
-        return new CurriedLambdaThunk<>(new CurriedLambdaThunk.LambdaBody<>(domain, x -> new CurriedLambdaThunk.MainBody<>(body.substitute(v, x))));
+        return new CurriedLambdaThunk<>(new CurriedLambdaThunk.LambdaBody<>(domain, x -> new CurriedLambdaThunk.MainBody<>(v.substituteIn(body, x))));
     }
 }

@@ -1,6 +1,5 @@
 package com.sstewartgallus.ext.tuples;
 
-import com.sstewartgallus.ext.variables.Id;
 import com.sstewartgallus.plato.Term;
 import com.sstewartgallus.plato.ThunkTerm;
 import com.sstewartgallus.plato.Type;
@@ -18,16 +17,6 @@ public interface Getter<A extends HList<A>> extends ThunkTerm<A> {
         @Override
         public Type<B> type() throws TypeCheckException {
             throw null;
-        }
-
-        @Override
-        public <X> Term<B> substitute(Id<X> variable, Type<X> replacement) {
-            return new Get<>(list.substitute(variable, replacement), index);
-        }
-
-        @Override
-        public <X> Term<B> substitute(Id<X> variable, Term<X> replacement) {
-            return new Get<>(list.substitute(variable, replacement), index);
         }
 
         @Override

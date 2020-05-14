@@ -1,6 +1,5 @@
 package com.sstewartgallus.ext;
 
-import com.sstewartgallus.ext.variables.Id;
 import com.sstewartgallus.plato.Term;
 import com.sstewartgallus.plato.ThunkTerm;
 import com.sstewartgallus.plato.Type;
@@ -23,11 +22,6 @@ public record AddThunk(Term<Integer>left, Term<Integer>right) implements ThunkTe
     @Override
     public String toString() {
         return "(+ " + left + " " + right + ")";
-    }
-
-    @Override
-    public <X> Term<Integer> substitute(Id<X> v, Term<X> replacement) {
-        return new AddThunk(left.substitute(v, replacement), right.substitute(v, replacement));
     }
 
     @Override

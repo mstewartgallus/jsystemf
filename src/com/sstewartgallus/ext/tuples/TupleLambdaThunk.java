@@ -27,11 +27,6 @@ public record TupleLambdaThunk<L extends HList<L>, C, D>(Sig<L, C, D>sig,
     }
 
     @Override
-    public <X> Term<D> substitute(Id<X> variable, Term<X> replacement) {
-        return new TupleLambdaThunk<>(sig, x -> f.apply(x).substitute(variable, replacement));
-    }
-
-    @Override
     public String toString() {
         return "(" + sig.stringify(f) + ")";
     }
@@ -98,16 +93,18 @@ public record TupleLambdaThunk<L extends HList<L>, C, D>(Sig<L, C, D>sig,
 
             @Override
             public Results<?, C, F<H, D>> uncurry(Function<com.sstewartgallus.ext.tuples.Cons<Term<H>, T>, Term<C>> f) {
-                var headId = new Id<H>();
-                var headVar = new VarValue<>(head, headId);
+                var headVar = new VarValue<>(head, new Id<>());
                 var value = tail.uncurry(t -> f.apply(new com.sstewartgallus.ext.tuples.Cons<>(headVar, t)));
-                return cons(headId, value);
+                return cons(headVar, value);
             }
 
-            public <X extends HList<X>> Results<com.sstewartgallus.ext.tuples.Cons<H, X>, C, F<H, D>> cons(Id<H> headId, Results<X, C, D> value) {
+            public <X extends HList<X>> Results<com.sstewartgallus.ext.tuples.Cons<H, X>, C, F<H, D>> cons(VarValue<H> headId, Results<X, C, D> value) {
                 var tailF = value.f();
                 var sig = new UncurryLambdaThunk.Sig.Cons<>(head, value.sig());
-                return new Results<>(sig, product -> tailF.apply(nextGetter(product)).substitute(headId, new DerefThunk<X, H>(product)));
+                return new Results<>(sig, product -> {
+                    Term<H> replacement = new DerefThunk<X, H>(product);
+                    return headId.substituteIn(tailF.apply(nextGetter(product)), replacement);
+                });
             }
         }
     }

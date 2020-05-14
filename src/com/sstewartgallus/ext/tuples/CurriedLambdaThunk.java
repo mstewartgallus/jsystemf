@@ -1,7 +1,7 @@
 package com.sstewartgallus.ext.tuples;
 
 import com.sstewartgallus.ext.pretty.PrettyValue;
-import com.sstewartgallus.ext.variables.Id;
+import com.sstewartgallus.ext.variables.VarValue;
 import com.sstewartgallus.plato.*;
 
 import java.util.Objects;
@@ -39,13 +39,11 @@ public record CurriedLambdaThunk<A>(Body<A>body) implements ThunkTerm<A> {
 
         Term<A> toTerm();
 
-        <X> Body<A> substitute(Id<X> v, Term<X> replacement);
+        <X> Body<A> substitute(VarValue<X> v, Term<X> replacement);
     }
 
     public static record LambdaBody<A, B>(Type<A>domain,
                                           Function<Term<A>, Body<B>>f) implements Body<F<A, B>> {
-        private static final ThreadLocal<Integer> DEPTH = ThreadLocal.withInitial(() -> 0);
-
         public LambdaBody {
             Objects.requireNonNull(domain);
             Objects.requireNonNull(f);
@@ -65,7 +63,7 @@ public record CurriedLambdaThunk<A>(Body<A>body) implements ThunkTerm<A> {
         }
 
         @Override
-        public <X> Body<F<A, B>> substitute(Id<X> v, Term<X> replacement) {
+        public <X> Body<F<A, B>> substitute(VarValue<X> v, Term<X> replacement) {
             return new LambdaBody<>(domain, x -> f.apply(x).substitute(v, replacement));
         }
 
@@ -84,8 +82,8 @@ public record CurriedLambdaThunk<A>(Body<A>body) implements ThunkTerm<A> {
         }
 
         @Override
-        public <X> Body<A> substitute(Id<X> v, Term<X> replacement) {
-            return new MainBody<>(body.substitute(v, replacement));
+        public <X> Body<A> substitute(VarValue<X> v, Term<X> replacement) {
+            return new MainBody<>(v.substituteIn(this.body, replacement));
         }
 
         @Override

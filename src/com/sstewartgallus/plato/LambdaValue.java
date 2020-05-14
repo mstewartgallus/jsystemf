@@ -1,7 +1,6 @@
 package com.sstewartgallus.plato;
 
 import com.sstewartgallus.ext.pretty.PrettyValue;
-import com.sstewartgallus.ext.variables.Id;
 
 import java.util.Objects;
 import java.util.function.Function;
@@ -36,15 +35,5 @@ public record LambdaValue<A, B>(Type<A>domain,
     public Term<B> apply(Term<A> x) {
         // fixme... typecheck domain?
         return f.apply(x);
-    }
-
-    @Override
-    public <X> Term<F<A, B>> substitute(Id<X> v, Type<X> replacement) {
-        return domain.substitute(v, replacement).l(x -> f.apply(x).substitute(v, replacement));
-    }
-
-    @Override
-    public <X> Term<F<A, B>> substitute(Id<X> v, Term<X> replacement) {
-        return domain.l(x -> f.apply(x).substitute(v, replacement));
     }
 }

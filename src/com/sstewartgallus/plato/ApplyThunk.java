@@ -1,7 +1,5 @@
 package com.sstewartgallus.plato;
 
-import com.sstewartgallus.ext.variables.Id;
-
 import java.util.Objects;
 
 public record ApplyThunk<A, B>(Term<F<A, B>>f, Term<A>x) implements ThunkTerm<B>, CoreTerm<B> {
@@ -42,10 +40,5 @@ public record ApplyThunk<A, B>(Term<F<A, B>>f, Term<A>x) implements ThunkTerm<B>
 
         var fNorm = Interpreter.normalize(f);
         return ((LambdaValue<A, B>) fNorm).apply(x);
-    }
-
-    @Override
-    public <X> Term<B> substitute(Id<X> v, Term<X> replacement) {
-        return new ApplyThunk<>(f.substitute(v, replacement), x.substitute(v, replacement));
     }
 }

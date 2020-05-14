@@ -47,12 +47,11 @@ public final class Capture {
         var domain = lambda.domain();
         var f = lambda.f();
 
-        var v = new Id<A>();
-        var load = new VarValue<>(domain, v);
-        var body = f.apply(load);
+        var v = new VarValue<>(domain, new Id<>());
+        var body = f.apply(v);
         var results = captureBody(body);
         Set<VarValue<?>> captures = new TreeSet<>(results.captured);
-        captures.remove(load);
+        captures.remove(v);
 
         var chunk = results.value;
         return new BodyResults<>(captures, new CurriedLambdaThunk.LambdaBody<>(domain, x -> chunk.substitute(v, x)));
@@ -66,7 +65,7 @@ public final class Capture {
     }
 
     private static <A, B> Term<A> helper(List<VarValue<?>> free, int ii, VarValue<B> freeVar, CurriedLambdaThunk.Body<A> body) {
-        return new ApplyThunk<>(helper(free, ii + 1, new CurriedLambdaThunk.LambdaBody<>(freeVar.type(), x -> body.substitute(freeVar.variable(), x))),
+        return new ApplyThunk<>(helper(free, ii + 1, new CurriedLambdaThunk.LambdaBody<>(freeVar.type(), x -> body.substitute(freeVar, x))),
                 freeVar);
     }
 

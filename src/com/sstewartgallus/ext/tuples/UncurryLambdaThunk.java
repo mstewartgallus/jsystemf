@@ -1,7 +1,6 @@
 package com.sstewartgallus.ext.tuples;
 
 import com.sstewartgallus.ext.pretty.PrettyValue;
-import com.sstewartgallus.ext.variables.Id;
 import com.sstewartgallus.plato.*;
 
 import java.util.Objects;
@@ -23,11 +22,6 @@ public record UncurryLambdaThunk<L extends HList<L>, C, D>(Sig<L, C, D>sig,
     @Override
     public Term<D> stepThunk() {
         return sig.stepThunk(f);
-    }
-
-    @Override
-    public <X> Term<D> substitute(Id<X> variable, Term<X> replacement) {
-        return new UncurryLambdaThunk<>(sig, x -> f.apply(x).substitute(variable, replacement));
     }
 
     @Override

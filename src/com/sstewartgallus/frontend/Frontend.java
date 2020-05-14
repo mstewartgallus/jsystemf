@@ -95,7 +95,7 @@ public class Frontend {
                     var newEnv = environment.put(binder, entity);
 
                     var theTerm = toTerm(rest, newEnv);
-                    return Term.v(x -> theTerm.substitute(id, x));
+                    return Term.v(x -> new VarType<>(id).substituteIn(theTerm, x));
                 }
             }
         }
@@ -131,7 +131,7 @@ public class Frontend {
         var newEnv = environment.put(binder, entity);
 
         var theTerm = toTerm(rest, newEnv);
-        return binderType.l(x -> theTerm.substitute(id, x));
+        return binderType.l(x -> variable.substituteIn(theTerm, x));
     }
 
     private static Term<?> lookupTerm(String str, Environment environment) {

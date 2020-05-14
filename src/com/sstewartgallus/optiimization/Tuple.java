@@ -56,7 +56,7 @@ public final class Tuple {
 
         return new TupleLambdaThunk<>(new TupleLambdaThunk.Sig.Cons<>(domain, new TupleLambdaThunk.Sig.Zero<>(body.type())), tuple -> {
             var h = tuple.head();
-            return toUncurry.substitute(head, h);
+            return new VarValue<>(h.type(), head).substituteIn(toUncurry, h);
         });
     }
 
@@ -67,7 +67,7 @@ public final class Tuple {
         return new TupleLambdaThunk<Cons<Term<B>, X>, F<B, C>, F<B, A>>(sig, p -> {
             Term<B> h = p.head();
             X t = p.tail();
-            return tupleF.apply(t).substitute(head, h);
+            return new VarValue<>(h.type(), head).substituteIn(tupleF.apply(t), h);
         });
     }
 }

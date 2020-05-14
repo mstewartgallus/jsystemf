@@ -1,6 +1,7 @@
 package com.sstewartgallus.ext.variables;
 
 import com.sstewartgallus.ir.Signature;
+import com.sstewartgallus.plato.Term;
 import com.sstewartgallus.plato.Type;
 import com.sstewartgallus.plato.V;
 
@@ -8,14 +9,6 @@ public record VarType<T>(Id<T>variable) implements Type<T> {
     @Override
     public String toString() {
         return "t" + variable;
-    }
-
-    @Override
-    public <Z> Type<T> substitute(Id<Z> v, Type<Z> replacement) {
-        if (v == variable) {
-            return (Type<T>) replacement;
-        }
-        return this;
     }
 
     @Override
@@ -31,4 +24,35 @@ public record VarType<T>(Id<T>variable) implements Type<T> {
         throw new UnsupportedOperationException("unimplemented");
     }
 
+    public <A> Term<A> substituteIn(Term<A> root, Type<T> replacement) {
+        return root.visit(new Term.Visitor() {
+            @Override
+            public <T> Type<T> type(Type<T> type) {
+                if (!(type instanceof VarType<T> varType)) {
+                    return type.visitChildren(this);
+                }
+
+                if (varType.variable == variable) {
+                    return (Type) replacement;
+                }
+                return varType;
+            }
+        });
+    }
+
+    public <A> Type<A> substituteIn(Type<A> root, Type<T> replacement) {
+        return root.visit(new Term.Visitor() {
+            @Override
+            public <T> Type<T> type(Type<T> type) {
+                if (!(type instanceof VarType<T> varType)) {
+                    return type.visitChildren(this);
+                }
+
+                if (varType.variable == variable) {
+                    return (Type) replacement;
+                }
+                return varType;
+            }
+        });
+    }
 }

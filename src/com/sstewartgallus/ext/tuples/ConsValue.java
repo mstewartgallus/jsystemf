@@ -1,6 +1,5 @@
 package com.sstewartgallus.ext.tuples;
 
-import com.sstewartgallus.ext.variables.Id;
 import com.sstewartgallus.plato.Term;
 import com.sstewartgallus.plato.Type;
 import com.sstewartgallus.plato.TypeCheckException;
@@ -17,11 +16,6 @@ public record ConsValue<H, T extends HList<T>>(Term<H>head, Term<T>tail) impleme
     @Override
     public Type<Cons<H, T>> type() throws TypeCheckException {
         return new ConsType<>(head.type(), tail.type());
-    }
-
-    @Override
-    public <X> Term<Cons<H, T>> substitute(Id<X> v, Term<X> replacement) {
-        return new ConsValue<>(head.substitute(v, replacement), tail.substitute(v, replacement));
     }
 
     public String toString() {

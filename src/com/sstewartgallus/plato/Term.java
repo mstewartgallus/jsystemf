@@ -1,7 +1,5 @@
 package com.sstewartgallus.plato;
 
-import com.sstewartgallus.ext.variables.Id;
-
 import java.util.function.Function;
 
 /**
@@ -30,18 +28,8 @@ public interface Term<A> {
 
     Type<A> type() throws TypeCheckException;
 
-    // fixme... see if it is possible to make variable substitution not part of the core language
-    // fixme.. I think I need some kind of visitor API or something...
-    default <X> Term<A> substitute(Id<X> variable, Type<X> replacement) {
-        throw new UnsupportedOperationException(getClass().toString());
-    }
-
-    default <X> Term<A> substitute(Id<X> variable, Term<X> replacement) {
-        throw new UnsupportedOperationException(getClass().toString());
-    }
-
     default Term<A> visit(Visitor visitor) {
-        return visitor.term(this).visitChildren(visitor);
+        return visitor.term(this);
     }
 
     default Term<A> visitChildren(Visitor visitor) {
@@ -49,6 +37,12 @@ public interface Term<A> {
     }
 
     abstract class Visitor {
-        public abstract <T> Term<T> term(Term<T> term);
+        public <T> Type<T> type(Type<T> type) {
+            return type;
+        }
+
+        public <T> Term<T> term(Term<T> term) {
+            return term;
+        }
     }
 }

@@ -25,17 +25,20 @@ public record VarValue<A>(Type<A>type, Id<A>variable) implements ValueTerm<A>, C
         return "v" + variable;
     }
 
-    @Override
-    public <X> Term<A> substitute(Id<X> v, Type<X> replacement) {
-        return new VarValue<>(type.substitute(v, replacement), variable);
-    }
+    public <X> Term<X> substituteIn(Term<X> root, Term<A> replacement) {
+        return root.visit(new Visitor() {
+            @Override
+            public <T> Term<T> term(Term<T> term) {
+                if (!(term instanceof VarValue<T> varValue)) {
+                    return term.visitChildren(this);
+                }
 
-    @Override
-    public <X> Term<A> substitute(Id<X> argument, Term<X> replacement) {
-        if (variable.equals(argument)) {
-            return (Term) replacement;
-        }
-        return this;
+                if (varValue.variable == variable) {
+                    return (Term) replacement;
+                }
+                return varValue;
+            }
+        });
     }
 
     @Override

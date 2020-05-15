@@ -2,7 +2,7 @@ package com.sstewartgallus.ext.pointfree;
 
 import com.sstewartgallus.plato.*;
 
-public record K<A, B>(Type<A>domain, Term<B>result) implements ThunkTerm<F<A, B>> {
+public record ConstantThunk<A, B>(Type<A>domain, Term<B>result) implements ThunkTerm<F<A, B>> {
     @Override
     public Term<F<A, B>> stepThunk() {
         return new LambdaValue<>(domain, x -> result);
@@ -15,6 +15,6 @@ public record K<A, B>(Type<A>domain, Term<B>result) implements ThunkTerm<F<A, B>
 
     @Override
     public Term<F<A, B>> visitChildren(Visitor visitor) {
-        return new K<>(visitor.type(domain), visitor.term(result));
+        return new ConstantThunk<>(visitor.type(domain), visitor.term(result));
     }
 }

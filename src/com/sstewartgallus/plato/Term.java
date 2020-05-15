@@ -24,7 +24,7 @@ public interface Term<A> {
     }
 
     static <A, B> Term<B> apply(Term<F<A, B>> f, Term<A> x) {
-        return new Pick<>(new CallThunk<>(new ConstantThunk<>(NilType.NIL, f), new ConstantThunk<>(NilType.NIL, x)));
+        return new ApplyThunk<>(f, x);
     }
 
     static <A, B> Term<V<A, B>> v(Function<Type<A>, Term<B>> f) {

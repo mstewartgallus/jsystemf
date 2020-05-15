@@ -59,7 +59,7 @@ public class Frontend {
         return Node.of(words);
     }
 
-    private static Type<?> toType(Node node, Environment env) {
+    public static Type<?> toType(Node node, Environment env) {
         // fixme.. denormal types are looking more and more plausible...
         if (node instanceof Node.Atom atom) {
             return lookupType(atom.value(), env);
@@ -79,29 +79,11 @@ public class Frontend {
     public static Term<?> toTerm(Node.Array source, Environment environment) {
         var nodes = source.nodes();
         var nodeZero = nodes.get(0);
-        // fixme... put special forms in the environment as well...
+
         if (nodeZero instanceof Node.Atom atom) {
-            switch (atom.value()) {
-                case "λ" -> {
-                    var binder = ((Node.Array) nodes.get(1)).nodes();
-                    var binderName = ((Node.Atom) binder.get(0)).value();
-                    var binderType = binder.get(1);
-
-                    var rest = new Node.Array(nodes.subList(2, nodes.size()));
-
-                    return getTerm(binderName, toType(binderType, environment), rest, environment);
-                }
-                case "∀" -> {
-                    var binder = ((Node.Atom) nodes.get(1)).value();
-                    var rest = new Node.Array(nodes.subList(2, nodes.size()));
-
-                    var variable = new VarType<>();
-                    var entity = new Entity.TypeEntity(variable);
-                    var newEnv = environment.put(binder, entity);
-
-                    var theTerm = toTerm(rest, newEnv);
-                    return Term.v(x -> variable.substituteIn(theTerm, x));
-                }
+            var entity = environment.get(atom.value());
+            if (entity.isPresent() && entity.get() instanceof Entity.SpecialFormEntity special) {
+                return special.f().apply(nodes, environment);
             }
         }
 
@@ -129,9 +111,9 @@ public class Frontend {
         return result.get();
     }
 
-    private static <A> Term<?> getTerm(String binder, Type<A> binderType, Node.Array rest, Environment environment) {
+    public static <A> Term<?> getTerm(String binder, Type<A> binderType, Node.Array rest, Environment environment) {
         var variable = new VarValue<>(binderType);
-        var entity = new Entity.TermEntity(variable);
+        var entity = new Entity.TermEntity(binder, variable);
         var newEnv = environment.put(binder, entity);
 
         var theTerm = toTerm(rest, newEnv);

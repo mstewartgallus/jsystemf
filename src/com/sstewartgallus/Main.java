@@ -21,12 +21,18 @@ import java.lang.annotation.ElementType;
 import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
+import java.lang.invoke.MethodHandle;
+import java.lang.invoke.MethodHandleProxies;
 import java.util.Arrays;
+import java.util.List;
+import java.util.function.BiFunction;
+import java.util.function.Function;
 import java.util.function.Supplier;
+import java.util.stream.Stream;
 
 import static java.lang.invoke.MethodHandles.lookup;
 
-@Target(ElementType.FIELD)
+@Target({ElementType.FIELD, ElementType.METHOD})
 @Retention(RetentionPolicy.RUNTIME)
 @interface PutEnv {
     String value();
@@ -45,34 +51,77 @@ public final class Main {
     @PutEnv("I")
     private static final Type<?> INT_TYPE = Type.INT;
 
+    @PutEnv("λ")
+    private static Term<?> lambda(List<Node> nodes, Environment environment) {
+        var binder = ((Node.Array) nodes.get(1)).nodes();
+        var binderName = ((Node.Atom) binder.get(0)).value();
+        var binderType = binder.get(1);
+
+        var rest = new Node.Array(nodes.subList(2, nodes.size()));
+
+        return Frontend.getTerm(binderName, Frontend.toType(binderType, environment), rest, environment);
+    }
+
+    @PutEnv("∀")
+    private static Term<?> forall(List<Node> nodes, Environment environment) {
+        var binder = ((Node.Atom) nodes.get(1)).value();
+        var rest = new Node.Array(nodes.subList(2, nodes.size()));
+
+        var variable = new VarType<>();
+        var entity = new Entity.TypeEntity(binder, variable);
+        var newEnv = environment.put(binder, entity);
+
+        var theTerm = Frontend.toTerm(rest, newEnv);
+        return Term.v(x -> variable.substituteIn(theTerm, x));
+    }
+
     //@PutEnv("<")
     //private static final Term<?> LESS_THAN = Type.INT.l(x -> Type.INT.l(y -> Prims.lessThan(x, y)));
 
     private static final Environment DEFAULT_ENV =
-            Arrays.
-                    stream(Main.class.getDeclaredFields())
-                    .filter(f -> f.isAnnotationPresent(PutEnv.class))
-                    .reduce(Environment.empty(), (env, field) -> {
-                        var defaultAnnotation = field.getAnnotation(PutEnv.class);
-                        var name = defaultAnnotation.value();
+            Stream.concat(
+                    Arrays.
+                            stream(Main.class.getDeclaredFields())
+                            .filter(f -> f.isAnnotationPresent(PutEnv.class))
+                            .map(field -> {
+                                var defaultAnnotation = field.getAnnotation(PutEnv.class);
+                                var name = defaultAnnotation.value();
 
-                        Object value;
-                        try {
-                            value = field.get(null);
-                        } catch (IllegalAccessException e) {
-                            throw new RuntimeException(e);
-                        }
+                                Object value;
+                                try {
+                                    value = field.get(null);
+                                } catch (IllegalAccessException e) {
+                                    throw new RuntimeException(e);
+                                }
 
-                        Entity entity;
-                        if (value instanceof Term) {
-                            entity = new Entity.TermEntity((Term<?>) value);
-                        } else if (value instanceof Type) {
-                            entity = new Entity.TypeEntity((Type<?>) value);
-                        } else {
-                            throw new RuntimeException("error " + value);
-                        }
-                        return env.put(name, entity);
-                    }, Environment::union);
+                                Entity entity;
+                                if (value instanceof Term) {
+                                    entity = new Entity.TermEntity(name, (Term<?>) value);
+                                } else if (value instanceof Type) {
+                                    entity = new Entity.TypeEntity(name, (Type<?>) value);
+                                } else {
+                                    throw new RuntimeException("error " + value);
+                                }
+                                return entity;
+                            }),
+                    Arrays.
+                            stream(Main.class.getDeclaredMethods())
+                            .filter(f -> f.isAnnotationPresent(PutEnv.class))
+                            .map(method -> {
+                                var defaultAnnotation = method.getAnnotation(PutEnv.class);
+                                var name = defaultAnnotation.value();
+
+                                MethodHandle methodHandle;
+                                try {
+                                    methodHandle = lookup().unreflect(method);
+                                } catch (IllegalAccessException e) {
+                                    throw new RuntimeException(e);
+                                }
+
+                                var f = MethodHandleProxies.asInterfaceInstance(BiFunction.class, methodHandle);
+                                return new Entity.SpecialFormEntity(name, f);
+                            })
+            ).reduce(Environment.empty(), (env, entity) -> env.put(entity.name(), entity), Environment::union);
 
     static {
         // fixme... still need to introduce lazy values and product recursion..

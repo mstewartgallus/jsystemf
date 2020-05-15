@@ -2,7 +2,6 @@ package com.sstewartgallus.optiimization;
 
 import com.sstewartgallus.ext.tuples.CurriedLambdaThunk;
 import com.sstewartgallus.ext.variables.VarValue;
-import com.sstewartgallus.plato.ApplyThunk;
 import com.sstewartgallus.plato.F;
 import com.sstewartgallus.plato.Term;
 
@@ -64,7 +63,7 @@ public final class Capture {
     }
 
     private static <A, B> Term<A> helper(List<VarValue<?>> free, int ii, VarValue<B> freeVar, CurriedLambdaThunk.Body<A> body) {
-        return new ApplyThunk<>(helper(free, ii + 1, new CurriedLambdaThunk.LambdaBody<>(freeVar.type(), x -> body.substitute(freeVar, x))),
+        return Term.apply(helper(free, ii + 1, new CurriedLambdaThunk.LambdaBody<>(freeVar.type(), x -> body.substitute(freeVar, x))),
                 freeVar);
     }
 

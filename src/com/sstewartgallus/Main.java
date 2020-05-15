@@ -92,7 +92,7 @@ public final class Main {
 
         var term = Frontend.toTerm(ast, DEFAULT_ENV);
 
-        output("System F", term);
+        outputT("System F", term, term.type());
 
         var interpreterOutput = Interpreter.normalize(term);
         outputT("Interpreter Output", interpreterOutput, interpreterOutput.type());

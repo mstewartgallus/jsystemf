@@ -17,4 +17,9 @@ public record ConstantThunk<A, B>(Type<A>domain, Term<B>result) implements Thunk
     public Term<F<A, B>> visitChildren(Visitor visitor) {
         return new ConstantThunk<>(visitor.type(domain), visitor.term(result));
     }
+
+    @Override
+    public String toString() {
+        return "(K " + result + ")";
+    }
 }

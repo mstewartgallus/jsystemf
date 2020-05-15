@@ -18,6 +18,11 @@ public record Pick<B>(Term<F<Nil, B>>k) implements ThunkTerm<B> {
     }
 
     @Override
+    public String toString() {
+        return "(eval " + k + ")";
+    }
+
+    @Override
     public Term<B> visitChildren(Visitor visitor) {
         return new Pick<>(visitor.term(k));
     }

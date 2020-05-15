@@ -1,5 +1,10 @@
 package com.sstewartgallus.plato;
 
+import com.sstewartgallus.ext.pointfree.CallThunk;
+import com.sstewartgallus.ext.pointfree.ConstantThunk;
+import com.sstewartgallus.ext.pointfree.Pick;
+import com.sstewartgallus.ext.tuples.NilType;
+
 import java.util.function.Function;
 
 /**
@@ -19,7 +24,7 @@ public interface Term<A> {
     }
 
     static <A, B> Term<B> apply(Term<F<A, B>> f, Term<A> x) {
-        return new ApplyThunk<>(f, x);
+        return new Pick<>(new CallThunk<>(new ConstantThunk<>(NilType.NIL, f), new ConstantThunk<>(NilType.NIL, x)));
     }
 
     static <A, B> Term<V<A, B>> v(Function<Type<A>, Term<B>> f) {

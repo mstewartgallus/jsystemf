@@ -16,6 +16,7 @@ public final class ConvertPointFree {
         if (term instanceof UncurryLambdaThunk<?, ?, A> lambda) {
             return uncurryLambda(lambda, id);
         }
+
         if (term instanceof CurriedApplyThunk<A> apply) {
             return uncurryApply(apply, id);
         }

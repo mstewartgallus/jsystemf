@@ -4,6 +4,7 @@ package com.sstewartgallus;
 import com.sstewartgallus.ext.tuples.Nil;
 import com.sstewartgallus.ext.tuples.NilType;
 import com.sstewartgallus.ext.variables.Id;
+import com.sstewartgallus.ext.variables.VarType;
 import com.sstewartgallus.frontend.Entity;
 import com.sstewartgallus.frontend.Environment;
 import com.sstewartgallus.frontend.Frontend;
@@ -115,7 +116,7 @@ public final class Main {
         var pointFree = ConvertPointFree.pointFree(uncurry, NilType.NIL, new Id<Nil>());
         outputT("Point Free", pointFree, pointFree.type());
 
-        var generic = pointFree.generic(new Id<Object>());
+        var generic = pointFree.generic(new VarType<>());
         outputT("Generic", generic, generic.signature());
 
         // fixme.. hack

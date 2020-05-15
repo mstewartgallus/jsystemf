@@ -18,8 +18,8 @@ public final class VarType<T> implements Type<T> {
     }
 
     @Override
-    public <Z> Signature<V<Z, T>> pointFree(Id<Z> argument) {
-        if (variable == argument) {
+    public <Z> Signature<V<Z, T>> pointFree(VarType<Z> argument) {
+        if (variable == argument.variable) {
             return (Signature) new Signature.Identity<Z>();
         }
         throw new Error("fixme");

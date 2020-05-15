@@ -1,6 +1,6 @@
 package com.sstewartgallus.ext.tuples;
 
-import com.sstewartgallus.ext.variables.Id;
+import com.sstewartgallus.ext.variables.VarType;
 import com.sstewartgallus.ir.Signature;
 import com.sstewartgallus.plato.Type;
 import com.sstewartgallus.plato.TypeCheckException;
@@ -18,7 +18,7 @@ public enum NilType implements Type<Nil> {
     }
 
     @Override
-    public <Z> Signature<V<Z, Nil>> pointFree(Id<Z> argument) {
+    public <Z> Signature<V<Z, Nil>> pointFree(VarType<Z> argument) {
         return new Signature.K<>(Signature.NilSig.NIL);
     }
 }

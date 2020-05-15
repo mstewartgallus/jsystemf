@@ -2,7 +2,6 @@ package com.sstewartgallus.ir;
 
 import com.sstewartgallus.ext.java.JavaType;
 import com.sstewartgallus.ext.tuples.*;
-import com.sstewartgallus.ext.variables.Id;
 import com.sstewartgallus.ext.variables.VarType;
 import com.sstewartgallus.plato.F;
 import com.sstewartgallus.plato.FunctionType;
@@ -10,7 +9,7 @@ import com.sstewartgallus.plato.Type;
 import com.sstewartgallus.plato.V;
 
 public interface PointFree<A> {
-    <Z> Generic<V<Z, A>> generic(Id<Z> argument);
+    <Z> Generic<V<Z, A>> generic(VarType<Z> argument);
 
     <Z> PointFree<A> substitute(VarType<Z> argument, Type<Z> replacement);
 
@@ -21,7 +20,7 @@ public interface PointFree<A> {
             return String.valueOf(value);
         }
 
-        public <X> Generic<V<X, Integer>> generic(Id<X> argument) {
+        public <X> Generic<V<X, Integer>> generic(VarType<X> argument) {
             return new Generic.IntValue<>(type().pointFree(argument), value);
         }
 
@@ -40,7 +39,7 @@ public interface PointFree<A> {
             return "(K " + value.toString() + ")";
         }
 
-        public <V> Generic<com.sstewartgallus.plato.V<V, F<A, B>>> generic(Id<V> argument) {
+        public <V> Generic<com.sstewartgallus.plato.V<V, F<A, B>>> generic(VarType<V> argument) {
             var sig = type().pointFree(argument);
             return new GenericV.K<>(sig, domain.pointFree(argument), value.generic(argument));
         }
@@ -58,7 +57,7 @@ public interface PointFree<A> {
     record Get<A extends HList<A>, B extends HList<B>, X>(Type<A>domain,
                                                           Index<A, Cons<X, B>>ix) implements PointFree<F<A, X>> {
 
-        public <V> Generic<com.sstewartgallus.plato.V<V, F<A, X>>> generic(Id<V> argument) {
+        public <V> Generic<com.sstewartgallus.plato.V<V, F<A, X>>> generic(VarType<V> argument) {
             var sig = type().pointFree(argument);
             return new GenericV.Get<>(sig, domain.pointFree(argument), ix);
         }
@@ -79,7 +78,7 @@ public interface PointFree<A> {
     record Call<Z extends HList<Z>, A, B>(PointFree<F<Z, F<A, B>>>f,
                                           PointFree<F<Z, A>>x) implements PointFree<F<Z, B>> {
         @Override
-        public <V> Generic<com.sstewartgallus.plato.V<V, F<Z, B>>> generic(Id<V> argument) {
+        public <V> Generic<com.sstewartgallus.plato.V<V, F<Z, B>>> generic(VarType<V> argument) {
             var sig = type().pointFree(argument);
             var domain = ((FunctionType<Z, F<A, B>>) f.type()).domain();
             return new GenericV.Call<>(sig, domain.pointFree(argument), f.generic(argument), x.generic(argument));
@@ -105,7 +104,7 @@ public interface PointFree<A> {
     record Lambda<A extends HList<A>, B, R>(UncurryLambdaThunk.Sig<A, B, R>sig,
                                             PointFree<F<A, B>>body) implements PointFree<R> {
         @Override
-        public <X> Generic<V<X, R>> generic(Id<X> argument) {
+        public <X> Generic<V<X, R>> generic(VarType<X> argument) {
             var bodyT = (FunctionType<A, B>) body.type();
             return new GenericV.Lambda<>(
                     type().pointFree(argument),

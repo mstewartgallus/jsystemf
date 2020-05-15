@@ -1,7 +1,7 @@
 package com.sstewartgallus.plato;
 
 import com.sstewartgallus.ext.java.JavaType;
-import com.sstewartgallus.ext.variables.Id;
+import com.sstewartgallus.ext.variables.VarType;
 import com.sstewartgallus.ir.Signature;
 
 import java.util.function.Function;
@@ -29,7 +29,7 @@ public interface Type<X> {
         return new FunctionType<>(this, range);
     }
 
-    <Z> Signature<V<Z, X>> pointFree(Id<Z> argument);
+    <Z> Signature<V<Z, X>> pointFree(VarType<Z> argument);
 
     default Type<X> visitChildren(Term.Visitor visitor) {
         throw null;

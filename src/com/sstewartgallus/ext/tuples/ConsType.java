@@ -1,6 +1,6 @@
 package com.sstewartgallus.ext.tuples;
 
-import com.sstewartgallus.ext.variables.Id;
+import com.sstewartgallus.ext.variables.VarType;
 import com.sstewartgallus.ir.Signature;
 import com.sstewartgallus.plato.Type;
 import com.sstewartgallus.plato.TypeCheckException;
@@ -23,7 +23,7 @@ public record ConsType<H, T extends HList<T>>(Type<H>head, Type<T>tail) implemen
     }
 
     @Override
-    public <Z> Signature<V<Z, Cons<H, T>>> pointFree(Id<Z> argument) {
+    public <Z> Signature<V<Z, Cons<H, T>>> pointFree(VarType<Z> argument) {
         return new Signature.ConsType<>(head.pointFree(argument), tail.pointFree(argument));
     }
 

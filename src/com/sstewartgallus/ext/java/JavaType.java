@@ -1,6 +1,6 @@
 package com.sstewartgallus.ext.java;
 
-import com.sstewartgallus.ext.variables.Id;
+import com.sstewartgallus.ext.variables.VarType;
 import com.sstewartgallus.ir.Signature;
 import com.sstewartgallus.plato.Type;
 import com.sstewartgallus.plato.TypeCheckException;
@@ -25,7 +25,7 @@ public record JavaType<A>(Class<A>clazz) implements Type<A> {
     }
 
     @Override
-    public <Z> Signature<V<Z, A>> pointFree(Id<Z> argument) {
+    public <Z> Signature<V<Z, A>> pointFree(VarType<Z> argument) {
         return new Signature.K<>(new Signature.Pure<>(clazz));
     }
 

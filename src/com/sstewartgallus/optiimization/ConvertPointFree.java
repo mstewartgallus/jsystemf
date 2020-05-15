@@ -3,16 +3,45 @@ package com.sstewartgallus.optiimization;
 import com.sstewartgallus.ext.java.IntValue;
 import com.sstewartgallus.ext.java.ObjectValue;
 import com.sstewartgallus.ext.pointfree.CallThunk;
-import com.sstewartgallus.ext.pointfree.ConstantThunk;
 import com.sstewartgallus.ext.pointfree.Pick;
 import com.sstewartgallus.ext.tuples.*;
 import com.sstewartgallus.ext.variables.VarValue;
 import com.sstewartgallus.ir.PointFree;
 import com.sstewartgallus.plato.F;
+import com.sstewartgallus.plato.LambdaValue;
 import com.sstewartgallus.plato.Term;
 
+/**
+ * Converting to point free form is like taking the derivative of a function.
+ * <p>
+ * PointFree[ K (x, y) ]_x  = K (1, y)
+ * <p>
+ * d xy / dx = 1 * y
+ */
 public final class ConvertPointFree {
     private ConvertPointFree() {
+    }
+
+    // fixme... how to typecheck
+    public static <A> Term<A> pointFree2(Term<A> root) {
+        return root.visit(new Term.Visitor() {
+            @Override
+            public <T> Term<T> term(Term<T> term) {
+                if (!(term instanceof LambdaValue<?, ?> lambda)) {
+                    return term.visitChildren(this);
+                }
+                return (Term) pointFreeify(lambda);
+            }
+        });
+    }
+
+    private static <A, B> Term<F<A, B>> pointFreeify(LambdaValue<A, B> lambda) {
+        var f = lambda.f();
+        var domain = lambda.domain();
+
+        var v = new VarValue<>(domain);
+        var body = f.apply(v);
+        return body.pointFree(v);
     }
 
     public static <T extends HList<T>, A> PointFree<F<T, A>> pointFree(Term<A> term, VarValue<T> id) {
@@ -54,11 +83,6 @@ public final class ConvertPointFree {
         }
 
         throw new IllegalArgumentException("Unexpected core list " + term);
-    }
-
-    private static <T extends HList<T>, A, B> PointFree<F<T, F<A, B>>> pointFreeConstant(ConstantThunk<A, B> constantThunk, VarValue<T> id) {
-        PointFree<F<T, B>> result = pointFree(constantThunk.result(), id);
-        throw null;
     }
 
     private static <T extends HList<T>, B, C, A> PointFree<F<T, F<B, A>>> pointFreeCall(CallThunk<B, C, A> call, VarValue<T> id) {

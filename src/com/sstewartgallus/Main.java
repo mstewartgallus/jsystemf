@@ -8,12 +8,13 @@ import com.sstewartgallus.frontend.Entity;
 import com.sstewartgallus.frontend.Environment;
 import com.sstewartgallus.frontend.Frontend;
 import com.sstewartgallus.frontend.Node;
-import com.sstewartgallus.ir.Generic;
 import com.sstewartgallus.optiimization.*;
 import com.sstewartgallus.plato.*;
 import com.sstewartgallus.primitives.Prims;
 import com.sstewartgallus.runtime.Value;
 import com.sstewartgallus.runtime.ValueInvoker;
+import com.sstewartgallus.runtime.ValueThrowable;
+import com.sstewartgallus.runtime.ValueThrowables;
 
 import java.io.IOException;
 import java.io.StringReader;
@@ -26,7 +27,6 @@ import java.lang.invoke.MethodHandleProxies;
 import java.util.Arrays;
 import java.util.List;
 import java.util.function.BiFunction;
-import java.util.function.Function;
 import java.util.function.Supplier;
 import java.util.stream.Stream;
 
@@ -38,46 +38,19 @@ import static java.lang.invoke.MethodHandles.lookup;
     String value();
 }
 
+
 public final class Main {
     public static final int INDENT = 26;
     public static final int INDENT_2 = 50;
     static final Supplier<Object> TO_EXEC;
+    private static final MyThrowable TEMPLATE = new MyThrowable();
     private static final TypeApply TP = ValueInvoker.newInstance(lookup(), TypeApply.class);
     private static final Apply AP = ValueInvoker.newInstance(lookup(), Apply.class);
     private static final ApplyInt API = ValueInvoker.newInstance(lookup(), ApplyInt.class);
-
     @PutEnv("+")
     private static final Term<?> ADD = Type.INT.l(x -> Type.INT.l(y -> Prims.add(x, y)));
     @PutEnv("I")
     private static final Type<?> INT_TYPE = Type.INT;
-
-    @PutEnv("λ")
-    private static Term<?> lambda(List<Node> nodes, Environment environment) {
-        var binder = ((Node.Array) nodes.get(1)).nodes();
-        var binderName = ((Node.Atom) binder.get(0)).value();
-        var binderType = binder.get(1);
-
-        var rest = new Node.Array(nodes.subList(2, nodes.size()));
-
-        return Frontend.getTerm(binderName, Frontend.toType(binderType, environment), rest, environment);
-    }
-
-    @PutEnv("∀")
-    private static Term<?> forall(List<Node> nodes, Environment environment) {
-        var binder = ((Node.Atom) nodes.get(1)).value();
-        var rest = new Node.Array(nodes.subList(2, nodes.size()));
-
-        var variable = new VarType<>();
-        var entity = new Entity.TypeEntity(binder, variable);
-        var newEnv = environment.put(binder, entity);
-
-        var theTerm = Frontend.toTerm(rest, newEnv);
-        return Term.v(x -> variable.substituteIn(theTerm, x));
-    }
-
-    //@PutEnv("<")
-    //private static final Term<?> LESS_THAN = Type.INT.l(x -> Type.INT.l(y -> Prims.lessThan(x, y)));
-
     private static final Environment DEFAULT_ENV =
             Stream.concat(
                     Arrays.
@@ -125,7 +98,7 @@ public final class Main {
 
     static {
         // fixme... still need to introduce lazy values and product recursion..
-        var source = "(λ (x I) x) 4";
+        var source = "λ (x I) λ (y I) x";
 
         output("Source", source);
 
@@ -141,7 +114,10 @@ public final class Main {
 
         var term = Frontend.toTerm(ast, DEFAULT_ENV);
 
-        outputT("System F", term, term.type());
+        output("System F", term); //, term.type());
+
+        var pointFree2 = ConvertPointFree.pointFree2(term);
+        outputT("Point Free 2", pointFree2, pointFree2.type());
 
         var interpreterOutput = Interpreter.normalize(term);
         outputT("Interpreter Output", interpreterOutput, interpreterOutput.type());
@@ -166,15 +142,42 @@ public final class Main {
 
         var generic = pointFree.generic(new VarType<>());
         outputT("Generic", generic, generic.signature());
-
+/*
         // fixme.. hack
         var main = Generic.compile(lookup(), (Generic) generic);
         output("Main", main);
 
         var bar = API.apply((Value<F<Integer, F<Integer, Integer>>>) main, 3, 5);
         output("Result", bar);
+*/
+        TO_EXEC = () -> ValueThrowables.clone(TEMPLATE);// API.apply((Value<F<Integer, F<Integer, Integer>>>) main, 3, 3);
+    }
 
-        TO_EXEC = () -> API.apply((Value<F<Integer, F<Integer, Integer>>>) main, 3, 3);
+    @PutEnv("λ")
+    private static Term<?> lambda(List<Node> nodes, Environment environment) {
+        var binder = ((Node.Array) nodes.get(1)).nodes();
+        var binderName = ((Node.Atom) binder.get(0)).value();
+        var binderType = binder.get(1);
+
+        var rest = new Node.Array(nodes.subList(2, nodes.size()));
+
+        return Frontend.getTerm(binderName, Frontend.toType(binderType, environment), rest, environment);
+    }
+
+    //@PutEnv("<")
+    //private static final Term<?> LESS_THAN = Type.INT.l(x -> Type.INT.l(y -> Prims.lessThan(x, y)));
+
+    @PutEnv("∀")
+    private static Term<?> forall(List<Node> nodes, Environment environment) {
+        var binder = ((Node.Atom) nodes.get(1)).value();
+        var rest = new Node.Array(nodes.subList(2, nodes.size()));
+
+        var variable = new VarType<>();
+        var entity = new Entity.TypeEntity(binder, variable);
+        var newEnv = environment.put(binder, entity);
+
+        var theTerm = Frontend.toTerm(rest, newEnv);
+        return Term.v(x -> variable.substituteIn(theTerm, x));
     }
 
     static void output(String stage, Object results) {
@@ -216,6 +219,9 @@ public final class Main {
     @FunctionalInterface
     public interface ApplyInt {
         int apply(Value<F<Integer, F<Integer, Integer>>> f, int x, int y);
+    }
+
+    static class MyThrowable extends ValueThrowable {
     }
 
 }

@@ -1,5 +1,8 @@
 package com.sstewartgallus.plato;
 
+import com.sstewartgallus.ext.pointfree.CallThunk;
+import com.sstewartgallus.ext.variables.VarValue;
+
 import java.util.Objects;
 
 public record ApplyThunk<A, B>(Term<F<A, B>>f, Term<A>x) implements ThunkTerm<B>, CoreTerm<B> {
@@ -9,7 +12,15 @@ public record ApplyThunk<A, B>(Term<F<A, B>>f, Term<A>x) implements ThunkTerm<B>
     }
 
     public Term<B> visitChildren(Visitor visitor) {
-        return new ApplyThunk<>(visitor.term(f), visitor.term(x));
+        return Term.apply(visitor.term(f), visitor.term(x));
+    }
+
+    @Override
+    public <X> Term<F<X, B>> pointFree(VarValue<X> varValue) {
+        // fixme.. is there a better way ? could also do compose eval...
+        var fValue = f.pointFree(varValue);
+        var xValue = x.pointFree(varValue);
+        return new CallThunk<>(fValue, xValue);
     }
 
     @Override

@@ -1,6 +1,5 @@
 package com.sstewartgallus.frontend;
 
-import com.sstewartgallus.ext.variables.VarType;
 import com.sstewartgallus.ext.variables.VarValue;
 import com.sstewartgallus.plato.FunctionType;
 import com.sstewartgallus.plato.Term;

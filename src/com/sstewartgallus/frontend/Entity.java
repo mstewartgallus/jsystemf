@@ -5,7 +5,6 @@ import com.sstewartgallus.plato.Type;
 
 import java.util.List;
 import java.util.function.BiFunction;
-import java.util.function.Function;
 
 // fixme... abstract out more data about environment entities
 // fixme... allow types as entities...

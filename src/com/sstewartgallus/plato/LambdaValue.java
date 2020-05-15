@@ -1,6 +1,7 @@
 package com.sstewartgallus.plato;
 
 import com.sstewartgallus.ext.pretty.PrettyValue;
+import com.sstewartgallus.ext.variables.VarValue;
 
 import java.util.Objects;
 import java.util.function.Function;
@@ -13,7 +14,17 @@ public record LambdaValue<A, B>(Type<A>domain,
     }
 
     public Term<F<A, B>> visitChildren(Visitor visitor) {
-        return new LambdaValue<>(visitor.type(domain), x -> visitor.term(f.apply(x)));
+        var v = new VarValue<>(domain);
+        var body = visitor.term(f.apply(v));
+        return new LambdaValue<>(visitor.type(domain), x -> v.substituteIn(body, x));
+    }
+
+    @Override
+    public <X> Term<F<X, F<A, B>>> pointFree(VarValue<X> varValue) {
+        // fixme... traditional solution is creating a tuple of the old var value and the new one...
+        var v = new VarValue<>(domain);
+        var body = f.apply(v);
+        return body.pointFree(v).pointFree(varValue);
     }
 
     @Override

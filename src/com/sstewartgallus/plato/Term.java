@@ -1,9 +1,7 @@
 package com.sstewartgallus.plato;
 
-import com.sstewartgallus.ext.pointfree.CallThunk;
 import com.sstewartgallus.ext.pointfree.ConstantThunk;
-import com.sstewartgallus.ext.pointfree.Pick;
-import com.sstewartgallus.ext.tuples.NilType;
+import com.sstewartgallus.ext.variables.VarValue;
 
 import java.util.function.Function;
 
@@ -31,6 +29,10 @@ public interface Term<A> {
         return new TypeLambdaValue<>(f);
     }
 
+    static <A, B> Term<F<A, B>> constant(Type<A> type, Term<B> term) {
+        return Term.apply(new ConstantThunk<>(term.type(), type), term);
+    }
+
     Type<A> type() throws TypeCheckException;
 
     default Term<A> visit(Visitor visitor) {
@@ -38,6 +40,10 @@ public interface Term<A> {
     }
 
     Term<A> visitChildren(Visitor visitor);
+
+    default <X> Term<F<X, A>> pointFree(VarValue<X> varValue) {
+        throw new UnsupportedOperationException(getClass().toString());
+    }
 
     abstract class Visitor {
         public <T> Type<T> type(Type<T> type) {

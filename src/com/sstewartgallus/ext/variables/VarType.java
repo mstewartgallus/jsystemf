@@ -6,20 +6,17 @@ import com.sstewartgallus.plato.Type;
 import com.sstewartgallus.plato.V;
 
 public final class VarType<T> implements Type<T> {
-    private final Id<T> variable;
-
     public VarType() {
-        variable = new Id<>();
     }
 
     @Override
     public String toString() {
-        return "t" + variable;
+        return "t" + hashCode();
     }
 
     @Override
     public <Z> Signature<V<Z, T>> pointFree(VarType<Z> argument) {
-        if (variable == argument.variable) {
+        if (this == argument) {
             return (Signature) new Signature.Identity<Z>();
         }
         throw new Error("fixme");
@@ -31,6 +28,7 @@ public final class VarType<T> implements Type<T> {
     }
 
     public <A> Term<A> substituteIn(Term<A> root, Type<T> replacement) {
+        var self = this;
         return root.visit(new Term.Visitor() {
             @Override
             public <T> Type<T> type(Type<T> type) {
@@ -38,7 +36,7 @@ public final class VarType<T> implements Type<T> {
                     return type.visitChildren(this);
                 }
 
-                if (varType.variable == variable) {
+                if (varType == self) {
                     return (Type) replacement;
                 }
                 return varType;
@@ -47,6 +45,7 @@ public final class VarType<T> implements Type<T> {
     }
 
     public <A> Type<A> substituteIn(Type<A> root, Type<T> replacement) {
+        var self = this;
         return root.visit(new Term.Visitor() {
             @Override
             public <T> Type<T> type(Type<T> type) {
@@ -54,7 +53,7 @@ public final class VarType<T> implements Type<T> {
                     return type.visitChildren(this);
                 }
 
-                if (varType.variable == variable) {
+                if (varType == self) {
                     return (Type) replacement;
                 }
                 return varType;

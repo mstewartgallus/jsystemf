@@ -1,5 +1,6 @@
 package com.sstewartgallus.optiimization;
 
+import com.sstewartgallus.ext.java.IntValue;
 import com.sstewartgallus.ext.java.ObjectValue;
 import com.sstewartgallus.ext.tuples.*;
 import com.sstewartgallus.ext.variables.Id;
@@ -23,6 +24,11 @@ public final class ConvertPointFree {
 
         if (term instanceof DerefThunk<?, A> get) {
             return pointFreeGet(get, argType, id);
+        }
+
+        if (term instanceof IntValue pure) {
+            // fixme..
+            return (PointFree)new PointFree.K<>(argType, new PointFree.IntValue(pure.value()));
         }
 
         if (term instanceof ObjectValue<A> pure) {
@@ -51,7 +57,19 @@ public final class ConvertPointFree {
     }
 
     private static <T extends HList<T>, A> PointFree<F<T, A>> uncurryApply(CurriedApplyThunk<A> apply, Type<T> argType, Id<T> id) {
-        throw null;
+        return uncurry(apply.body(), argType, id);
+    }
+
+    private static <A, T extends HList<T>> PointFree<F<T, A>> uncurry(CurriedApplyThunk.Body<A> body, Type<T> argType, Id<T> id) {
+        if (body instanceof CurriedApplyThunk.MonoBody<A> monoBody) {
+            return pointFree(monoBody.body(), argType, id);
+        }
+        var apply = (CurriedApplyThunk.ApplyBody<?, A>) body;
+        return toCall(argType, id, apply);
+    }
+
+    private static <A, C, T extends HList<T>> PointFree<F<T, A>> toCall(Type<T> argType, Id<T> id, CurriedApplyThunk.ApplyBody<C, A> apply) {
+        return new PointFree.Call<>(uncurry(apply.f(), argType, id), pointFree(apply.x(), argType, id));
     }
 
     private static <T extends HList<T>, A extends HList<A>, B, C> PointFree<F<T, C>> uncurryLambda(UncurryLambdaThunk<A, B, C> lambda, Type<T> argType, Id<T> id) {

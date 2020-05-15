@@ -1,5 +1,10 @@
 package com.sstewartgallus.plato;
 
+import com.sstewartgallus.ext.pointfree.ComposeThunk;
+import com.sstewartgallus.ext.pointfree.ConstantThunk;
+import com.sstewartgallus.ext.pointfree.Pick;
+import com.sstewartgallus.ext.tuples.NilType;
+
 import java.util.function.Function;
 
 /**

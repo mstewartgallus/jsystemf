@@ -1,5 +1,6 @@
 package com.sstewartgallus.ir;
 
+import com.sstewartgallus.ext.java.JavaType;
 import com.sstewartgallus.ext.tuples.*;
 import com.sstewartgallus.ext.variables.Id;
 import com.sstewartgallus.ext.variables.VarType;
@@ -14,6 +15,25 @@ public interface PointFree<A> {
     <Z> PointFree<A> substitute(VarType<Z> argument, Type<Z> replacement);
 
     Type<A> type();
+
+    record IntValue(int value) implements PointFree<Integer> {
+        public String toString() {
+            return String.valueOf(value);
+        }
+
+        public <X> Generic<V<X, Integer>> generic(Id<X> argument) {
+            return new Generic.IntValue<>(type().pointFree(argument), value);
+        }
+
+        public <X> PointFree<Integer> substitute(VarType<X> argument, Type<X> replacement) {
+            return this;
+        }
+
+        @Override
+        public Type<Integer> type() {
+            return new JavaType<>(int.class);
+        }
+    }
 
     record K<A extends HList<A>, B>(Type<A>domain, PointFree<B>value) implements PointFree<F<A, B>> {
         public String toString() {

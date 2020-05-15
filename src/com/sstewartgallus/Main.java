@@ -76,7 +76,7 @@ public final class Main {
 
     static {
         // fixme... still need to introduce lazy values and product recursion..
-        var source = "λ (x I) λ (y I) x";
+        var source = "(λ (x I) x) 4";
 
         output("Source", source);
 

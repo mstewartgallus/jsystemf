@@ -1,6 +1,5 @@
 package com.sstewartgallus.frontend;
 
-import com.sstewartgallus.ext.variables.Id;
 import com.sstewartgallus.ext.variables.VarType;
 import com.sstewartgallus.ext.variables.VarValue;
 import com.sstewartgallus.plato.FunctionType;
@@ -110,7 +109,7 @@ public class Frontend {
             if (node instanceof Node.Atom atom) {
                 return lookupTerm(atom.value(), environment);
             }
-            return toTerm((Node.Array)node, environment);
+            return toTerm((Node.Array) node, environment);
         }).reduce((f, x) -> {
             var fType = f.type();
             var xType = x.type();
@@ -131,8 +130,7 @@ public class Frontend {
     }
 
     private static <A> Term<?> getTerm(String binder, Type<A> binderType, Node.Array rest, Environment environment) {
-        var id = new Id<A>();
-        var variable = new VarValue<>(binderType, id);
+        var variable = new VarValue<>(binderType);
         var entity = new Entity.TermEntity(variable);
         var newEnv = environment.put(binder, entity);
 

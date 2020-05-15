@@ -1,7 +1,6 @@
 package com.sstewartgallus.ext.tuples;
 
 import com.sstewartgallus.ext.pretty.PrettyValue;
-import com.sstewartgallus.ext.variables.Id;
 import com.sstewartgallus.ext.variables.VarValue;
 import com.sstewartgallus.plato.*;
 
@@ -77,7 +76,7 @@ public record CurriedLambdaThunk<A>(Body<A>body) implements ThunkTerm<A> {
 
         @Override
         public Body<F<A, B>> visit(Visitor visitor) {
-            var v = new VarValue<>(domain, new Id<>());
+            var v = new VarValue<>(domain);
             var body = f.apply(v).visit(visitor);
             return new LambdaBody<>(visitor.type(domain), x -> body.substitute(v, x));
         }

@@ -1,10 +1,8 @@
 package com.sstewartgallus.optiimization;
 
-import com.sstewartgallus.ext.tuples.Cons;
 import com.sstewartgallus.ext.tuples.CurriedLambdaThunk;
 import com.sstewartgallus.ext.tuples.HList;
 import com.sstewartgallus.ext.tuples.TupleLambdaThunk;
-import com.sstewartgallus.ext.variables.Id;
 import com.sstewartgallus.ext.variables.VarValue;
 import com.sstewartgallus.plato.F;
 import com.sstewartgallus.plato.Term;
@@ -43,31 +41,30 @@ public final class Tuple {
         var domain = lambda.domain();
         var f = lambda.f();
 
-        var head = new Id<B>();
-        var headVar = new VarValue<>(domain, head);
+        var headVar = new VarValue<>(domain);
 
         var body = f.apply(headVar);
 
         Term<A> toUncurry = uncurryBody(body);
         if (toUncurry instanceof TupleLambdaThunk<?, ?, A> tuple) {
             // fixme...
-            return cons(domain, head, (TupleLambdaThunk) tuple);
+            return cons(domain, headVar, (TupleLambdaThunk) tuple);
         }
 
         return new TupleLambdaThunk<>(new TupleLambdaThunk.Sig.Cons<>(domain, new TupleLambdaThunk.Sig.Zero<>(body.type())), tuple -> {
             var h = tuple.head();
-            return new VarValue<>(h.type(), head).substituteIn(toUncurry, h);
+            return headVar.substituteIn(toUncurry, h);
         });
     }
 
-    private static <X extends HList<X>, C, B, A> Term<F<B, A>> cons(Type<B> domain, Id<B> head, TupleLambdaThunk<X, F<B, C>, A> tuple) {
+    private static <X extends HList<X>, C, B, A> Term<F<B, A>> cons(Type<B> domain, VarValue<B> head, TupleLambdaThunk<X, F<B, C>, A> tuple) {
         var tupleF = tuple.f();
         var env = tuple.sig();
-        TupleLambdaThunk.Sig<Cons<Term<B>, X>, F<B, C>, F<B, A>> sig = new TupleLambdaThunk.Sig.Cons<B, X, F<B, C>, A>(domain, env);
-        return new TupleLambdaThunk<Cons<Term<B>, X>, F<B, C>, F<B, A>>(sig, p -> {
-            Term<B> h = p.head();
-            X t = p.tail();
-            return new VarValue<>(h.type(), head).substituteIn(tupleF.apply(t), h);
+        var sig = new TupleLambdaThunk.Sig.Cons<>(domain, env);
+        return new TupleLambdaThunk<>(sig, p -> {
+            var h = p.head();
+            var t = p.tail();
+            return head.substituteIn(tupleF.apply(t), h);
         });
     }
 }

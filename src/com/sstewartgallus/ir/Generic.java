@@ -60,7 +60,7 @@ public interface Generic<A> {
     }
 
     record IntValue<L>(Signature<V<L, Integer>>signature,
-                      int value) implements GenericV<L, Integer> {
+                       int value) implements GenericV<L, Integer> {
         public String toString() {
             return String.valueOf(value);
         }

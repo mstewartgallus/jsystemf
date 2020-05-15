@@ -1,7 +1,6 @@
 package com.sstewartgallus.optiimization;
 
 import com.sstewartgallus.ext.tuples.CurriedLambdaThunk;
-import com.sstewartgallus.ext.variables.Id;
 import com.sstewartgallus.ext.variables.VarValue;
 import com.sstewartgallus.plato.ApplyThunk;
 import com.sstewartgallus.plato.F;
@@ -47,7 +46,7 @@ public final class Capture {
         var domain = lambda.domain();
         var f = lambda.f();
 
-        var v = new VarValue<>(domain, new Id<>());
+        var v = new VarValue<>(domain);
         var body = f.apply(v);
         var results = captureBody(body);
         Set<VarValue<?>> captures = new TreeSet<>(results.captured);

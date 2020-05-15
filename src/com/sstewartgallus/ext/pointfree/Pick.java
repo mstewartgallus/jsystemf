@@ -7,7 +7,7 @@ import com.sstewartgallus.plato.*;
 public record Pick<B>(Term<F<Nil, B>>k) implements ThunkTerm<B> {
     @Override
     public Term<B> stepThunk() {
-        var kNorm = (LambdaValue<Nil, B>)Interpreter.normalize(k);
+        var kNorm = (LambdaValue<Nil, B>) Interpreter.normalize(k);
         return kNorm.apply(NilValue.NIL);
     }
 

@@ -28,7 +28,7 @@ public final class ConvertPointFree {
 
         if (term instanceof IntValue pure) {
             // fixme..
-            return (PointFree)new PointFree.K<>(argType, new PointFree.IntValue(pure.value()));
+            return (PointFree) new PointFree.K<>(argType, new PointFree.IntValue(pure.value()));
         }
 
         if (term instanceof ObjectValue<A> pure) {
@@ -76,9 +76,9 @@ public final class ConvertPointFree {
         var sig = lambda.sig();
         var f = lambda.f();
 
-        var v = new Id<A>();
         var vType = sig.argType();
-        var body = pointFree(f.apply(new VarValue<A>(vType, v)), vType, v);
+        var v = new VarValue<A>(vType);
+        var body = pointFree(f.apply(v), vType, v.variable());
         return new PointFree.K<>(argType, new PointFree.Lambda<>(sig, body));
     }
 }

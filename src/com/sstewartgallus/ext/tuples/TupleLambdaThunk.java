@@ -1,7 +1,6 @@
 package com.sstewartgallus.ext.tuples;
 
 import com.sstewartgallus.ext.pretty.PrettyValue;
-import com.sstewartgallus.ext.variables.Id;
 import com.sstewartgallus.ext.variables.VarValue;
 import com.sstewartgallus.plato.*;
 
@@ -98,7 +97,7 @@ public record TupleLambdaThunk<L extends HList<L>, C, D>(Sig<L, C, D>sig,
 
             @Override
             public Results<?, C, F<H, D>> uncurry(Function<com.sstewartgallus.ext.tuples.Cons<Term<H>, T>, Term<C>> f) {
-                var headVar = new VarValue<>(head, new Id<>());
+                var headVar = new VarValue<>(head);
                 var value = tail.uncurry(t -> f.apply(new com.sstewartgallus.ext.tuples.Cons<>(headVar, t)));
                 return cons(headVar, value);
             }

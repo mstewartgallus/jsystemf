@@ -19,7 +19,11 @@ public final class VarValue<A> implements ValueTerm<A>, Comparable<VarValue<?>> 
     private final Type<A> type;
     private final Id<A> variable;
 
-    public VarValue(Type<A> type, Id<A> variable) {
+    public VarValue(Type<A> type) {
+        this(type, new Id<>());
+    }
+
+    private VarValue(Type<A> type, Id<A> variable) {
         Objects.requireNonNull(type);
         Objects.requireNonNull(variable);
         this.type = type;

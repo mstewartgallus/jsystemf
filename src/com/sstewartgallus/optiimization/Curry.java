@@ -1,7 +1,6 @@
 package com.sstewartgallus.optiimization;
 
 import com.sstewartgallus.ext.tuples.CurriedLambdaThunk;
-import com.sstewartgallus.ext.variables.Id;
 import com.sstewartgallus.ext.variables.VarValue;
 import com.sstewartgallus.plato.F;
 import com.sstewartgallus.plato.LambdaValue;
@@ -27,7 +26,7 @@ public final class Curry {
         var domain = lambda.domain();
         var f = lambda.f();
 
-        var v = new VarValue<>(domain, new Id<>());
+        var v = new VarValue<>(domain);
         var body = f.apply(v);
 
         var curriedBody = curry(body);

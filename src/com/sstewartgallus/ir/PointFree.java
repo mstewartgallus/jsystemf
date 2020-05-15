@@ -126,4 +126,45 @@ public interface PointFree<A> {
             return "(λ" + sig + " " + body + ")";
         }
     }
+
+    record Pick<T, A>(PointFree<F<T, F<Nil, A>>>k) implements PointFree<F<T, A>> {
+        @Override
+        public <Z> Generic<V<Z, F<T, A>>> generic(VarType<Z> argument) {
+            throw null;
+        }
+
+        @Override
+        public <Z> PointFree<F<T, A>> substitute(VarType<Z> argument, Type<Z> replacement) {
+            throw null;
+        }
+
+        @Override
+        public Type<F<T, A>> type() {
+            var kType = (FunctionType<T, F<Nil, A>>) k.type();
+            var range = ((FunctionType<Nil, A>) kType.range());
+            return kType.domain().to(range.range());
+        }
+
+        public String toString() {
+            return "!" + k;
+        }
+    }
+
+    record KThunk<T, B, C, A>(PointFree<F<T, F<B, F<C, A>>>>f,
+                              PointFree<F<T, F<B, C>>>x) implements PointFree<F<T, F<B, A>>> {
+        @Override
+        public <Z> Generic<V<Z, F<T, F<B, A>>>> generic(VarType<Z> argument) {
+            return null;
+        }
+
+        @Override
+        public <Z> PointFree<F<T, F<B, A>>> substitute(VarType<Z> argument, Type<Z> replacement) {
+            return null;
+        }
+
+        @Override
+        public Type<F<T, F<B, A>>> type() {
+            return null;
+        }
+    }
 }

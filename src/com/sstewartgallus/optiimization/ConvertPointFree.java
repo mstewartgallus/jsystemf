@@ -2,6 +2,9 @@ package com.sstewartgallus.optiimization;
 
 import com.sstewartgallus.ext.java.IntValue;
 import com.sstewartgallus.ext.java.ObjectValue;
+import com.sstewartgallus.ext.pointfree.CallThunk;
+import com.sstewartgallus.ext.pointfree.ConstantThunk;
+import com.sstewartgallus.ext.pointfree.Pick;
 import com.sstewartgallus.ext.tuples.*;
 import com.sstewartgallus.ext.variables.VarValue;
 import com.sstewartgallus.ir.PointFree;
@@ -13,6 +16,14 @@ public final class ConvertPointFree {
     }
 
     public static <T extends HList<T>, A> PointFree<F<T, A>> pointFree(Term<A> term, VarValue<T> id) {
+        if (term instanceof Pick<A> pick) {
+            return pointFreePick(pick, id);
+        }
+
+        if (term instanceof CallThunk<?, ?, ?> call) {
+            return (PointFree) pointFreeCall(call, id);
+        }
+
         if (term instanceof UncurryLambdaThunk<?, ?, A> lambda) {
             return uncurryLambda(lambda, id);
         }
@@ -43,6 +54,21 @@ public final class ConvertPointFree {
         }
 
         throw new IllegalArgumentException("Unexpected core list " + term);
+    }
+
+    private static <T extends HList<T>, A, B> PointFree<F<T, F<A, B>>> pointFreeConstant(ConstantThunk<A, B> constantThunk, VarValue<T> id) {
+        PointFree<F<T, B>> result = pointFree(constantThunk.result(), id);
+        throw null;
+    }
+
+    private static <T extends HList<T>, B, C, A> PointFree<F<T, F<B, A>>> pointFreeCall(CallThunk<B, C, A> call, VarValue<T> id) {
+        PointFree<F<T, F<B, F<C, A>>>> f = pointFree(call.f(), id);
+        PointFree<F<T, F<B, C>>> x = pointFree(call.x(), id);
+        return new PointFree.KThunk<>(f, x);
+    }
+
+    private static <T extends HList<T>, A> PointFree<F<T, A>> pointFreePick(Pick<A> pick, VarValue<T> id) {
+        return new PointFree.Pick<>(pointFree(pick.k(), id));
     }
 
     private static <T extends HList<T>, X, A extends HList<A>, B extends HList<B>> PointFree<F<T, X>> pointFreeGet(DerefThunk<B, X> get, VarValue<T> id) {

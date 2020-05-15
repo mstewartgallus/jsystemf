@@ -17,7 +17,6 @@ public record CallThunk<Z, A, B>(Term<F<Z, F<A, B>>>f,
 
     @Override
     public Type<F<Z, B>> type() throws TypeCheckException {
-        System.err.println(f);
         var fType = f.type();
 
         var funType = (FunctionType<Z, F<A, B>>) fType;

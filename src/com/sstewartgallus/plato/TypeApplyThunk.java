@@ -2,7 +2,7 @@ package com.sstewartgallus.plato;
 
 import java.util.Objects;
 
-public record TypeApplyThunk<A, B>(Term<V<A, B>>f, Type<A>x) implements ThunkTerm<B>, CoreTerm<B> {
+public record TypeApplyThunk<A, B>(Term<V<A, B>>f, Type<A>x) implements ThunkTerm<B>, LambdaTerm<B> {
     public TypeApplyThunk {
         Objects.requireNonNull(f);
         Objects.requireNonNull(x);
@@ -20,9 +20,15 @@ public record TypeApplyThunk<A, B>(Term<V<A, B>>f, Type<A>x) implements ThunkTer
 
     @Override
     public String toString() {
-        return "{" + f + " " + x + "}";
+        return "(" + noBrackets() + ")";
     }
 
+    private String noBrackets() {
+        if (f instanceof TypeApplyThunk<?, V<A, B>> fApply) {
+            return fApply.noBrackets() + " " + x;
+        }
+        return f + " " + x;
+    }
     @Override
     public Term<B> stepThunk() {
         // fixme... do types need to be normalized as well?

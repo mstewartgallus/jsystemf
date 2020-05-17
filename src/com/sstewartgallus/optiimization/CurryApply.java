@@ -1,9 +1,44 @@
 package com.sstewartgallus.optiimization;
 
-import com.sstewartgallus.ext.tuples.CurriedApplyThunk;
+import com.sstewartgallus.ext.tuples.*;
 import com.sstewartgallus.plato.ApplyThunk;
 import com.sstewartgallus.plato.F;
 import com.sstewartgallus.plato.Term;
+import com.sstewartgallus.plato.Type;
+
+interface Args<A extends Tuple<A>, B, C> {
+
+    Signature<A, B, C> sig();
+
+    Term<A> flatten();
+
+    record NoArgs<A>(Type<A>result) implements Args<N, A, A> {
+
+        @Override
+        public Signature<N, A, A> sig() {
+            return new Signature.Result<>(result);
+        }
+
+        @Override
+        public Term<N> flatten() {
+            return NilTupleValue.NIL;
+        }
+    }
+
+    record AddVar<A, T extends Tuple<T>, B, C>(Term<A>head,
+                                               Args<T, B, C>tail) implements Args<P<A, T>, B, F<A, C>> {
+        @Override
+        public Signature<P<A, T>, B, F<A, C>> sig() {
+            return new Signature.AddArg<>(head.type(), tail.sig());
+        }
+
+        @Override
+        public Term<P<A, T>> flatten() {
+            return new TuplePairValue<>(head, tail.flatten());
+        }
+    }
+
+}
 
 public final class CurryApply {
     private CurryApply() {
@@ -16,17 +51,29 @@ public final class CurryApply {
                 if (!(term instanceof ApplyThunk<?, T> applyThunk)) {
                     return term.visitChildren(this);
                 }
-                return curryApply(applyThunk);
+                return curryApply(applyThunk, new Args.NoArgs<>(applyThunk.type()));
             }
         });
     }
 
-    private static <A, B> Term<B> curryApply(ApplyThunk<A, B> apply) {
-        var f = curryApply(apply.f());
-        var x = curryApply(apply.x());
-        if (f instanceof CurriedApplyThunk<F<A, B>> fCurry) {
-            return new CurriedApplyThunk<>(new CurriedApplyThunk.ApplyBody<>(fCurry.body(), x));
+    private static <A, B, X extends Tuple<X>, C> Term<C> curryApply(ApplyThunk<A, B> apply, Args<X, C, B> args) {
+        var f = apply.f();
+        var x = apply.x();
+
+        return curry(f, new Args.AddVar<>(x, args));
+    }
+
+    private static <A, B, X extends Tuple<X>, C> Term<C> curry(Term<F<A, B>> term, Args<X, C, F<A, B>> args) {
+        if (term instanceof ApplyThunk<?, F<A, B>> fApply) {
+            return curryApply(fApply, args);
         }
-        return new CurriedApplyThunk<>(new CurriedApplyThunk.ApplyBody<>(new CurriedApplyThunk.MonoBody<>(f), x));
+
+        term = curryApply(term);
+
+        var sig = args.sig();
+        var curryF = new UncurryThunk<>(sig);
+
+        var fCurried = Term.apply(curryF, term);
+        return Term.apply(fCurried, args.flatten());
     }
 }

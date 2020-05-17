@@ -5,7 +5,7 @@ import com.sstewartgallus.ext.pretty.PrettyType;
 import java.util.Objects;
 import java.util.function.Function;
 
-public record TypeLambdaValue<A, B>(Function<Type<A>, Term<B>>f) implements ValueTerm<V<A, B>>, CoreTerm<V<A, B>> {
+public record TypeLambdaValue<A, B>(Function<Type<A>, Term<B>>f) implements ValueTerm<V<A, B>>, LambdaTerm<V<A, B>> {
     public TypeLambdaValue {
         Objects.requireNonNull(f);
     }

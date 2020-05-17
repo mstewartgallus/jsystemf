@@ -1,9 +1,8 @@
 package com.sstewartgallus.plato;
 
 import com.sstewartgallus.ext.java.JavaType;
-import com.sstewartgallus.ext.variables.VarType;
-import com.sstewartgallus.ir.Signature;
 
+import java.util.List;
 import java.util.function.Function;
 
 /**
@@ -29,13 +28,19 @@ public interface Type<X> {
         return new FunctionType<>(this, range);
     }
 
-    <Z> Signature<V<Z, X>> pointFree(VarType<Z> argument);
-
     default Type<X> visitChildren(Term.Visitor visitor) {
         throw null;
     }
 
     default Type<X> visit(Term.Visitor visitor) {
         return visitor.type(this);
+    }
+
+    default Class<?> erase() {
+        throw new UnsupportedOperationException(getClass().toString());
+    }
+
+    default List<Class<?>> flatten() {
+        return List.of(erase());
     }
 }

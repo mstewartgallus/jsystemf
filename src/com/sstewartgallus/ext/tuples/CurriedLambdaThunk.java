@@ -1,6 +1,6 @@
 package com.sstewartgallus.ext.tuples;
 
-import com.sstewartgallus.ext.pretty.PrettyValue;
+import com.sstewartgallus.ext.pretty.PrettyThunk;
 import com.sstewartgallus.ext.variables.VarValue;
 import com.sstewartgallus.plato.*;
 
@@ -58,7 +58,7 @@ public record CurriedLambdaThunk<A>(Body<A>body) implements ThunkTerm<A> {
 
         @Override
         public Type<F<A, B>> type() throws TypeCheckException {
-            try (var pretty = PrettyValue.generate(domain)) {
+            try (var pretty = PrettyThunk.generate(domain)) {
                 var range = f.apply(pretty).type();
                 return new FunctionType<>(domain, range);
             }
@@ -83,7 +83,7 @@ public record CurriedLambdaThunk<A>(Body<A>body) implements ThunkTerm<A> {
 
         @Override
         public String toString() {
-            try (var pretty = PrettyValue.generate(domain)) {
+            try (var pretty = PrettyThunk.generate(domain)) {
                 var body = f.apply(pretty);
                 return "{" + pretty + ": " + domain + "} → " + body;
             }

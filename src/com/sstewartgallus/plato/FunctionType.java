@@ -1,8 +1,5 @@
 package com.sstewartgallus.plato;
 
-import com.sstewartgallus.ext.variables.VarType;
-import com.sstewartgallus.ir.Signature;
-
 public record FunctionType<A, B>(Type<A>domain, Type<B>range) implements CoreType<F<A, B>>, Type<F<A, B>> {
     @Override
     public <Y> Type<F<A, B>> unify(Type<Y> right) throws TypeCheckException {
@@ -13,12 +10,19 @@ public record FunctionType<A, B>(Type<A>domain, Type<B>range) implements CoreTyp
     }
 
     @Override
-    public <Z> Signature<V<Z, F<A, B>>> pointFree(VarType<Z> argument) {
-        return new Signature.Function<>(domain.pointFree(argument), range.pointFree(argument));
+    public String toString() {
+        return "(" + noBrackets() + ")";
     }
 
-    @Override
-    public String toString() {
-        return "{" + domain + " → " + range + "}";
+    private String noBrackets() {
+        if (range instanceof FunctionType<?, ?> rangeF) {
+            return domain + " → " + rangeF.noBrackets();
+        }
+        return domain + " → " + range;
+    }
+
+
+    public Class<?> erase() {
+        return Term.class;
     }
 }

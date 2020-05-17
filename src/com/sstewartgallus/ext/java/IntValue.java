@@ -5,12 +5,10 @@ import com.sstewartgallus.plato.Type;
 import com.sstewartgallus.plato.TypeCheckException;
 import com.sstewartgallus.plato.ValueTerm;
 
-import java.util.Objects;
-
 public record IntValue(int value) implements ValueTerm<Integer>, JavaTerm<Integer> {
     @Override
     public String toString() {
-        return Objects.toString(value);
+        return String.valueOf(value);
     }
 
     @Override

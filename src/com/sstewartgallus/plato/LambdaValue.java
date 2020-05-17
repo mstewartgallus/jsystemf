@@ -1,13 +1,13 @@
 package com.sstewartgallus.plato;
 
-import com.sstewartgallus.ext.pretty.PrettyValue;
+import com.sstewartgallus.ext.pretty.PrettyThunk;
 import com.sstewartgallus.ext.variables.VarValue;
 
 import java.util.Objects;
 import java.util.function.Function;
 
 public record LambdaValue<A, B>(Type<A>domain,
-                                Function<Term<A>, Term<B>>f) implements ValueTerm<F<A, B>>, CoreTerm<F<A, B>> {
+                                Function<Term<A>, Term<B>>f) implements ValueTerm<F<A, B>>, LambdaTerm<F<A, B>> {
     public LambdaValue {
         Objects.requireNonNull(domain);
         Objects.requireNonNull(f);
@@ -29,7 +29,7 @@ public record LambdaValue<A, B>(Type<A>domain,
 
     @Override
     public Type<F<A, B>> type() throws TypeCheckException {
-        try (var pretty = PrettyValue.generate(domain)) {
+        try (var pretty = PrettyThunk.generate(domain)) {
             var range = f.apply(pretty).type();
             return new FunctionType<>(domain, range);
         }
@@ -37,9 +37,16 @@ public record LambdaValue<A, B>(Type<A>domain,
 
     @Override
     public String toString() {
-        try (var pretty = PrettyValue.generate(domain)) {
+        return "(" + noBrackets() + ")";
+    }
+
+    private String noBrackets() {
+        try (var pretty = PrettyThunk.generate(domain)) {
             var body = f.apply(pretty);
-            return "({" + pretty + ": " + domain + "} → " + body + ")";
+            if (body instanceof LambdaValue<?, ?> lambdaValue) {
+                return "λ (" + pretty + " " + domain + ") " + lambdaValue.noBrackets();
+            }
+            return "λ (" + pretty + " " + domain + ") " + body;
         }
     }
 

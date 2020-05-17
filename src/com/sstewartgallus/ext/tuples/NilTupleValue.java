@@ -4,16 +4,16 @@ import com.sstewartgallus.plato.Term;
 import com.sstewartgallus.plato.Type;
 import com.sstewartgallus.plato.ValueTerm;
 
-public enum NilValue implements ValueTerm<Nil> {
+public enum NilTupleValue implements ValueTerm<N> {
     NIL;
 
     @Override
-    public Term<Nil> visitChildren(Visitor visitor) {
+    public Term<N> visitChildren(Visitor visitor) {
         return NIL;
     }
 
     @Override
-    public Type<Nil> type() {
-        return NilType.NIL;
+    public Type<N> type() {
+        return NilTupleType.NIL;
     }
 }

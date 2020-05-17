@@ -1,45 +1,44 @@
 package com.sstewartgallus.ext.pointfree;
 
+import com.sstewartgallus.ext.variables.VarValue;
 import com.sstewartgallus.plato.*;
 
-import java.util.Objects;
-
-public record CallThunk<Z, A, B>(Term<F<Z, F<A, B>>>f,
-                                 Term<F<Z, A>>x) implements ThunkTerm<F<Z, B>>, CoreTerm<F<Z, B>> {
-    public CallThunk {
-        Objects.requireNonNull(f);
-        Objects.requireNonNull(x);
-    }
-
-    public Term<F<Z, B>> visitChildren(Visitor visitor) {
-        return new CallThunk<>(visitor.term(f), visitor.term(x));
+// fixme... desugar to forall instead of passing in types...., all extension combinators should be point free.
+public record CallThunk<Z, A, B>() implements ThunkTerm<V<Z, V<A, V<B, F<F<Z, F<A, B>>, F<F<Z, A>, F<Z, B>>>>>>> {
+    @Override
+    public Type<V<Z, V<A, V<B, F<F<Z, F<A, B>>, F<F<Z, A>, F<Z, B>>>>>>> type() throws TypeCheckException {
+        return Type.v(z -> Type.v(a -> Type.v(b -> {
+            var f = z.to(a.to(b));
+            var x = z.to(a);
+            return f.to(x.to(z.to(b)));
+        })));
     }
 
     @Override
-    public Type<F<Z, B>> type() throws TypeCheckException {
-        var fType = f.type();
+    public Term<V<Z, V<A, V<B, F<F<Z, F<A, B>>, F<F<Z, A>, F<Z, B>>>>>>> visitChildren(Visitor visitor) {
+        return this;
+    }
 
-        var funType = (FunctionType<Z, F<A, B>>) fType;
-        var range = funType.range();
-
-        return funType.domain().to(((FunctionType<A, B>) range).range());
+    @Override
+    public <X> Term<F<X, V<Z, V<A, V<B, F<F<Z, F<A, B>>, F<F<Z, A>, F<Z, B>>>>>>>> pointFree(VarValue<X> varValue) {
+        return Term.constant(varValue.type(), this);
     }
 
     @Override
     public String toString() {
-        return "(S " + f + " " + x + ")";
+        return "S";
     }
 
     @Override
-    public Term<F<Z, B>> stepThunk() {
-        var fType = (FunctionType<Z, F<A, B>>) f.type();
-        return new LambdaValue<>(fType.domain(), z -> {
-            var fNorm = (LambdaValue<Z, F<A, B>>) Interpreter.normalize(f);
-            var xNorm = (LambdaValue<Z, A>) Interpreter.normalize(x);
-            var fValue = fNorm.apply(z);
-            var xValue = xNorm.apply(z);
-            var fValueNorm = (LambdaValue<A, B>) Interpreter.normalize(fValue);
-            return fValueNorm.apply(xValue);
-        });
+    public Term<V<Z, V<A, V<B, F<F<Z, F<A, B>>, F<F<Z, A>, F<Z, B>>>>>>> stepThunk() {
+        return Term.v((Type<Z> z) -> Term.v((Type<A> a) -> Term.v((Type<B> b) -> {
+            var fT = z.to(a.to(b));
+            var xT = z.to(a);
+            return fT.l((Term<F<Z, F<A, B>>> f) -> xT.l((Term<F<Z,A>> x) -> z.l(zVal -> {
+                var fResult = Term.apply(f, zVal);
+                var xResult = Term.apply(x, zVal);
+                return Term.apply(fResult, xResult);
+            })));
+        })));
     }
 }

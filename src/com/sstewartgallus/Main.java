@@ -1,7 +1,6 @@
 package com.sstewartgallus;
 
 
-import com.sstewartgallus.ext.tuples.NilType;
 import com.sstewartgallus.ext.variables.VarType;
 import com.sstewartgallus.ext.variables.VarValue;
 import com.sstewartgallus.frontend.Entity;
@@ -40,8 +39,6 @@ import static java.lang.invoke.MethodHandles.lookup;
 
 
 public final class Main {
-    public static final int INDENT = 26;
-    public static final int INDENT_2 = 50;
     static final Supplier<Object> TO_EXEC;
     private static final MyThrowable TEMPLATE = new MyThrowable();
     private static final TypeApply TP = ValueInvoker.newInstance(lookup(), TypeApply.class);
@@ -49,7 +46,7 @@ public final class Main {
     private static final ApplyInt API = ValueInvoker.newInstance(lookup(), ApplyInt.class);
     @PutEnv("+")
     private static final Term<?> ADD = Type.INT.l(x -> Type.INT.l(y -> Prims.add(x, y)));
-    @PutEnv("I")
+    @PutEnv("int")
     private static final Type<?> INT_TYPE = Type.INT;
     private static final Environment DEFAULT_ENV =
             Stream.concat(
@@ -97,8 +94,8 @@ public final class Main {
             ).reduce(Environment.empty(), (env, entity) -> env.put(entity.name(), entity), Environment::union);
 
     static {
-        // fixme... still need to introduce lazy values and product recursion..
-        var source = "λ (x I) λ (y I) x";
+        // fixme... still need to introduce lazy proper laziness, strictness analysis and tail recursion..
+        var source = "(λ (x int) λ (y int) x) 4 2";
 
         output("Source", source);
 
@@ -114,35 +111,32 @@ public final class Main {
 
         var term = Frontend.toTerm(ast, DEFAULT_ENV);
 
-        output("System F", term); //, term.type());
-
-        var pointFree2 = ConvertPointFree.pointFree2(term);
-        outputT("Point Free 2", pointFree2, pointFree2.type());
-
-        var interpreterOutput = Interpreter.normalize(term);
-        outputT("Interpreter Output", interpreterOutput, interpreterOutput.type());
-
-        var curry = Curry.curry(term);
-        outputT("Curried", curry, curry.type());
-
-        var captured = Capture.capture(curry);
+        outputT("System F", term);
+        // fixme... implement properly before?...
+/*        var captured = Capture.capture(curry);
         outputT("Partial Application", captured, captured.type());
+*/
+        var curryApply = CurryApply.curryApply(term);
+        outputT("Curry Apply", curryApply);
 
-        var applyCurried = CurryApply.curryApply(curry);
-        outputT("Apply Curried", applyCurried, applyCurried.type());
+        var uncurry = UncurryLambdas.uncurry(curryApply);
+        outputT("Uncurry Lambda", uncurry);
 
-        var tuple = Tuple.uncurry(applyCurried);
-        outputT("Tuple", tuple, tuple.type());
+        var elim = EliminateUncurryCurry.eliminate(uncurry);
+        outputT("Rewrite uncurry ⚬ curry", elim);
 
-        var uncurry = Uncurry.uncurry(tuple);
-        outputT("Uncurry", uncurry, uncurry.type());
+        var pf = ConvertPointFree.pointFree(elim);
+        outputT("Point Free", pf);
 
-        var pointFree = ConvertPointFree.pointFree(uncurry, new VarValue<>(NilType.NIL));
-        outputT("Point Free", pointFree, pointFree.type());
-
+        // fixme... consdier pointfree generics...
+/*
         var generic = pointFree.generic(new VarType<>());
         outputT("Generic", generic, generic.signature());
-/*
+*/
+        var jit = Jit.jit(pf);
+        outputT("JIT", jit);
+
+        /*
         // fixme.. hack
         var main = Generic.compile(lookup(), (Generic) generic);
         output("Main", main);
@@ -150,18 +144,31 @@ public final class Main {
         var bar = API.apply((Value<F<Integer, F<Integer, Integer>>>) main, 3, 5);
         output("Result", bar);
 */
+        System.exit(0);
         TO_EXEC = () -> ValueThrowables.clone(TEMPLATE);// API.apply((Value<F<Integer, F<Integer, Integer>>>) main, 3, 3);
     }
 
     @PutEnv("λ")
     private static Term<?> lambda(List<Node> nodes, Environment environment) {
         var binder = ((Node.Array) nodes.get(1)).nodes();
+
         var binderName = ((Node.Atom) binder.get(0)).value();
         var binderType = binder.get(1);
 
         var rest = new Node.Array(nodes.subList(2, nodes.size()));
 
-        return Frontend.getTerm(binderName, Frontend.toType(binderType, environment), rest, environment);
+        var type = Frontend.toType(binderType, environment);
+
+        var v = new VarValue<>(type);
+        environment = environment.put(binderName, new Entity.TermEntity(binderName, v));
+
+        var theTerm = Frontend.toTerm(rest, environment);
+
+        return getTerm(v, theTerm);
+    }
+
+    private static <A, B> Term<F<A, B>> getTerm(VarValue<A> v, Term<B> theTerm) {
+        return v.type().l(x -> v.substituteIn(theTerm, x));
     }
 
     //@PutEnv("<")
@@ -184,17 +191,14 @@ public final class Main {
         outputT(stage, results, "-");
     }
 
-    static void outputT(String stage, Object results, Object type) {
-        var resultsStr = results.toString();
-        var x = 1 + (INDENT - stage.length());
-        var y = (INDENT_2 - resultsStr.length());
-        if (x < 0) {
-            x = INDENT;
-        }
-        if (y < 0) {
-            y = INDENT_2;
-        }
-        System.err.println(stage + " ".repeat(x) + "\t" + resultsStr + " ".repeat(y) + ":" + "\t" + type);
+    static void outputT(String stage, Term<?> term) {
+        outputT(stage, term, term.type());
+        var output = Interpreter.normalize(term);
+        outputT(" ⇒", output, output.type());
+    }
+
+    static void outputT(String stage, Object term, Object type) {
+        System.err.format("%-20s\t\t%-50s\t:\t%s%n", stage, term, type);
     }
 
     public static void main(String... args) {

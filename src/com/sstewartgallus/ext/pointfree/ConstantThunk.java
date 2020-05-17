@@ -3,24 +3,24 @@ package com.sstewartgallus.ext.pointfree;
 import com.sstewartgallus.ext.variables.VarValue;
 import com.sstewartgallus.plato.*;
 
-public record ConstantThunk<A, B>(Type<A>left, Type<B>right) implements ThunkTerm<F<A, F<B, A>>> {
+public record ConstantThunk<A, B>() implements ThunkTerm<V<A, V<B, F<A, F<B, A>>>>> {
     @Override
-    public Term<F<A, F<B, A>>> stepThunk() {
-        return left.l(x -> right.l(y -> x));
+    public Term<V<A, V<B, F<A, F<B, A>>>>> stepThunk() {
+        return Term.v(left -> Term.v(right -> left.l(x -> right.l(y -> x))));
     }
 
     @Override
-    public Type<F<A, F<B, A>>> type() throws TypeCheckException {
-        return left.to(right.to(left));
+    public Type<V<A, V<B, F<A, F<B, A>>>>> type() throws TypeCheckException {
+        return Type.v(l -> Type.v(r -> l.to(r.to(l))));
     }
 
     @Override
-    public Term<F<A, F<B, A>>> visitChildren(Visitor visitor) {
-        return new ConstantThunk<>(visitor.type(left), visitor.type(right));
+    public Term<V<A, V<B, F<A, F<B, A>>>>> visitChildren(Visitor visitor) {
+        return this;
     }
 
     @Override
-    public <X> Term<F<X, F<A, F<B, A>>>> pointFree(VarValue<X> varValue) {
+    public <X> Term<F<X, V<A, V<B, F<A, F<B, A>>>>>> pointFree(VarValue<X> varValue) {
         return Term.constant(varValue.type(), this);
     }
 

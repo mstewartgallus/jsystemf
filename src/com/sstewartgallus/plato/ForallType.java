@@ -1,8 +1,6 @@
 package com.sstewartgallus.plato;
 
 import com.sstewartgallus.ext.pretty.PrettyType;
-import com.sstewartgallus.ext.variables.VarType;
-import com.sstewartgallus.ir.Signature;
 
 import java.util.function.Function;
 
@@ -17,10 +15,5 @@ public record ForallType<A, B>(Function<Type<A>, Type<B>>f) implements CoreType<
     @Override
     public <Y> Type<V<A, B>> unify(Type<Y> right) {
         throw new UnsupportedOperationException("unimplemented");
-    }
-
-    @Override
-    public <Z> Signature<V<Z, V<A, B>>> pointFree(VarType<Z> argument) {
-        throw null;
     }
 }

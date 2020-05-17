@@ -1,10 +1,7 @@
 package com.sstewartgallus.ext.pretty;
 
-import com.sstewartgallus.ext.variables.VarType;
-import com.sstewartgallus.ir.Signature;
 import com.sstewartgallus.plato.Type;
 import com.sstewartgallus.plato.TypeCheckException;
-import com.sstewartgallus.plato.V;
 
 public final class PrettyType<A> implements Type<A>, AutoCloseable {
     private static final ThreadLocal<Integer> DEPTH = ThreadLocal.withInitial(() -> 0);
@@ -32,11 +29,6 @@ public final class PrettyType<A> implements Type<A>, AutoCloseable {
 
     @Override
     public <Y> Type<A> unify(Type<Y> right) throws TypeCheckException {
-        throw null;
-    }
-
-    @Override
-    public <Z> Signature<V<Z, A>> pointFree(VarType<Z> argument) {
         throw null;
     }
 }

@@ -1,9 +1,7 @@
 package com.sstewartgallus.ext.variables;
 
-import com.sstewartgallus.ir.Signature;
 import com.sstewartgallus.plato.Term;
 import com.sstewartgallus.plato.Type;
-import com.sstewartgallus.plato.V;
 
 public final class VarType<T> implements Type<T> {
     public VarType() {
@@ -12,14 +10,6 @@ public final class VarType<T> implements Type<T> {
     @Override
     public String toString() {
         return "t" + hashCode();
-    }
-
-    @Override
-    public <Z> Signature<V<Z, T>> pointFree(VarType<Z> argument) {
-        if (this == argument) {
-            return (Signature) new Signature.Identity<Z>();
-        }
-        throw new Error("fixme");
     }
 
     @Override

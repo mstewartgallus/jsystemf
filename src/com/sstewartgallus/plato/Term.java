@@ -30,7 +30,7 @@ public interface Term<A> {
     }
 
     static <A, B> Term<F<A, B>> constant(Type<A> type, Term<B> term) {
-        return Term.apply(new ConstantThunk<>(term.type(), type), term);
+        return Term.apply(Term.apply(Term.apply(new ConstantThunk<>(), term.type()), type), term);
     }
 
     Type<A> type() throws TypeCheckException;

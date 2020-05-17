@@ -5,14 +5,7 @@ import com.sstewartgallus.plato.*;
 
 import java.util.Objects;
 
-// fixme... should be a nonpure extension to the list language...
-// fixme... is it a thunk or a value?
-
-/**
- * NOT a core list of the language...
- *
- * @param <A>
- */
+// fixme... should be a nonpure extension to the list language ?
 public final class VarValue<A> implements ValueTerm<A>, Comparable<VarValue<?>> {
     private final Type<A> type;
     private final Id<A> variable;
@@ -36,7 +29,7 @@ public final class VarValue<A> implements ValueTerm<A>, Comparable<VarValue<?>> 
     @Override
     public <X> Term<F<X, A>> pointFree(VarValue<X> varValue) {
         if (varValue.variable == variable) {
-            return (Term) new IdentityThunk<>(type);
+            return (Term) Term.apply(new IdentityThunk<>(), type);
         }
         return Term.constant(varValue.type, this);
     }

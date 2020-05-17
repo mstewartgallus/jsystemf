@@ -20,6 +20,13 @@ public record TypeLambdaValue<A, B>(Function<Type<A>, Term<B>>f) implements Valu
         return Type.v(x -> f.apply(x).type());
     }
 
+    public Term<B> apply(Type<A> x) {
+        System.err.println(this + " " + x);
+        var result = f.apply(x);
+        System.err.println("Result " + result);
+        return result;
+    }
+
     @Override
     public String toString() {
         try (var pretty = PrettyType.<A>generate()) {

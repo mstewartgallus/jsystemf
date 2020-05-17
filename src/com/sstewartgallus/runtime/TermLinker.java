@@ -32,7 +32,7 @@ public final class TermLinker implements TypeBasedGuardingDynamicLinker, Guardin
 
     static {
         var factory = new DynamicLinkerFactory();
-        factory.setPrioritizedLinkers(List.of(new JitLinker(), new LambdaLinker(), new ThunkLinker(), new TermLinker()));
+        factory.setPrioritizedLinkers(List.of(new JitLinker(), new TypeLambdaLinker(), new LambdaLinker(), new ThunkLinker(), new TermLinker()));
         factory.setSyncOnRelink(true);
         DYNAMIC_LINKER = factory.createLinker();
     }

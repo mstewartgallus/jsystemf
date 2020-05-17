@@ -1,8 +1,14 @@
 package com.sstewartgallus.plato;
 
+import com.sstewartgallus.runtime.TermInvoker;
+
 import java.util.Objects;
 
+import static java.lang.invoke.MethodHandles.lookup;
+
 public record TypeApplyThunk<A, B>(Term<V<A, B>>f, Type<A>x) implements ThunkTerm<B>, LambdaTerm<B> {
+    private static final ApplyType INVOKE_TERM = TermInvoker.newInstance(lookup(), ApplyType.class);
+
     public TypeApplyThunk {
         Objects.requireNonNull(f);
         Objects.requireNonNull(x);
@@ -32,10 +38,12 @@ public record TypeApplyThunk<A, B>(Term<V<A, B>>f, Type<A>x) implements ThunkTer
 
     @Override
     public Term<B> stepThunk() {
-        // fixme... do types need to be normalized as well?
-        // fixme... type check?
-        var fNorm = (TypeLambdaValue<A, B>) Interpreter.normalize(f);
-        // fixme... should I normalize the argument?
-        return fNorm.f().apply(x);
+        System.err.println(f + " " + x);
+        return INVOKE_TERM.apply(f, x);
+    }
+
+    @FunctionalInterface
+    public interface ApplyType {
+        <A, B> Term<B> apply(Term<V<A, B>> f, Type<A> x);
     }
 }

@@ -41,17 +41,24 @@ public final class Jit {
                     return (Term) jitDeref(derefThunk);
                 }
 
-                if (term instanceof LambdaValue<?, ?> lambdaValue) {
-                    return (Term) jitLambda(lambdaValue);
-                }
-
                 if (term instanceof TuplePairValue<?, ?> consValue) {
                     return (Term) jitConsValue(consValue);
+                }
+
+                if (term instanceof TypeApplyThunk<?, T> typeApplyThunk) {
+                    return jitTypeApply(typeApplyThunk);
                 }
 
                 return term.visitChildren(this);
             }
         });
+    }
+
+    private static <A, B> Term<B> jitTypeApply(TypeApplyThunk<A, B> typeApplyThunk) {
+        var f = jit(typeApplyThunk.f());
+        var x = typeApplyThunk.x();
+
+        return new TypeApplyThunk<>(f, x);
     }
 
     private static <A, B extends Tuple<B>> Term<P<A, B>> jitConsValue(TuplePairValue<A, B> consValue) {
@@ -65,12 +72,6 @@ public final class Jit {
         // fixme... create unboxed tuples....
         // fixme... flattening tuples should probably be a different phase....
         return new FlatValue<>(consValue.type(), Collections.unmodifiableList(terms));
-    }
-
-    private static <A, B> Term<F<A, B>> jitLambda(LambdaValue<A, B> lambdaValue) {
-        // fixme.. jit to an invokable thingie ... ?
-
-        throw null;
     }
 
     private static <A extends Tuple<A>, B extends Tuple<B>, C> Term<F<B, C>> jitDeref(AtTupleIndexThunk<A, B, C> derefThunk) {
@@ -117,5 +118,4 @@ public final class Jit {
         var mh = identity(type.erase());
         return new JitValue<>(new Signature.AddArg<>(type, new Signature.Result<>(type)), mh);
     }
-
 }

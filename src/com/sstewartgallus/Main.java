@@ -1,6 +1,7 @@
 package com.sstewartgallus;
 
 
+import com.sstewartgallus.ext.java.J;
 import com.sstewartgallus.ext.variables.VarType;
 import com.sstewartgallus.ext.variables.VarValue;
 import com.sstewartgallus.frontend.Entity;
@@ -93,7 +94,7 @@ public final class Main {
 
     static {
         // fixme... still need to introduce lazy proper laziness, strictness analysis and tail recursion..
-        var source = "(λ (x int) λ (y int) x) 4";
+        var source = "λ (x int) λ (y int) x";
 
         output("Source", source);
 
@@ -107,7 +108,7 @@ public final class Main {
 
         output("Environment", DEFAULT_ENV);
 
-        var term = (Term<F<Integer, Integer>>) Frontend.toTerm(ast, DEFAULT_ENV);
+        var term = (Term<F<J<Integer>, F<J<Integer>, J<Integer>>>>) Frontend.toTerm(ast, DEFAULT_ENV);
 
         outputT("System F", term);
 
@@ -178,9 +179,9 @@ public final class Main {
         outputT(stage, results, "-");
     }
 
-    static void outputT(String stage, Term<F<Integer, Integer>> term) {
+    static void outputT(String stage, Term<F<J<Integer>, F<J<Integer>, J<Integer>>>> term) {
         outputT(stage, term, term.type());
-        var output = API.apply(term, 5);
+        var output = API.apply(term, 2, 5);
         outputT(" ⇒", output, "-");
     }
 
@@ -198,7 +199,7 @@ public final class Main {
 
     @FunctionalInterface
     public interface ApplyInt {
-        int apply(Term<F<Integer, Integer>> f, int x);
+        int apply(Term<F<J<Integer>, F<J<Integer>, J<Integer>>>> f, int x, int y);
     }
 
     static class MyThrowable extends ValueThrowable {

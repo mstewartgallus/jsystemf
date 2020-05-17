@@ -11,8 +11,7 @@ import jdk.dynalink.linker.support.Guards;
 import java.lang.invoke.MethodHandle;
 import java.lang.invoke.MethodType;
 
-import static java.lang.invoke.MethodHandles.dropArguments;
-import static java.lang.invoke.MethodHandles.lookup;
+import static java.lang.invoke.MethodHandles.*;
 
 public final class LambdaLinker implements TypeBasedGuardingDynamicLinker {
 
@@ -35,14 +34,29 @@ public final class LambdaLinker implements TypeBasedGuardingDynamicLinker {
     @Override
     public GuardedInvocation getGuardedInvocation(LinkRequest linkRequest, LinkerServices linkerServices) {
         var receiver = (LambdaValue<?, ?>) linkRequest.getReceiver();
+        var cs = linkRequest.getCallSiteDescriptor();
+        var methodType = cs.getMethodType();
 
-        var methodType = linkRequest.getCallSiteDescriptor().getMethodType();
-        if (methodType.parameterCount() != 3) {
-            return null;
-        }
 
         var mh = APPLY_MH;
         mh = dropArguments(mh, 1, Void.class);
+
+        var parameterCount = methodType.parameterCount();
+        if (parameterCount > 3) {
+            mh = linkerServices.asType(mh, methodType.dropParameterTypes(3, parameterCount).changeReturnType(Term.class));
+
+            var restTypes = methodType
+                    .dropParameterTypes(0, 3)
+                    .insertParameterTypes(0, Term.class, Void.class);
+            var handleTheRest = TermLinker
+                    .link(cs.getLookup(), cs.getOperation(), restTypes)
+                    .dynamicInvoker();
+
+            handleTheRest = insertArguments(handleTheRest, 1, (Object) null);
+            handleTheRest = dropArguments(handleTheRest, 1, mh.type().parameterList());
+
+            mh = foldArguments(handleTheRest, mh);
+        }
         return new GuardedInvocation(mh, Guards.isOfClass(LambdaValue.class, methodType));
     }
 }

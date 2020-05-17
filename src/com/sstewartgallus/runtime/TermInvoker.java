@@ -1,5 +1,9 @@
 package com.sstewartgallus.runtime;
 
+import com.sstewartgallus.ext.java.JavaType;
+import com.sstewartgallus.ext.tuples.Signature;
+import com.sstewartgallus.ext.tuples.UncurryValue;
+import com.sstewartgallus.plato.Term;
 import jdk.dynalink.StandardOperation;
 import org.objectweb.asm.ClassWriter;
 import org.objectweb.asm.Handle;
@@ -26,8 +30,21 @@ public abstract class TermInvoker<T> extends Value<T> {
     protected static CallSite bootstrap(MethodHandles.Lookup lookup, String name, MethodType methodType) {
         var lookupValue = LOOKUP_MAP.get(lookup.lookupClass()).lookupDelegate;
         methodType = methodType.insertParameterTypes(1, Void.class);
+        if (true || methodType.parameterCount() <= 3) {
+            var mh = TermLinker.link(lookupValue, StandardOperation.CALL, methodType).dynamicInvoker();
+            mh = insertArguments(mh, 1, (Object) null);
+            return new ConstantCallSite(mh);
+        }
+
+        System.err.println("foo " + methodType);
+        // fixme... construct generically...
+        var i = new JavaType<>(int.class);
+        var sig = new Signature.AddArg<>(i, new Signature.AddArg<>(i, new Signature.Result<>(i)));
+        var uncurry = new UncurryValue<>(sig);
+
+        methodType = methodType.insertParameterTypes(2, Term.class);
         var mh = TermLinker.link(lookupValue, StandardOperation.CALL, methodType).dynamicInvoker();
-        mh = insertArguments(mh, 1, (Object) null);
+        mh = insertArguments(mh, 0, uncurry, (Object) null);
         return new ConstantCallSite(mh);
     }
 

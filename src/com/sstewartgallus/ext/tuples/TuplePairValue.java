@@ -1,13 +1,10 @@
 package com.sstewartgallus.ext.tuples;
 
-import com.sstewartgallus.plato.Term;
-import com.sstewartgallus.plato.Type;
-import com.sstewartgallus.plato.TypeCheckException;
-import com.sstewartgallus.plato.ValueTerm;
+import com.sstewartgallus.plato.*;
 
 import java.util.Objects;
 
-public record TuplePairValue<H, T extends Tuple<T>>(Term<H>head, Term<T>tail) implements ValueTerm<P<H, T>> {
+public record TuplePairValue<H, T extends Tuple<T>>(Term<H>head, ValueTerm<T>tail) implements ValueTerm<P<H, T>> {
     public TuplePairValue {
         Objects.requireNonNull(head);
         Objects.requireNonNull(tail);
@@ -15,7 +12,7 @@ public record TuplePairValue<H, T extends Tuple<T>>(Term<H>head, Term<T>tail) im
 
     @Override
     public Term<P<H, T>> visitChildren(Visitor visitor) {
-        return new TuplePairValue<>(visitor.term(head), visitor.term(tail));
+        return new TuplePairValue<>(visitor.term(head), Interpreter.normalize(visitor.term(tail)));
     }
 
     @Override

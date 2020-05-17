@@ -4,8 +4,8 @@ import com.sstewartgallus.plato.*;
 
 import java.util.Objects;
 
-public record UncurryThunk<L extends Tuple<L>, C, D>(Signature<L, C, D>signature) implements ThunkTerm<F<D, F<L, C>>> {
-    public UncurryThunk {
+public record UncurryValue<L extends Tuple<L>, C, D>(Signature<L, C, D>signature) implements ValueTerm<F<D, F<L, C>>> {
+    public UncurryValue {
         Objects.requireNonNull(signature);
     }
 
@@ -19,11 +19,6 @@ public record UncurryThunk<L extends Tuple<L>, C, D>(Signature<L, C, D>signature
         var argType = signature.argType();
         var retType = signature.retType();
         return signature.type().to(argType.to(retType));
-    }
-
-    @Override
-    public Term<F<D, F<L, C>>> stepThunk() {
-        return signature.type().l(signature::stepThunkReverse);
     }
 
     @Override

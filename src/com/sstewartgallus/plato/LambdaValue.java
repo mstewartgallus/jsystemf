@@ -52,7 +52,7 @@ public record LambdaValue<A, B>(Type<A>domain,
     }
 
     public Term<B> apply(Term<A> x) {
-        System.err.println("Apply " + this + " " + x);
+//        System.err.println("Apply " + this + " " + x);
 
         // fixme... typecheck domain?
         return f.apply(x);

@@ -1,9 +1,6 @@
 package com.sstewartgallus.ext.tuples;
 
-import com.sstewartgallus.plato.F;
-import com.sstewartgallus.plato.Interpreter;
-import com.sstewartgallus.plato.Term;
-import com.sstewartgallus.plato.Type;
+import com.sstewartgallus.plato.*;
 
 import java.lang.invoke.MethodHandle;
 import java.util.ArrayList;
@@ -18,6 +15,8 @@ public interface Signature<T extends Tuple<T>, C, D> {
     Type<D> type();
 
     Type<C> retType();
+
+    Term<C> stepThunkReverse(Term<D> apply, ValueTerm<T> t);
 
     Term<F<T, C>> stepThunkReverse(Term<D> fTerm);
 
@@ -51,6 +50,10 @@ public interface Signature<T extends Tuple<T>, C, D> {
             return type;
         }
 
+        @Override
+        public Term<A> stepThunkReverse(Term<A> apply, ValueTerm<N> t) {
+            return apply;
+        }
 
         public String toString() {
             return " → " + type;
@@ -72,7 +75,10 @@ public interface Signature<T extends Tuple<T>, C, D> {
 
         @Override
         public Term<F<H, D>> stepThunk(Term<F<P<H, T>, C>> f) {
-            return head.l(h -> tail.stepThunk(tail.argType().l(t -> Term.apply(f, new TuplePairValue<>(h, t)))));
+            return head.l(h -> tail.stepThunk(tail.argType().l(t -> {
+                var tNorm = Interpreter.normalize(t);
+                return Term.apply(f, new TuplePairValue<>(h, tNorm));
+            })));
         }
 
         @Override
@@ -107,15 +113,23 @@ public interface Signature<T extends Tuple<T>, C, D> {
         public Term<F<P<H, T>, C>> stepThunkReverse(Term<F<H, D>> term) {
             return new TuplePairType<>(head, tail.argType()).l(x -> {
                 var xNorm = (TuplePairValue<H, T>) Interpreter.normalize(x);
-                var foo = Term.apply(term, xNorm.head());
-                var bar = tail.stepThunkReverse(foo);
-                return Term.apply(bar, xNorm.tail());
+                var h = xNorm.head();
+                var t = xNorm.tail();
+                // tuples are NOT lazy
+                return tail.stepThunkReverse(Term.apply(term, h), t);
             });
         }
 
         @Override
         public Type<C> retType() {
             return tail.retType();
+        }
+
+        @Override
+        public Term<C> stepThunkReverse(Term<F<H, D>> apply, ValueTerm<P<H, T>> list) {
+            var listPair = (TuplePairValue<H, T>) list;
+
+            return tail.stepThunkReverse(Term.apply(apply, listPair.head()), listPair.tail());
         }
 
 

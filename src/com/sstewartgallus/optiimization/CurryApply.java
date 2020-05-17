@@ -1,16 +1,13 @@
 package com.sstewartgallus.optiimization;
 
 import com.sstewartgallus.ext.tuples.*;
-import com.sstewartgallus.plato.ApplyThunk;
-import com.sstewartgallus.plato.F;
-import com.sstewartgallus.plato.Term;
-import com.sstewartgallus.plato.Type;
+import com.sstewartgallus.plato.*;
 
 interface Args<A extends Tuple<A>, B, C> {
 
     Signature<A, B, C> sig();
 
-    Term<A> flatten();
+    ValueTerm<A> flatten();
 
     record NoArgs<A>(Type<A>result) implements Args<N, A, A> {
 
@@ -20,7 +17,7 @@ interface Args<A extends Tuple<A>, B, C> {
         }
 
         @Override
-        public Term<N> flatten() {
+        public ValueTerm<N> flatten() {
             return NilTupleValue.NIL;
         }
     }
@@ -33,7 +30,7 @@ interface Args<A extends Tuple<A>, B, C> {
         }
 
         @Override
-        public Term<P<A, T>> flatten() {
+        public ValueTerm<P<A, T>> flatten() {
             return new TuplePairValue<>(head, tail.flatten());
         }
     }
@@ -71,7 +68,7 @@ public final class CurryApply {
         term = curryApply(term);
 
         var sig = args.sig();
-        var curryF = new UncurryThunk<>(sig);
+        var curryF = new UncurryValue<>(sig);
 
         var fCurried = Term.apply(curryF, term);
         return Term.apply(fCurried, args.flatten());

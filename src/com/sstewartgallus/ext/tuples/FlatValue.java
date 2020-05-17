@@ -24,14 +24,6 @@ public record FlatValue<T extends Tuple<T>>(Type<T>type, List<Term<?>>list) impl
 
     @Override
     public Term<T> stepThunk() {
-        // fixme... ugly
-        Term<?> tail;
-        if (list.size() <= 1) {
-            tail = NilTupleValue.NIL;
-        } else {
-            var t = (TuplePairType<?, ?>) type;
-            tail = new FlatValue<>(t.tail(), list.subList(1, list.size()));
-        }
-        return new TuplePairValue(list.get(0), tail);
+        throw null;
     }
 }

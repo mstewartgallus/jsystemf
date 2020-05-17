@@ -5,7 +5,7 @@ import com.sstewartgallus.plato.TypeCheckException;
 
 import java.util.Objects;
 
-public record JavaType<A>(Class<A>clazz) implements Type<A> {
+public record JavaType<A>(Class<A>clazz) implements Type<J<A>> {
 
     public JavaType {
         Objects.requireNonNull(clazz);
@@ -15,8 +15,8 @@ public record JavaType<A>(Class<A>clazz) implements Type<A> {
         return clazz;
     }
 
-    public <Y> Type<A> unify(Type<Y> right) throws TypeCheckException {
-        if (!(right instanceof JavaType<Y> javaType)) {
+    public <Y> Type<J<A>> unify(Type<Y> right) throws TypeCheckException {
+        if (!(right instanceof JavaType javaType)) {
             throw new TypeCheckException(this, right);
         }
         if (clazz != javaType.clazz) {

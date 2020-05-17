@@ -7,13 +7,13 @@ import com.sstewartgallus.plato.ValueTerm;
 
 import java.util.Objects;
 
-public record ObjectValue<A>(A value) implements ValueTerm<A>, JavaTerm<A> {
+public record ObjectValue<A>(A value) implements ValueTerm<J<A>>, JavaTerm<A> {
     public ObjectValue {
         Objects.requireNonNull(value);
     }
 
     @Override
-    public Term<A> visitChildren(Visitor visitor) {
+    public Term<J<A>> visitChildren(Visitor visitor) {
         return this;
     }
 
@@ -23,7 +23,7 @@ public record ObjectValue<A>(A value) implements ValueTerm<A>, JavaTerm<A> {
     }
 
     @Override
-    public Type<A> type() throws TypeCheckException {
+    public Type<J<A>> type() throws TypeCheckException {
         return new JavaType<A>((Class) value.getClass());
     }
 }

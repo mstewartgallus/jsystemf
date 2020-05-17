@@ -13,7 +13,7 @@ interface Vars<A extends Tuple<A>, B, C> {
 
     default Term<C> collapse() {
         var head = arguments();
-        return new ApplyThunk<>(new CurryValue<>(sig()), arguments().l(args -> collapse(args, new TupleIndex.Zero<>(head))));
+        return new ApplyThunk<>(new CurryThunk<>(sig()), arguments().l(args -> collapse(args, new TupleIndex.Zero<>(head))));
     }
 
     <X extends Tuple<X>> Term<B> collapse(Term<X> source, TupleIndex<X, A> args);

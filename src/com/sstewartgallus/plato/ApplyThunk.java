@@ -7,7 +7,11 @@ import com.sstewartgallus.ext.variables.VarValue;
 
 import java.util.Objects;
 
+import static java.lang.invoke.MethodHandles.lookup;
+
 public record ApplyThunk<A, B>(Term<F<A, B>>f, Term<A>x) implements ThunkTerm<B>, LambdaTerm<B> {
+    private static final TermInvoker INVOKE_TERM = com.sstewartgallus.runtime.TermInvoker.newInstance(lookup(), TermInvoker.class);
+
     public ApplyThunk {
         Objects.requireNonNull(f);
         Objects.requireNonNull(x);
@@ -31,9 +35,6 @@ public record ApplyThunk<A, B>(Term<F<A, B>>f, Term<A>x) implements ThunkTerm<B>
     public <X> Term<F<X, B>> pointFree(VarValue<X> varValue) {
         var fValue = f.pointFree(varValue);
         var xValue = x.pointFree(varValue);
-
-        System.err.println("ap " + fValue + " " + xValue);
-
 
         if (fValue instanceof IdentityThunk) {
             return (Term) xValue;
@@ -76,7 +77,14 @@ public record ApplyThunk<A, B>(Term<F<A, B>>f, Term<A>x) implements ThunkTerm<B>
 
     @Override
     public Term<B> stepThunk() {
-        var fNorm = Interpreter.normalize(f);
-        return ((LambdaValue<A, B>) fNorm).apply(x);
+        // fixme... unfortunately we need to involve dynalink in this even for very typical objects..
+        // fixme... consider an environment parameter with a lookup() at least..
+        return INVOKE_TERM.apply(f, x);
     }
+
+    @FunctionalInterface
+    public interface TermInvoker {
+        <A, B> Term<B> apply(Term<F<A, B>> f, Term<A> x);
+    }
+
 }

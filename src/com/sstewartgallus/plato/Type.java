@@ -1,5 +1,6 @@
 package com.sstewartgallus.plato;
 
+import com.sstewartgallus.ext.java.J;
 import com.sstewartgallus.ext.java.JavaType;
 
 import java.util.List;
@@ -11,7 +12,7 @@ import java.util.function.Function;
  * Any processing should happen AFTER this step.
  */
 public interface Type<X> {
-    Type<Integer> INT = new JavaType<>(int.class);
+    Type<J<Integer>> INT = new JavaType<>(int.class);
 
     static <A, B> Type<V<A, B>> v(Function<Type<A>, Type<B>> f) {
         return new ForallType<>(f);

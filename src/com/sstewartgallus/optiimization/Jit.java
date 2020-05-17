@@ -2,8 +2,6 @@ package com.sstewartgallus.optiimization;
 
 import com.sstewartgallus.ext.mh.MethodHandleThunk;
 import com.sstewartgallus.ext.pointfree.CallThunk;
-import com.sstewartgallus.ext.pointfree.ConstantThunk;
-import com.sstewartgallus.ext.pointfree.IdentityThunk;
 import com.sstewartgallus.ext.tuples.*;
 import com.sstewartgallus.plato.*;
 

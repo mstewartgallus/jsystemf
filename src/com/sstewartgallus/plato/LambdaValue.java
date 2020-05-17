@@ -13,6 +13,7 @@ public record LambdaValue<A, B>(Type<A>domain,
         Objects.requireNonNull(f);
     }
 
+
     public Term<F<A, B>> visitChildren(Visitor visitor) {
         var v = new VarValue<>(domain);
         var body = visitor.term(f.apply(v));
@@ -21,9 +22,9 @@ public record LambdaValue<A, B>(Type<A>domain,
 
     @Override
     public <X> Term<F<X, F<A, B>>> pointFree(VarValue<X> varValue) {
-        // fixme... traditional solution is creating a tuple of the old var value and the new one...
         var v = new VarValue<>(domain);
         var body = f.apply(v);
+
         return body.pointFree(v).pointFree(varValue);
     }
 

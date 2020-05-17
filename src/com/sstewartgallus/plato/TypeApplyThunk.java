@@ -29,6 +29,7 @@ public record TypeApplyThunk<A, B>(Term<V<A, B>>f, Type<A>x) implements ThunkTer
         }
         return f + " " + x;
     }
+
     @Override
     public Term<B> stepThunk() {
         // fixme... do types need to be normalized as well?

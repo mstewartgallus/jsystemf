@@ -8,10 +8,11 @@ import com.sstewartgallus.frontend.Environment;
 import com.sstewartgallus.frontend.Frontend;
 import com.sstewartgallus.frontend.Node;
 import com.sstewartgallus.optiimization.*;
-import com.sstewartgallus.plato.*;
+import com.sstewartgallus.plato.F;
+import com.sstewartgallus.plato.Term;
+import com.sstewartgallus.plato.Type;
 import com.sstewartgallus.primitives.Prims;
-import com.sstewartgallus.runtime.Value;
-import com.sstewartgallus.runtime.ValueInvoker;
+import com.sstewartgallus.runtime.TermInvoker;
 import com.sstewartgallus.runtime.ValueThrowable;
 import com.sstewartgallus.runtime.ValueThrowables;
 
@@ -37,13 +38,10 @@ import static java.lang.invoke.MethodHandles.lookup;
     String value();
 }
 
-
 public final class Main {
     static final Supplier<Object> TO_EXEC;
     private static final MyThrowable TEMPLATE = new MyThrowable();
-    private static final TypeApply TP = ValueInvoker.newInstance(lookup(), TypeApply.class);
-    private static final Apply AP = ValueInvoker.newInstance(lookup(), Apply.class);
-    private static final ApplyInt API = ValueInvoker.newInstance(lookup(), ApplyInt.class);
+    private static final ApplyInt API = TermInvoker.newInstance(lookup(), ApplyInt.class);
     @PutEnv("+")
     private static final Term<?> ADD = Type.INT.l(x -> Type.INT.l(y -> Prims.add(x, y)));
     @PutEnv("int")
@@ -95,7 +93,7 @@ public final class Main {
 
     static {
         // fixme... still need to introduce lazy proper laziness, strictness analysis and tail recursion..
-        var source = "(λ (x int) λ (y int) x) 4 2";
+        var source = "(λ (x int) λ (y int) x) 4";
 
         output("Source", source);
 
@@ -109,14 +107,14 @@ public final class Main {
 
         output("Environment", DEFAULT_ENV);
 
-        var term = Frontend.toTerm(ast, DEFAULT_ENV);
+        var term = (Term<F<Integer, Integer>>) Frontend.toTerm(ast, DEFAULT_ENV);
 
         outputT("System F", term);
-        // fixme... implement properly before?...
-/*        var captured = Capture.capture(curry);
+
+        var captured = Capture.capture(term);
         outputT("Partial Application", captured, captured.type());
-*/
-        var curryApply = CurryApply.curryApply(term);
+
+        var curryApply = CurryApply.curryApply(captured);
         outputT("Curry Apply", curryApply);
 
         var uncurry = UncurryLambdas.uncurry(curryApply);
@@ -129,21 +127,10 @@ public final class Main {
         outputT("Point Free", pf);
 
         // fixme... consdier pointfree generics...
-/*
-        var generic = pointFree.generic(new VarType<>());
-        outputT("Generic", generic, generic.signature());
-*/
+
         var jit = Jit.jit(pf);
         outputT("JIT", jit);
 
-        /*
-        // fixme.. hack
-        var main = Generic.compile(lookup(), (Generic) generic);
-        output("Main", main);
-
-        var bar = API.apply((Value<F<Integer, F<Integer, Integer>>>) main, 3, 5);
-        output("Result", bar);
-*/
         System.exit(0);
         TO_EXEC = () -> ValueThrowables.clone(TEMPLATE);// API.apply((Value<F<Integer, F<Integer, Integer>>>) main, 3, 3);
     }
@@ -191,10 +178,10 @@ public final class Main {
         outputT(stage, results, "-");
     }
 
-    static void outputT(String stage, Term<?> term) {
+    static void outputT(String stage, Term<F<Integer, Integer>> term) {
         outputT(stage, term, term.type());
-        var output = Interpreter.normalize(term);
-        outputT(" ⇒", output, output.type());
+        var output = API.apply(term, 5);
+        outputT(" ⇒", output, "-");
     }
 
     static void outputT(String stage, Object term, Object type) {
@@ -209,20 +196,9 @@ public final class Main {
         System.out.println(results[0]);
     }
 
-    // fixme... pass in type as well?
-    @FunctionalInterface
-    public interface TypeApply {
-        <A, B> Value<B> apply(Value<V<A, B>> f, Class<A> x);
-    }
-
-    @FunctionalInterface
-    public interface Apply {
-        <A, B> Value<B> apply(Value<F<A, B>> f, int x);
-    }
-
     @FunctionalInterface
     public interface ApplyInt {
-        int apply(Value<F<Integer, F<Integer, Integer>>> f, int x, int y);
+        int apply(Term<F<Integer, Integer>> f, int x);
     }
 
     static class MyThrowable extends ValueThrowable {

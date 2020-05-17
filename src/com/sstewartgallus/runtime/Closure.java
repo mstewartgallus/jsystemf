@@ -185,7 +185,7 @@ public abstract class Closure<T> extends FunValue<T> {
         args.addAll(newArgs);
 
         // fixme... user proper lookup...
-        var mh = ValueLinker.link(lookup(), StandardOperation.CALL, methodType(resultType.returnType(), args)).dynamicInvoker();
+        var mh = TermLinker.link(lookup(), StandardOperation.CALL, methodType(resultType.returnType(), args)).dynamicInvoker();
 
         MethodHandle[] envGets;
         {

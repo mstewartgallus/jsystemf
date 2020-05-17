@@ -1,5 +1,6 @@
 package com.sstewartgallus.ext;
 
+import com.sstewartgallus.ext.java.J;
 import com.sstewartgallus.plato.Term;
 import com.sstewartgallus.plato.ThunkTerm;
 import com.sstewartgallus.plato.Type;
@@ -8,19 +9,19 @@ import com.sstewartgallus.plato.TypeCheckException;
 import java.util.Objects;
 
 // fixme... don't use this...
-public record AddThunk(Term<Integer>left, Term<Integer>right) implements ThunkTerm<Integer> {
+public record AddThunk(Term<J<Integer>>left, Term<J<Integer>>right) implements ThunkTerm<J<Integer>> {
     public AddThunk {
         Objects.requireNonNull(left);
         Objects.requireNonNull(right);
     }
 
     @Override
-    public Term<Integer> visitChildren(Visitor visitor) {
+    public Term<J<Integer>> visitChildren(Visitor visitor) {
         return new AddThunk(visitor.term(left), visitor.term(right));
     }
 
     @Override
-    public Type<Integer> type() throws TypeCheckException {
+    public Type<J<Integer>> type() throws TypeCheckException {
         return Type.INT;
     }
 
@@ -30,7 +31,7 @@ public record AddThunk(Term<Integer>left, Term<Integer>right) implements ThunkTe
     }
 
     @Override
-    public Term<Integer> stepThunk() {
+    public Term<J<Integer>> stepThunk() {
         throw null;
         // return Prims.of(Interpreter.normalize(left).extract() + Interpreter.normalize(right).extract());
     }

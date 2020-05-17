@@ -17,6 +17,7 @@ import java.util.function.Function;
  * for inspiration.
  */
 public interface Term<A> {
+
     static <A, B> Term<B> apply(Term<V<A, B>> f, Type<A> x) {
         return new TypeApplyThunk<>(f, x);
     }

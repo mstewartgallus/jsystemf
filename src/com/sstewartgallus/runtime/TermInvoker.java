@@ -15,8 +15,8 @@ import static org.objectweb.asm.Opcodes.*;
 /**
  * Unfortunately the standard libary MethodHandleProxies creates boxes arguments it passes through with Object[]...
  */
-public abstract class ValueInvoker<T> extends Value<T> {
-    private static final Handle BOOTSTRAP = new Handle(H_INVOKESTATIC, Type.getInternalName(ValueInvoker.class), "bootstrap",
+public abstract class TermInvoker<T> extends Value<T> {
+    private static final Handle BOOTSTRAP = new Handle(H_INVOKESTATIC, Type.getInternalName(TermInvoker.class), "bootstrap",
             methodType(CallSite.class, MethodHandles.Lookup.class, String.class, MethodType.class).descriptorString(),
             false);
     private static final SupplierClassValue<LookupHolder> LOOKUP_MAP = new SupplierClassValue<>(LookupHolder::new);
@@ -26,7 +26,7 @@ public abstract class ValueInvoker<T> extends Value<T> {
     protected static CallSite bootstrap(MethodHandles.Lookup lookup, String name, MethodType methodType) {
         var lookupValue = LOOKUP_MAP.get(lookup.lookupClass()).lookupDelegate;
         methodType = methodType.insertParameterTypes(1, Void.class);
-        var mh = ValueLinker.link(lookupValue, StandardOperation.CALL, methodType).dynamicInvoker();
+        var mh = TermLinker.link(lookupValue, StandardOperation.CALL, methodType).dynamicInvoker();
         mh = insertArguments(mh, 1, (Object) null);
         return new ConstantCallSite(mh);
     }
@@ -40,7 +40,7 @@ public abstract class ValueInvoker<T> extends Value<T> {
     // fixme... separate arguments from simply locals on the locals...
     // fixme.. pass in lookup()?
     private static <I> I spin(MethodHandles.Lookup lookup, Class<I> iface, String methodName, MethodType methodType) {
-        var myname = Type.getInternalName(ValueInvoker.class);
+        var myname = Type.getInternalName(TermInvoker.class);
         var newclassname = myname + "Impl";
 
         // fixme... privatise as much as possible...
@@ -52,7 +52,7 @@ public abstract class ValueInvoker<T> extends Value<T> {
             mw.visitCode();
 
             mw.visitMethodInsn(INVOKESTATIC, Type.getInternalName(MethodHandles.class), "lookup", methodType(MethodHandles.Lookup.class).descriptorString(), false);
-            mw.visitMethodInsn(INVOKESTATIC, Type.getInternalName(ValueInvoker.class), "register", methodType(void.class, MethodHandles.Lookup.class).descriptorString(), false);
+            mw.visitMethodInsn(INVOKESTATIC, Type.getInternalName(TermInvoker.class), "register", methodType(void.class, MethodHandles.Lookup.class).descriptorString(), false);
 
             mw.visitInsn(RETURN);
             mw.visitMaxs(0, 0);
@@ -126,8 +126,8 @@ public abstract class ValueInvoker<T> extends Value<T> {
         cw.visitEnd();
         var bytes = cw.toByteArray();
 
-        var definedClass = AnonClassLoader.defineClass(ValueInvoker.class.getClassLoader(), bytes);
-        var klass = definedClass.asSubclass(ValueInvoker.class);
+        var definedClass = AnonClassLoader.defineClass(TermInvoker.class.getClassLoader(), bytes);
+        var klass = definedClass.asSubclass(TermInvoker.class);
 
         var privateLookup = LOOKUP_MAP.get(klass).lookup;
         LOOKUP_MAP.get(klass).lookupDelegate = lookup;

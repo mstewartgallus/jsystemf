@@ -30,4 +30,5 @@ public record MethodHandleThunk<A extends Tuple<A>, B, C>(Signature<A, B, C>sig,
     public String toString() {
         return methodHandle.toString();
     }
+
 }

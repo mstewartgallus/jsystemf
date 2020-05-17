@@ -1,8 +1,8 @@
 package com.sstewartgallus.optiimization;
 
-import com.sstewartgallus.ext.tuples.CurriedLambdaThunk;
 import com.sstewartgallus.ext.variables.VarValue;
 import com.sstewartgallus.plato.F;
+import com.sstewartgallus.plato.LambdaValue;
 import com.sstewartgallus.plato.Term;
 
 import java.util.HashSet;
@@ -16,58 +16,52 @@ public final class Capture {
     }
 
     public static <A> Term<A> capture(Term<A> root) {
-        return root.visit(new CurryVisitor());
+        return root.visit(new CaptureVisitor());
     }
 
-    private static <A> Results<A> curryLambda(CurriedLambdaThunk<A> lambda) {
-        var results = captureBody(lambda.body());
-        var captured = new TreeSet<>(results.captured);
-
+    private static <A, B> Results<F<A, B>> captureLambda(LambdaValue<A, B> lambda) {
+        var results = captureLambdaInner(lambda);
+        var captured = results.captured;
         List<VarValue<?>> free = captured.stream().sorted().collect(Collectors.toUnmodifiableList());
-
-        var chunk = results.value;
-        return new Results<>(captured, helper(free, 0, chunk));
+        return new Results<>(captured, helper(free, 0, results.value));
     }
 
-    private static <A> BodyResults<A> captureBody(CurriedLambdaThunk.Body<A> body) {
-        if (body instanceof CurriedLambdaThunk.MainBody<A> mainBody) {
-            var curryVisitor = new CurryVisitor();
-            var results = mainBody.body().visit(curryVisitor);
-            return new BodyResults<>(curryVisitor.captured, new CurriedLambdaThunk.MainBody<>(results));
-        }
-
-        var lambda = (CurriedLambdaThunk.LambdaBody<?, ?>) body;
-        // fixme...
-        return (BodyResults) captureLambda(lambda);
-    }
-
-    private static <A, B> BodyResults<F<A, B>> captureLambda(CurriedLambdaThunk.LambdaBody<A, B> lambda) {
+    private static <A, B> Results<F<A, B>> captureLambdaInner(LambdaValue<A, B> lambda) {
         var domain = lambda.domain();
         var f = lambda.f();
-
         var v = new VarValue<>(domain);
-        var body = f.apply(v);
-        var results = captureBody(body);
-        Set<VarValue<?>> captures = new TreeSet<>(results.captured);
-        captures.remove(v);
 
-        var chunk = results.value;
-        return new BodyResults<>(captures, new CurriedLambdaThunk.LambdaBody<>(domain, x -> chunk.substitute(v, x)));
+        var body = f.apply(v);
+        Set<VarValue<?>> captured;
+        Term<B> value;
+        if (body instanceof LambdaValue<?, ?> lambdaBody) {
+            var results = (Results<B>) captureLambdaInner(lambdaBody);
+            captured = results.captured;
+            value = results.value;
+        } else {
+            var visitor = new CaptureVisitor();
+            value = body.visit(visitor);
+            captured = visitor.captured;
+        }
+        captured = new TreeSet<>(captured);
+        captured.remove(v);
+
+        return new Results<>(captured, domain.l(x -> v.substituteIn(value, x)));
     }
 
-    private static <A> Term<A> helper(List<VarValue<?>> free, int ii, CurriedLambdaThunk.Body<A> body) {
+    private static <A> Term<A> helper(List<VarValue<?>> free, int ii, Term<A> body) {
         if (ii >= free.size()) {
-            return new CurriedLambdaThunk<>(body);
+            return body;
         }
         return helper(free, ii, free.get(ii), body);
     }
 
-    private static <A, B> Term<A> helper(List<VarValue<?>> free, int ii, VarValue<B> freeVar, CurriedLambdaThunk.Body<A> body) {
-        return Term.apply(helper(free, ii + 1, new CurriedLambdaThunk.LambdaBody<>(freeVar.type(), x -> body.substitute(freeVar, x))),
-                freeVar);
+    private static <A, B> Term<A> helper(List<VarValue<?>> free, int ii, VarValue<B> freeVar, Term<A> body) {
+        var f = freeVar.type().l(x -> freeVar.substituteIn(body, x));
+        return Term.apply(helper(free, ii + 1, f), freeVar);
     }
 
-    static final class CurryVisitor extends Term.Visitor {
+    static final class CaptureVisitor extends Term.Visitor {
         final Set<VarValue<?>> captured = new HashSet<>();
 
         @Override
@@ -77,19 +71,20 @@ public final class Capture {
                 return v;
             }
 
-            if (!(term instanceof CurriedLambdaThunk<T> thunk)) {
-                var child = new CurryVisitor();
+            if (!(term instanceof LambdaValue<?, ?> thunk)) {
+                var child = new CaptureVisitor();
                 var result = term.visitChildren(child);
                 captured.addAll(child.captured);
                 return result;
             }
-            return curryLambda(thunk).value;
+
+            var results = (Results<T>) captureLambda(thunk);
+            captured.addAll(results.captured);
+            return results.value;
         }
     }
 
     record Results<L>(Set<VarValue<?>>captured, Term<L>value) {
     }
 
-    record BodyResults<L>(Set<VarValue<?>>captured, CurriedLambdaThunk.Body<L>value) {
-    }
 }

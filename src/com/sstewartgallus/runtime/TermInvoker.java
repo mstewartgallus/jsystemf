@@ -44,7 +44,7 @@ public abstract class TermInvoker<T> extends Value<T> {
 
         methodType = methodType.insertParameterTypes(2, Term.class);
         var mh = TermLinker.link(lookupValue, StandardOperation.CALL, methodType).dynamicInvoker();
-        mh = insertArguments(mh, 0, uncurry, (Object) null);
+        mh = insertArguments(mh, 0, uncurry, null);
         return new ConstantCallSite(mh);
     }
 

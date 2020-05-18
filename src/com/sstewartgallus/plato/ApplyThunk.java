@@ -79,7 +79,6 @@ public record ApplyThunk<A, B>(Term<F<A, B>>f, Term<A>x) implements ThunkTerm<B>
     public Term<B> stepThunk() {
         // fixme... unfortunately we need to involve dynalink in this even for very typical objects..
         // fixme... consider an environment parameter with a lookup() at least..
-        System.err.println(f + " " + x);
         return INVOKE_TERM.apply(f, x);
     }
 

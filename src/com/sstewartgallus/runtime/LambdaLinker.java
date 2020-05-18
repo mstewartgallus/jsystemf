@@ -11,7 +11,6 @@ import jdk.dynalink.linker.support.Guards;
 import java.lang.invoke.MethodHandle;
 import java.lang.invoke.MethodType;
 import java.lang.invoke.SwitchPoint;
-import java.util.Arrays;
 
 import static java.lang.invoke.MethodHandles.*;
 
@@ -19,6 +18,7 @@ public final class LambdaLinker implements TypeBasedGuardingDynamicLinker {
 
     // fixme... can we have a better normalize than just abstract dispatch?
     private static final MethodHandle APPLY_MH;
+    private static final InvalidationException INVALIDATION_EXCEPTION = new InvalidationException();
 
     static {
         try {
@@ -97,11 +97,10 @@ public final class LambdaLinker implements TypeBasedGuardingDynamicLinker {
         return new GuardedInvocation(mh, Guards.isOfClass(LambdaValue.class, methodType), (SwitchPoint) null, InvalidationException.class);
     }
 
-    private static final InvalidationException INVALIDATION_EXCEPTION = new InvalidationException();
-}
-
-final class InvalidationException extends Throwable {
-    InvalidationException() {
-        super(null, null, false, false);
+    static final class InvalidationException extends Throwable {
+        InvalidationException() {
+            super(null, null, false, false);
+        }
     }
 }
+

@@ -1,6 +1,7 @@
 package com.sstewartgallus.runtime;
 
 import com.sstewartgallus.plato.LambdaValue;
+import com.sstewartgallus.plato.SimpleLambdaValue;
 import com.sstewartgallus.plato.Term;
 import jdk.dynalink.linker.GuardedInvocation;
 import jdk.dynalink.linker.LinkRequest;
@@ -35,7 +36,7 @@ public final class LambdaLinker implements TypeBasedGuardingDynamicLinker {
 
     @Override
     public GuardedInvocation getGuardedInvocation(LinkRequest linkRequest, LinkerServices linkerServices) throws Exception {
-        var receiver = (LambdaValue<?, ?>) linkRequest.getReceiver();
+        var receiver = (SimpleLambdaValue<?, ?>) linkRequest.getReceiver();
         var cs = linkRequest.getCallSiteDescriptor();
         var methodType = cs.getMethodType();
 
@@ -48,7 +49,7 @@ public final class LambdaLinker implements TypeBasedGuardingDynamicLinker {
             mh = dropArguments(mh, 1, Void.class);
             return new GuardedInvocation(
                     linkerServices.asType(mh, methodType),
-                    Guards.isOfClass(LambdaValue.class, methodType));
+                    Guards.isOfClass(SimpleLambdaValue.class, methodType));
         }
         mh = linkerServices.asType(mh, methodType
                 .dropParameterTypes(3, parameterCount)
@@ -94,7 +95,7 @@ public final class LambdaLinker implements TypeBasedGuardingDynamicLinker {
         mh = foldArguments(handleTheRest, 0, mh);
 
         mh = dropArguments(mh, 1, Void.class);
-        return new GuardedInvocation(mh, Guards.isOfClass(LambdaValue.class, methodType), (SwitchPoint) null, InvalidationException.class);
+        return new GuardedInvocation(mh, Guards.isOfClass(SimpleLambdaValue.class, methodType), (SwitchPoint) null, InvalidationException.class);
     }
 
     static final class InvalidationException extends Throwable {

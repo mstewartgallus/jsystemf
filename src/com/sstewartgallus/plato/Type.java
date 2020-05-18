@@ -22,7 +22,7 @@ public interface Type<X> {
     <Y> Type<X> unify(Type<Y> right) throws TypeCheckException;
 
     default <B> Term<F<X, B>> l(Function<Term<X>, Term<B>> f) {
-        return new LambdaValue<>(this, f);
+        return new SimpleLambdaValue<>(this, f);
     }
 
     default <B> Type<F<X, B>> to(Type<B> range) {

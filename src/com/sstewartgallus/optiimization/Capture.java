@@ -2,7 +2,7 @@ package com.sstewartgallus.optiimization;
 
 import com.sstewartgallus.ext.variables.VarValue;
 import com.sstewartgallus.plato.F;
-import com.sstewartgallus.plato.LambdaValue;
+import com.sstewartgallus.plato.SimpleLambdaValue;
 import com.sstewartgallus.plato.Term;
 
 import java.util.HashSet;
@@ -19,22 +19,21 @@ public final class Capture {
         return root.visit(new CaptureVisitor());
     }
 
-    private static <A, B> Results<F<A, B>> captureLambda(LambdaValue<A, B> lambda) {
+    private static <A, B> Results<F<A, B>> captureLambda(SimpleLambdaValue<A, B> lambda) {
         var results = captureLambdaInner(lambda);
         var captured = results.captured;
         List<VarValue<?>> free = captured.stream().sorted().collect(Collectors.toUnmodifiableList());
         return new Results<>(captured, helper(free, 0, results.value));
     }
 
-    private static <A, B> Results<F<A, B>> captureLambdaInner(LambdaValue<A, B> lambda) {
+    private static <A, B> Results<F<A, B>> captureLambdaInner(SimpleLambdaValue<A, B> lambda) {
         var domain = lambda.domain();
-        var f = lambda.f();
         var v = new VarValue<>(domain);
 
-        var body = f.apply(v);
+        var body = lambda.apply(v);
         Set<VarValue<?>> captured;
         Term<B> value;
-        if (body instanceof LambdaValue<?, ?> lambdaBody) {
+        if (body instanceof SimpleLambdaValue<?, ?> lambdaBody) {
             var results = (Results<B>) captureLambdaInner(lambdaBody);
             captured = results.captured;
             value = results.value;
@@ -71,7 +70,7 @@ public final class Capture {
                 return v;
             }
 
-            if (!(term instanceof LambdaValue<?, ?> thunk)) {
+            if (!(term instanceof SimpleLambdaValue<?, ?> thunk)) {
                 var child = new CaptureVisitor();
                 var result = term.visitChildren(child);
                 captured.addAll(child.captured);

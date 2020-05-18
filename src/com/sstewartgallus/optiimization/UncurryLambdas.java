@@ -71,7 +71,7 @@ public final class UncurryLambdas {
         return root.visit(new Term.Visitor() {
             @Override
             public <T> Term<T> term(Term<T> term) {
-                if (!(term instanceof LambdaValue<?, ?> lambdaValue)) {
+                if (!(term instanceof SimpleLambdaValue<?, ?> lambdaValue)) {
                     return term.visitChildren(this);
                 }
                 return (Term) uncurry(lambdaValue);
@@ -79,22 +79,17 @@ public final class UncurryLambdas {
         });
     }
 
-    public static <A, B> Term<F<A, B>> uncurry(LambdaValue<A, B> lambdaValue) {
+    public static <A, B> Term<F<A, B>> uncurry(SimpleLambdaValue<A, B> lambdaValue) {
         return uncurryLambda(lambdaValue).collapse();
     }
 
 
-    private static <A, B> Vars<?, ?, F<A, B>> uncurryLambda(LambdaValue<A, B> lambda) {
-        var f = lambda.f();
+    private static <A, B> Vars<?, ?, F<A, B>> uncurryLambda(SimpleLambdaValue<A, B> lambda) {
         var domain = lambda.domain();
 
-        return getaNilObjectObjectAddVar(f, domain);
-    }
-
-    private static <A, B> Vars<?, ?, F<A, B>> getaNilObjectObjectAddVar(Function<Term<A>, Term<B>> f, Type<A> domain) {
         return new Vars.AddVar<>(domain, x -> {
-            var body = f.apply(x);
-            if (!(body instanceof LambdaValue<?, ?> lambdaBody)) {
+            var body = lambda.apply(x);
+            if (!(body instanceof SimpleLambdaValue<?, ?> lambdaBody)) {
                 return new Vars.NoVars<>(body);
             }
             return (Vars) uncurryLambda(lambdaBody);

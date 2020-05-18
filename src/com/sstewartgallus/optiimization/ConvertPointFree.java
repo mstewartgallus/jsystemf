@@ -2,7 +2,7 @@ package com.sstewartgallus.optiimization;
 
 import com.sstewartgallus.ext.variables.VarValue;
 import com.sstewartgallus.plato.F;
-import com.sstewartgallus.plato.LambdaValue;
+import com.sstewartgallus.plato.SimpleLambdaValue;
 import com.sstewartgallus.plato.Term;
 
 /**
@@ -21,7 +21,7 @@ public final class ConvertPointFree {
         return root.visit(new Term.Visitor() {
             @Override
             public <T> Term<T> term(Term<T> term) {
-                if (!(term instanceof LambdaValue<?, ?> lambda)) {
+                if (!(term instanceof SimpleLambdaValue<?, ?> lambda)) {
                     return term.visitChildren(this);
                 }
                 return (Term) pointFreeify(lambda);
@@ -29,12 +29,11 @@ public final class ConvertPointFree {
         });
     }
 
-    private static <A, B> Term<F<A, B>> pointFreeify(LambdaValue<A, B> lambda) {
-        var f = lambda.f();
+    private static <A, B> Term<F<A, B>> pointFreeify(SimpleLambdaValue<A, B> lambda) {
         var domain = lambda.domain();
 
         var v = new VarValue<>(domain);
-        var body = f.apply(v);
+        var body = lambda.apply(v);
         return body.pointFree(v);
     }
 }

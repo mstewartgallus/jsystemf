@@ -2,6 +2,11 @@ package com.sstewartgallus;
 
 
 import com.sstewartgallus.ext.java.J;
+import com.sstewartgallus.ext.java.JavaType;
+import com.sstewartgallus.ext.tuples.N;
+import com.sstewartgallus.ext.tuples.P;
+import com.sstewartgallus.ext.tuples.Signature;
+import com.sstewartgallus.ext.tuples.UncurryValue;
 import com.sstewartgallus.ext.variables.VarType;
 import com.sstewartgallus.ext.variables.VarValue;
 import com.sstewartgallus.frontend.Entity;
@@ -181,7 +186,11 @@ public final class Main {
 
     static void outputT(String stage, Term<F<J<Integer>, F<J<Integer>, J<Integer>>>> term) {
         outputT(stage, term, term.type());
-        var output = API.apply(term, 2, 5);
+
+        var i = new JavaType<>(int.class);
+        var sig = new Signature.AddArg<>(i, new Signature.AddArg<>(i, new Signature.Result<>(i)));
+        var uncurry = new UncurryValue<>(sig);
+        var output = API.apply(Term.apply(uncurry, term), 2, 5);
         outputT(" ⇒", output, "-");
     }
 
@@ -199,7 +208,7 @@ public final class Main {
 
     @FunctionalInterface
     public interface ApplyInt {
-        int apply(Term<F<J<Integer>, F<J<Integer>, J<Integer>>>> f, int x, int y);
+        int apply(Term<F<P<J<Integer>, P<J<Integer>, N>>, J<Integer>>> f, int x, int y);
     }
 
     static class MyThrowable extends ValueThrowable {

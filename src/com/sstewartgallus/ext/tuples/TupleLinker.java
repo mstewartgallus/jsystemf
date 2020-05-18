@@ -6,11 +6,6 @@ import jdk.dynalink.linker.LinkRequest;
 import jdk.dynalink.linker.LinkerServices;
 import jdk.dynalink.linker.TypeBasedGuardingDynamicLinker;
 
-import java.lang.invoke.SwitchPoint;
-import java.util.Arrays;
-
-import static java.lang.invoke.MethodHandles.*;
-
 public final class TupleLinker implements TypeBasedGuardingDynamicLinker {
     @Override
     public boolean canLinkType(Class<?> aClass) {

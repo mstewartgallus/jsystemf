@@ -11,8 +11,8 @@ public final class AtTupleIndexValue<B extends Tuple<B>, X extends Tuple<X>, A> 
     private final TupleIndex<X, P<A, B>> index;
     private final int reify;
 
-    public AtTupleIndexValue(Type<A>head, Type<B>tail,
-                             TupleIndex<X, P<A, B>>index) {
+    public AtTupleIndexValue(Type<A> head, Type<B> tail,
+                             TupleIndex<X, P<A, B>> index) {
         super(index.domain());
         this.head = head;
         this.tail = tail;

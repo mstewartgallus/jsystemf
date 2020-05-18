@@ -10,9 +10,8 @@ import jdk.dynalink.linker.LinkerServices;
 import jdk.dynalink.linker.TypeBasedGuardingDynamicLinker;
 
 import java.lang.invoke.MethodHandle;
-import java.lang.invoke.MethodType;
 
-import static java.lang.invoke.MethodHandles.*;
+import static java.lang.invoke.MethodHandles.lookup;
 import static java.lang.invoke.MethodType.methodType;
 
 public final class ThunkLinker implements TypeBasedGuardingDynamicLinker {

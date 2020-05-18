@@ -1,19 +1,16 @@
 package com.sstewartgallus.runtime;
 
-import com.sstewartgallus.ext.java.JavaType;
-import com.sstewartgallus.ext.tuples.Signature;
-import com.sstewartgallus.ext.tuples.UncurryValue;
-import com.sstewartgallus.plato.Term;
 import jdk.dynalink.StandardOperation;
 import org.objectweb.asm.ClassWriter;
 import org.objectweb.asm.Handle;
 import org.objectweb.asm.Type;
 
-import java.lang.invoke.*;
+import java.lang.invoke.CallSite;
+import java.lang.invoke.MethodHandle;
+import java.lang.invoke.MethodHandles;
+import java.lang.invoke.MethodType;
 import java.util.Arrays;
 
-import static java.lang.invoke.MethodHandles.filterArguments;
-import static java.lang.invoke.MethodHandles.insertArguments;
 import static java.lang.invoke.MethodType.methodType;
 import static org.objectweb.asm.Opcodes.*;
 
@@ -30,26 +27,7 @@ public abstract class TermInvoker<T> extends Value<T> {
     @SuppressWarnings("unused")
     protected static CallSite bootstrap(MethodHandles.Lookup lookup, String name, MethodType methodType) {
         var lookupValue = LOOKUP_MAP.get(lookup.lookupClass()).lookupDelegate;
-        methodType = methodType.insertParameterTypes(1, Void.class);
-
-        var mh = TermLinker.link(lookupValue, StandardOperation.CALL, methodType).dynamicInvoker();
-        mh = insertArguments(mh, 1, (Object) null);
-
-        if (methodType.parameterCount() <= 3) {
-            return new ConstantCallSite(mh);
-        }
-
-        // fixme... construct generically...
-        var i = new JavaType<>(int.class);
-        var sig = new Signature.AddArg<>(i, new Signature.AddArg<>(i, new Signature.Result<>(i)));
-        var uncurry = new UncurryValue<>(sig);
-
-        var filter = TermLinker.link(lookupValue, StandardOperation.CALL, methodType(Term.class, Term.class, Void.class, Term.class)).dynamicInvoker();
-        filter = insertArguments(filter, 0, uncurry, null);
-
-        mh = filterArguments(mh, 0, filter);
-
-        return new ConstantCallSite(mh);
+        return TermLinker.link(lookupValue, StandardOperation.CALL, methodType);
     }
 
     @SuppressWarnings("unused")
@@ -95,8 +73,11 @@ public abstract class TermInvoker<T> extends Value<T> {
             var mw = cw.visitMethod(ACC_PUBLIC, methodName, methodType.descriptorString(), null, null);
             mw.visitCode();
 
-            var ii = 1;
-            for (var param : methodType.parameterList()) {
+            mw.visitVarInsn(ALOAD, 1);
+            mw.visitInsn(ACONST_NULL);
+
+            var ii = 2;
+            for (var param : methodType.dropParameterTypes(0, 1).parameterList()) {
                 if (param.isPrimitive()) {
                     switch (param.getName()) {
                         case "boolean", "byte", "char", "short", "int" -> {
@@ -124,7 +105,8 @@ public abstract class TermInvoker<T> extends Value<T> {
                 ii += 1;
             }
 
-            mw.visitInvokeDynamicInsn(methodName, methodType.descriptorString(), BOOTSTRAP);
+            var indySig = methodType.insertParameterTypes(1, Void.class);
+            mw.visitInvokeDynamicInsn(methodName, indySig.descriptorString(), BOOTSTRAP);
 
             var returnType = methodType.returnType();
             if (returnType.isPrimitive()) {

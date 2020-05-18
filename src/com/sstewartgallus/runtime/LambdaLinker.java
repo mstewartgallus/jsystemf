@@ -3,7 +3,6 @@ package com.sstewartgallus.runtime;
 import com.sstewartgallus.ext.tuples.NilTupleValue;
 import com.sstewartgallus.ext.tuples.TuplePairValue;
 import com.sstewartgallus.plato.LambdaValue;
-import com.sstewartgallus.plato.SimpleLambdaValue;
 import com.sstewartgallus.plato.Term;
 import com.sstewartgallus.plato.ValueTerm;
 import jdk.dynalink.linker.GuardedInvocation;
@@ -14,8 +13,6 @@ import jdk.dynalink.linker.support.Guards;
 
 import java.lang.invoke.MethodHandle;
 import java.lang.invoke.MethodType;
-import java.lang.invoke.SwitchPoint;
-import java.util.Arrays;
 
 import static java.lang.invoke.MethodHandles.*;
 
@@ -23,6 +20,7 @@ public final class LambdaLinker implements TypeBasedGuardingDynamicLinker {
 
     // fixme... can we have a better normalize than just abstract dispatch?
     private static final MethodHandle APPLY_MH;
+    private static final MethodHandle TUPLE_MH;
 
     static {
         try {
@@ -32,9 +30,12 @@ public final class LambdaLinker implements TypeBasedGuardingDynamicLinker {
         }
     }
 
-    @Override
-    public boolean canLinkType(Class<?> aClass) {
-        return LambdaValue.class.isAssignableFrom(aClass);
+    static {
+        try {
+            TUPLE_MH = lookup().findStatic(LambdaLinker.class, "tuple", MethodType.methodType(Term.class, Term[].class));
+        } catch (NoSuchMethodException | IllegalAccessException e) {
+            throw new RuntimeException(e);
+        }
     }
 
     static Term<?> tuple(Term<?>[] args) {
@@ -44,15 +45,12 @@ public final class LambdaLinker implements TypeBasedGuardingDynamicLinker {
         }
         return current;
     }
-    private static final MethodHandle TUPLE_MH;
 
-    static {
-        try {
-            TUPLE_MH = lookup().findStatic(LambdaLinker.class, "tuple", MethodType.methodType(Term.class, Term[].class));
-        } catch (NoSuchMethodException | IllegalAccessException e) {
-            throw new RuntimeException(e);
-        }
+    @Override
+    public boolean canLinkType(Class<?> aClass) {
+        return LambdaValue.class.isAssignableFrom(aClass);
     }
+
     @Override
     public GuardedInvocation getGuardedInvocation(LinkRequest linkRequest, LinkerServices linkerServices) throws Exception {
         var receiver = (LambdaValue<?, ?>) linkRequest.getReceiver();

@@ -2,7 +2,7 @@ package com.sstewartgallus.runtime;
 
 import com.sstewartgallus.ext.java.IntValue;
 import com.sstewartgallus.ext.mh.JitLinker;
-import com.sstewartgallus.ext.tuples.*;
+import com.sstewartgallus.ext.tuples.TupleLinker;
 import com.sstewartgallus.plato.Interpreter;
 import com.sstewartgallus.plato.Term;
 import com.sstewartgallus.plato.ValueTerm;

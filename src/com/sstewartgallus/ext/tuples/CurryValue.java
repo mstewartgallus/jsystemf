@@ -7,14 +7,14 @@ import java.util.Objects;
 public final class CurryValue<L extends Tuple<L>, C, D> extends LambdaValue<F<L, C>, D> {
     private final Signature<L, C, D> signature;
 
-    public Signature<L, C, D> signature() {
-        return signature;
-    }
-
     public CurryValue(Signature<L, C, D> signature) {
         super(signature.argType().to(signature.retType()));
         Objects.requireNonNull(signature);
         this.signature = signature;
+    }
+
+    public Signature<L, C, D> signature() {
+        return signature;
     }
 
     @Override

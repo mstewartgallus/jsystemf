@@ -77,9 +77,13 @@ public record ApplyThunk<A, B>(Term<F<A, B>>f, Term<A>x) implements ThunkTerm<B>
 
     @Override
     public Term<B> stepThunk() {
-        // fixme... unfortunately we need to involve dynalink in this even for very typical objects..
+        var fNorm = Interpreter.normalize(f);
         // fixme... consider an environment parameter with a lookup() at least..
-        return INVOKE_TERM.apply(f, x);
+        if (fNorm instanceof LambdaValue<A, B> lambda) {
+            return lambda.apply(x);
+        }
+        System.err.println(fNorm + " " + x);
+        return INVOKE_TERM.apply(fNorm, x);
     }
 
     @FunctionalInterface

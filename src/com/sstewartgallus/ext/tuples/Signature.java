@@ -2,10 +2,6 @@ package com.sstewartgallus.ext.tuples;
 
 import com.sstewartgallus.plato.*;
 
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.List;
-
 public interface Signature<T extends Tuple<T>, C, D> {
 
     Term<D> stepThunk(Term<F<T, C>> f);
@@ -17,6 +13,7 @@ public interface Signature<T extends Tuple<T>, C, D> {
     Type<C> retType();
 
     Term<C> stepThunkReverse(Term<D> apply, ValueTerm<T> t);
+
     Term<C> apply(Term<D> head, ValueTerm<T> tail);
 
     record Result<A>(Type<A>type) implements Signature<N, A, A> {

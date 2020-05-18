@@ -35,7 +35,9 @@ public final class TupleLinker implements TypeBasedGuardingDynamicLinker {
 
             var parameterCount = methodType.parameterCount();
 
-            mh = linkerServices.asType(mh, methodType.dropParameterTypes(3, parameterCount).changeReturnType(Term.class));
+            mh = linkerServices
+                    .asType(mh, methodType.dropParameterTypes(3, parameterCount)
+                            .changeReturnType(Term.class));
 
             var restTypes = methodType
                     .dropParameterTypes(0, 3)

@@ -21,10 +21,7 @@ public record TypeLambdaValue<A, B>(Function<Type<A>, Term<B>>f) implements Valu
     }
 
     public Term<B> apply(Type<A> x) {
-        System.err.println(this + " " + x);
-        var result = f.apply(x);
-        System.err.println("Result " + result);
-        return result;
+        return this.f.apply(x);
     }
 
     @Override

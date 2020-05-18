@@ -38,10 +38,11 @@ public record TypeApplyThunk<A, B>(Term<V<A, B>>f, Type<A>x) implements ThunkTer
 
     @Override
     public Term<B> stepThunk() {
-        if (f instanceof TypeLambdaValue<A, B> lambda) {
+        var fNorm = Interpreter.normalize(f);
+        if (fNorm instanceof TypeLambdaValue<A, B> lambda) {
             return lambda.apply(x);
         }
-        return INVOKE_TERM.apply(f, x);
+        return INVOKE_TERM.apply(fNorm, x);
     }
 
     @FunctionalInterface

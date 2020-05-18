@@ -22,6 +22,8 @@ public interface TupleIndex<A extends Tuple<A>, B extends Tuple<B>> {
 
     ValueTerm<B> stepThunk(Term<A> term);
 
+    ValueTerm<B> index(ValueTerm<A> x);
+
     record Zero<A extends Tuple<A>>(Type<A>range) implements TupleIndex<A, A> {
         @Override
         public String toString() {
@@ -36,6 +38,11 @@ public interface TupleIndex<A extends Tuple<A>, B extends Tuple<B>> {
         @Override
         public ValueTerm<A> stepThunk(Term<A> term) {
             return Interpreter.normalize(term);
+        }
+
+        @Override
+        public ValueTerm<A> index(ValueTerm<A> x) {
+            return x;
         }
     }
 
@@ -55,6 +62,11 @@ public interface TupleIndex<A extends Tuple<A>, B extends Tuple<B>> {
         public ValueTerm<B> stepThunk(Term<A> term) {
             var norm = Interpreter.normalize(f.stepThunk(term));
             return ((TuplePairValue<X, B>) norm).tail();
+        }
+
+        @Override
+        public ValueTerm<B> index(ValueTerm<A> x) {
+            return ((TuplePairValue<X, B>) f.index(x)).tail();
         }
 
         @Override

@@ -24,11 +24,7 @@ public final class AtTupleIndexValue<B extends Tuple<B>, X extends Tuple<X>, A> 
 
     @Override
     public Term<A> apply(Term<X> x) {
-        Term<?> current = x;
-        for (var ii = 0; ii < reify; ++ii) {
-            current = ((TuplePairValue<?, ?>) current).tail();
-        }
-        return ((TuplePairValue<A, ?>) current).head();
+        return ((TuplePairValue<A, B>) index.index(Interpreter.normalize(x))).head();
     }
 
     @Override

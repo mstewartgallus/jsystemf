@@ -2,8 +2,8 @@ package com.sstewartgallus.ext.tuples;
 
 import com.sstewartgallus.plato.*;
 
-import java.lang.invoke.MethodHandle;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 
 public interface Signature<T extends Tuple<T>, C, D> {
@@ -17,10 +17,7 @@ public interface Signature<T extends Tuple<T>, C, D> {
     Type<C> retType();
 
     Term<C> stepThunkReverse(Term<D> apply, ValueTerm<T> t);
-
-    Term<F<T, C>> stepThunkReverse(Term<D> fTerm);
-
-    Term<D> stepThunk(MethodHandle methodHandle);
+    Term<C> apply(Term<D> head, ValueTerm<T> tail);
 
     record Result<A>(Type<A>type) implements Signature<N, A, A> {
         @Override
@@ -35,15 +32,9 @@ public interface Signature<T extends Tuple<T>, C, D> {
         }
 
         @Override
-        public Term<A> stepThunk(MethodHandle methodHandleThunk) {
-            throw null;
+        public Term<A> apply(Term<A> head, ValueTerm<N> tail) {
+            return head;
         }
-
-        @Override
-        public Term<F<N, A>> stepThunkReverse(Term<A> term) {
-            return NilTupleType.NIL.l(n -> term);
-        }
-
 
         @Override
         public Type<A> retType() {
@@ -62,16 +53,6 @@ public interface Signature<T extends Tuple<T>, C, D> {
 
     record AddArg<H, T extends Tuple<T>, C, D>(Type<H>head,
                                                Signature<T, C, D>tail) implements Signature<P<H, T>, C, F<H, D>> {
-        private static List<Term<?>> toList(Term<?> x) {
-            var list = new ArrayList<Term<?>>();
-
-            var node = Interpreter.normalize(x);
-            while (node instanceof TuplePairValue<?, ?> cons) {
-                list.add(cons.head());
-                node = Interpreter.normalize(cons.tail());
-            }
-            return list;
-        }
 
         @Override
         public Term<F<H, D>> stepThunk(Term<F<P<H, T>, C>> f) {
@@ -92,32 +73,10 @@ public interface Signature<T extends Tuple<T>, C, D> {
         }
 
         @Override
-        public Term<F<H, D>> stepThunk(MethodHandle handle) {
-            return head.l(x -> {
-                // fixme... we need a generic adapter procedure/hopefully at least slightly faster...
-                var list = toList(x);
-
-                Term<D> result;
-                try {
-                    result = (Term) handle.invokeWithArguments(list);
-                } catch (Error | RuntimeException e) {
-                    throw e;
-                } catch (Throwable throwable) {
-                    throw new RuntimeException(throwable);
-                }
-                return result;
-            });
-        }
-
-        @Override
-        public Term<F<P<H, T>, C>> stepThunkReverse(Term<F<H, D>> term) {
-            return new TuplePairType<>(head, tail.argType()).l(x -> {
-                var xNorm = (TuplePairValue<H, T>) Interpreter.normalize(x);
-                var h = xNorm.head();
-                var t = xNorm.tail();
-                // tuples are NOT lazy
-                return tail.stepThunkReverse(Term.apply(term, h), t);
-            });
+        public Term<C> apply(Term<F<H, D>> head, ValueTerm<P<H, T>> list) {
+            var p = (TuplePairValue<H, T>) list;
+            var f = Term.apply(head, p.head());
+            return tail.apply(f, p.tail());
         }
 
         @Override
@@ -147,4 +106,5 @@ public interface Signature<T extends Tuple<T>, C, D> {
             return str.toString();
         }
     }
+
 }

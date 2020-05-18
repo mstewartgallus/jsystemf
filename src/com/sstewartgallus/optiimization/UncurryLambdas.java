@@ -13,7 +13,7 @@ interface Vars<A extends Tuple<A>, B, C> {
 
     default Term<C> collapse() {
         var head = arguments();
-        return new ApplyThunk<>(new CurryThunk<>(sig()), arguments().l(args -> collapse(args, new TupleIndex.Zero<>(head))));
+        return new ApplyThunk<>(new CurryValue<>(sig()), arguments().l(args -> collapse(args, new TupleIndex.Zero<>(head))));
     }
 
     <X extends Tuple<X>> Term<B> collapse(Term<X> source, TupleIndex<X, A> args);
@@ -55,7 +55,7 @@ interface Vars<A extends Tuple<A>, B, C> {
         @Override
         public <X extends Tuple<X>> Term<B> collapse(Term<X> source, TupleIndex<X, P<A, T>> args) {
             var tail = f.apply(new VarValue<>(domain)).arguments();
-            var deref = new AtTupleIndexThunk<>(domain, tail, args);
+            var deref = new AtTupleIndexValue<>(domain, tail, args);
             var body = f.apply(Term.apply(deref, source));
             return body.collapse(source, new TupleIndex.Succ<>(args));
         }

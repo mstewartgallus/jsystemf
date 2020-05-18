@@ -8,9 +8,7 @@ import com.sstewartgallus.plato.*;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
-import java.util.stream.Collectors;
 
-import static java.lang.invoke.MethodHandles.dropArguments;
 import static java.lang.invoke.MethodHandles.identity;
 
 /**
@@ -37,7 +35,7 @@ public final class Jit {
                     return (Term) jitCallThunk(k);
                 }
 
-                if (term instanceof AtTupleIndexThunk<?, ?, ?> derefThunk) {
+                if (term instanceof AtTupleIndexValue<?, ?, ?> derefThunk) {
                     return (Term) jitDeref(derefThunk);
                 }
 
@@ -74,8 +72,9 @@ public final class Jit {
         return new FlatValue<>(consValue.type(), Collections.unmodifiableList(terms));
     }
 
-    private static <A extends Tuple<A>, B extends Tuple<B>, C> Term<F<B, C>> jitDeref(AtTupleIndexThunk<A, B, C> derefThunk) {
-        var index = derefThunk.index();
+    private static <A extends Tuple<A>, B extends Tuple<B>, C> Term<F<B, C>> jitDeref(AtTupleIndexValue<A, B, C> derefThunk) {
+        throw null;
+        /* var index = derefThunk.index();
         var head = derefThunk.head();
         var indexInt = index.reify();
         var domain = index.domain();
@@ -89,7 +88,7 @@ public final class Jit {
         handle = dropArguments(handle, handle.type().parameterCount(), after);
 
         var sig = new Signature.AddArg<>(index.domain(), new Signature.Result<>(head));
-        return new JitValue<>(sig, handle);
+        return new JitValue<>(sig, handle); */
     }
 
     private static <A, B> Term<B> jitApply(ApplyThunk<A, B> apply) {

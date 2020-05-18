@@ -1,12 +1,28 @@
 package com.sstewartgallus.ext.tuples;
 
+import com.sstewartgallus.ext.pretty.PrettyThunk;
 import com.sstewartgallus.plato.*;
 
 import java.util.Objects;
 
-public record UncurryValue<L extends Tuple<L>, C, D>(Signature<L, C, D>signature) implements ValueTerm<F<D, F<L, C>>> {
-    public UncurryValue {
+public final class UncurryValue<L extends Tuple<L>, C, D> extends LambdaValue<D, F<L, C>> {
+    private final Signature<L, C, D> signature;
+
+    public UncurryValue(Signature<L, C, D> signature) {
+        super(signature.type());
         Objects.requireNonNull(signature);
+        this.signature = signature;
+    }
+
+    @Override
+    public Term<F<L, C>> apply(Term<D> x) {
+        return signature.argType().l(pair -> {
+            if (pair instanceof PrettyThunk) {
+                return null;
+            }
+            var tuple = Interpreter.normalize(pair);
+            return signature.apply(x, tuple);
+        });
     }
 
     @Override
@@ -24,5 +40,9 @@ public record UncurryValue<L extends Tuple<L>, C, D>(Signature<L, C, D>signature
     @Override
     public String toString() {
         return "uncurry";
+    }
+
+    public Signature<L, C, D> signature() {
+        return signature;
     }
 }

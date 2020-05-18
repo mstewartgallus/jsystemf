@@ -4,9 +4,17 @@ import com.sstewartgallus.plato.*;
 
 import java.util.Objects;
 
-public record CurryThunk<L extends Tuple<L>, C, D>(Signature<L, C, D>signature) implements ThunkTerm<F<F<L, C>, D>> {
-    public CurryThunk {
+public final class CurryValue<L extends Tuple<L>, C, D> extends LambdaValue<F<L, C>, D> {
+    private final Signature<L, C, D> signature;
+
+    public Signature<L, C, D> signature() {
+        return signature;
+    }
+
+    public CurryValue(Signature<L, C, D> signature) {
+        super(signature.argType().to(signature.retType()));
         Objects.requireNonNull(signature);
+        this.signature = signature;
     }
 
     @Override
@@ -27,9 +35,7 @@ public record CurryThunk<L extends Tuple<L>, C, D>(Signature<L, C, D>signature) 
     }
 
     @Override
-    public Term<F<F<L, C>, D>> stepThunk() {
-        var argType = signature.argType();
-        var retType = signature.retType();
-        return argType.to(retType).l(x -> new CurriedLambdaValue<L, C, D>(signature, x));
+    public Term<D> apply(Term<F<L, C>> x) {
+        return new CurriedLambdaValue<>(signature, x);
     }
 }

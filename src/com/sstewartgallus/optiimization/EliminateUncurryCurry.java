@@ -1,7 +1,7 @@
 package com.sstewartgallus.optiimization;
 
 
-import com.sstewartgallus.ext.tuples.CurryThunk;
+import com.sstewartgallus.ext.tuples.CurryValue;
 import com.sstewartgallus.ext.tuples.UncurryValue;
 import com.sstewartgallus.plato.ApplyThunk;
 import com.sstewartgallus.plato.Term;
@@ -31,7 +31,7 @@ public final class EliminateUncurryCurry {
             return new ApplyThunk<>(f, x);
         }
 
-        if (!(x instanceof ApplyThunk xApply && xApply.f() instanceof CurryThunk curryValue)) {
+        if (!(x instanceof ApplyThunk xApply && xApply.f() instanceof CurryValue curryValue)) {
             return new ApplyThunk<>(f, x);
         }
 

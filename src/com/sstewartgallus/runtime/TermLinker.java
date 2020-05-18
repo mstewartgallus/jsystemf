@@ -2,7 +2,7 @@ package com.sstewartgallus.runtime;
 
 import com.sstewartgallus.ext.java.IntValue;
 import com.sstewartgallus.ext.mh.JitLinker;
-import com.sstewartgallus.ext.tuples.TupleLinker;
+import com.sstewartgallus.ext.tuples.*;
 import com.sstewartgallus.plato.Interpreter;
 import com.sstewartgallus.plato.Term;
 import com.sstewartgallus.plato.ValueTerm;
@@ -96,7 +96,6 @@ public final class TermLinker implements TypeBasedGuardingDynamicLinker, Guardin
             // fixme... check int type dynamically by calling type()
             return new GuardedInvocation(filterReturnValue(NORMALIZE_MH, INT_VALUE_MH.asType(MethodType.methodType(int.class, ValueTerm.class))).asType(MethodType.methodType(int.class, sourceType)));
         }
-
         return null;
     }
 }

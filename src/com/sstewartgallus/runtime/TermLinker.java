@@ -2,6 +2,7 @@ package com.sstewartgallus.runtime;
 
 import com.sstewartgallus.ext.java.IntValue;
 import com.sstewartgallus.ext.mh.JitLinker;
+import com.sstewartgallus.ext.tuples.TuplePairValue;
 import com.sstewartgallus.plato.Interpreter;
 import com.sstewartgallus.plato.Term;
 import com.sstewartgallus.plato.ValueTerm;
@@ -16,11 +17,12 @@ import java.lang.invoke.CallSite;
 import java.lang.invoke.MethodHandle;
 import java.lang.invoke.MethodHandles;
 import java.lang.invoke.MethodType;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.function.Supplier;
 
-import static java.lang.invoke.MethodHandles.filterReturnValue;
 import static java.lang.invoke.MethodHandles.lookup;
+import static java.lang.invoke.MethodType.methodType;
 
 public final class TermLinker implements TypeBasedGuardingDynamicLinker, GuardingTypeConverterFactory {
     private static final DynamicLinker DYNAMIC_LINKER;
@@ -29,6 +31,7 @@ public final class TermLinker implements TypeBasedGuardingDynamicLinker, Guardin
     // fixme.. look more into https://gitlab.haskell.org/ghc/ghc/-/wikis/commentary/rts/haskell-execution/function-calls
     private static final MethodHandle INT_VALUE_CONSTRUCTOR_MH;
     private static final MethodHandle INT_VALUE_MH;
+    private static final MethodHandle UNWRAP_MH;
 
     static {
         var linkers = List.of(new JitLinker(), new TypeLambdaLinker(), new LambdaLinker(), new ThunkLinker(), new TermLinker());
@@ -40,7 +43,7 @@ public final class TermLinker implements TypeBasedGuardingDynamicLinker, Guardin
 
     static {
         try {
-            NORMALIZE_MH = lookup().findStatic(Interpreter.class, "normalize", MethodType.methodType(ValueTerm.class, Term.class));
+            NORMALIZE_MH = lookup().findStatic(Interpreter.class, "normalize", methodType(ValueTerm.class, Term.class));
         } catch (NoSuchMethodException | IllegalAccessException e) {
             throw new RuntimeException(e);
         }
@@ -48,13 +51,23 @@ public final class TermLinker implements TypeBasedGuardingDynamicLinker, Guardin
 
     static {
         try {
-            INT_VALUE_CONSTRUCTOR_MH = lookup().findConstructor(IntValue.class, MethodType.methodType(void.class, int.class));
+            INT_VALUE_CONSTRUCTOR_MH = lookup().findConstructor(IntValue.class, methodType(void.class, int.class));
         } catch (NoSuchMethodException | IllegalAccessException e) {
             throw new RuntimeException(e);
         }
+    }
 
+    static {
         try {
-            INT_VALUE_MH = lookup().findVirtual(IntValue.class, "value", MethodType.methodType(int.class));
+            INT_VALUE_MH = lookup().findVirtual(IntValue.class, "value", methodType(int.class));
+        } catch (NoSuchMethodException | IllegalAccessException e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+    static {
+        try {
+            UNWRAP_MH = lookup().findStatic(TermLinker.class, "unwrap", methodType(Term[].class, ValueTerm.class));
         } catch (NoSuchMethodException | IllegalAccessException e) {
             throw new RuntimeException(e);
         }
@@ -65,6 +78,16 @@ public final class TermLinker implements TypeBasedGuardingDynamicLinker, Guardin
         return DYNAMIC_LINKER.link(
                 new SimpleRelinkableCallSite(
                         new CallSiteDescriptor(lookup, operation, methodType)));
+    }
+
+    private static Term<?>[] unwrap(ValueTerm<?> tuple) {
+        var current = tuple;
+        var list = new ArrayList<Term<?>>();
+        while (current instanceof TuplePairValue<?, ?> pair) {
+            list.add(pair.head());
+            current = pair.tail();
+        }
+        return list.toArray(Term[]::new);
     }
 
     @Override
@@ -82,18 +105,43 @@ public final class TermLinker implements TypeBasedGuardingDynamicLinker, Guardin
         return null;
     }
 
+    // fixme... move around....
     @Override
     public GuardedInvocation convertToType(Class<?> sourceType, Class<?> targetType, Supplier<MethodHandles.Lookup> lookupSupplier) throws Exception {
         if (sourceType == int.class && Term.class.isAssignableFrom(targetType)) {
-            return new GuardedInvocation(INT_VALUE_CONSTRUCTOR_MH.asType(MethodType.methodType(targetType, int.class)));
+            return new GuardedInvocation(INT_VALUE_CONSTRUCTOR_MH.asType(methodType(targetType, int.class)));
         }
-        if (ValueTerm.class.isAssignableFrom(sourceType) && int.class == targetType) {
+
+        if (IntValue.class.isAssignableFrom(sourceType) && Number.class == targetType) {
             // fixme... check int type dynamically by calling type()
-            return new GuardedInvocation(INT_VALUE_MH.asType(MethodType.methodType(int.class, sourceType)));
+            return new GuardedInvocation(INT_VALUE_MH.asType(methodType(Number.class, sourceType)));
         }
-        if (Term.class.isAssignableFrom(sourceType) && int.class == targetType) {
-            // fixme... check int type dynamically by calling type()
-            return new GuardedInvocation(filterReturnValue(NORMALIZE_MH, INT_VALUE_MH.asType(MethodType.methodType(int.class, ValueTerm.class))).asType(MethodType.methodType(int.class, sourceType)));
+
+        if (ValueTerm.class.isAssignableFrom(sourceType)) {
+            if (Term[].class == targetType) {
+                return new GuardedInvocation(UNWRAP_MH);
+            }
+            if (int.class == targetType) {
+                // fixme... check int type dynamically by calling type()
+                return new GuardedInvocation(INT_VALUE_MH.asType(methodType(int.class, sourceType)));
+            }
+            return null;
+        }
+
+        if (Term.class.isAssignableFrom(sourceType)) {
+            if (ValueTerm.class.isAssignableFrom(targetType)) {
+                return new GuardedInvocation(NORMALIZE_MH.asType(methodType(targetType, Term.class)));
+            }
+
+            unboxToPrim:
+            {
+                var guard = convertToType(ValueTerm.class, targetType, lookupSupplier);
+                if (guard == null) {
+                    break unboxToPrim;
+                }
+
+                return guard.filterArguments(0, NORMALIZE_MH);
+            }
         }
         return null;
     }

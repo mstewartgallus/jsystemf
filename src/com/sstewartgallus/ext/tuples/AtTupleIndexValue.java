@@ -22,6 +22,14 @@ public final class AtTupleIndexValue<B extends Tuple<B>, X extends Tuple<X>, A> 
         Objects.requireNonNull(tail);
     }
 
+    public Type<A> head() {
+        return head;
+    }
+
+    public TupleIndex<X, P<A, B>> index() {
+        return index;
+    }
+
     @Override
     public Term<A> apply(Term<X> x) {
         return ((TuplePairValue<A, B>) index.index(Interpreter.normalize(x))).head();

@@ -132,9 +132,19 @@ public interface Signature<T extends Tuple<T>, C, D> {
             return tail.stepThunkReverse(Term.apply(apply, listPair.head()), listPair.tail());
         }
 
-
+        @Override
         public String toString() {
-            return "(" + head + " Δ " + tail + ")";
+            StringBuilder str = new StringBuilder("((Δ " + head);
+            Signature<?, ?, ?> current = tail;
+            while (current instanceof Signature.AddArg<?, ?, ?, ?> addArg) {
+                str.append(" ");
+                str.append(addArg.head);
+                current = addArg.tail;
+            }
+            str.append(") ");
+            str.append(((Result<?>) current).type);
+            str.append(")");
+            return str.toString();
         }
     }
 }

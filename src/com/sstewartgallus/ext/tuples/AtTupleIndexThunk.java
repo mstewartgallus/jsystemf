@@ -29,7 +29,14 @@ public record AtTupleIndexThunk<B extends Tuple<B>, X extends Tuple<X>, A>(Type<
 
     @Override
     public Term<F<X, A>> stepThunk() {
-        return index.domain().l(x -> ((TuplePairValue<A, B>) Interpreter.normalize(index.stepThunk(x))).head());
+        var reify = index.reify();
+        return index.domain().l(x -> {
+            Term<?> current = x;
+            for (var ii = 0; ii < reify; ++ii) {
+                current = ((TuplePairValue<?, ?>) current).tail();
+            }
+            return ((TuplePairValue<A, ?>) current).head();
+        });
     }
 
     @Override

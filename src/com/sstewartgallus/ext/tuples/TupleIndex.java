@@ -3,6 +3,7 @@ package com.sstewartgallus.ext.tuples;
 import com.sstewartgallus.plato.Interpreter;
 import com.sstewartgallus.plato.Term;
 import com.sstewartgallus.plato.Type;
+import com.sstewartgallus.plato.ValueTerm;
 
 public interface TupleIndex<A extends Tuple<A>, B extends Tuple<B>> {
     Type<A> domain();
@@ -19,7 +20,7 @@ public interface TupleIndex<A extends Tuple<A>, B extends Tuple<B>> {
         return ii;
     }
 
-    Term<B> stepThunk(Term<A> term);
+    ValueTerm<B> stepThunk(Term<A> term);
 
     record Zero<A extends Tuple<A>>(Type<A>range) implements TupleIndex<A, A> {
         @Override
@@ -33,8 +34,8 @@ public interface TupleIndex<A extends Tuple<A>, B extends Tuple<B>> {
         }
 
         @Override
-        public Term<A> stepThunk(Term<A> term) {
-            return term;
+        public ValueTerm<A> stepThunk(Term<A> term) {
+            return Interpreter.normalize(term);
         }
     }
 
@@ -51,7 +52,7 @@ public interface TupleIndex<A extends Tuple<A>, B extends Tuple<B>> {
         }
 
         @Override
-        public Term<B> stepThunk(Term<A> term) {
+        public ValueTerm<B> stepThunk(Term<A> term) {
             var norm = Interpreter.normalize(f.stepThunk(term));
             return ((TuplePairValue<X, B>) norm).tail();
         }

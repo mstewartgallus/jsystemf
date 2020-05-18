@@ -18,6 +18,11 @@ public final class CurryValue<L extends Tuple<L>, C, D> extends LambdaValue<F<L,
     }
 
     @Override
+    public Term<D> apply(Term<F<L, C>> x) {
+        return signature.curry(x);
+    }
+
+    @Override
     public Term<F<F<L, C>, D>> visitChildren(Visitor visitor) {
         return this;
     }
@@ -34,8 +39,4 @@ public final class CurryValue<L extends Tuple<L>, C, D> extends LambdaValue<F<L,
         return "curry";
     }
 
-    @Override
-    public Term<D> apply(Term<F<L, C>> x) {
-        return new CurriedLambdaValue<>(signature, x);
-    }
 }

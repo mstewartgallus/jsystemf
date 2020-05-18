@@ -16,6 +16,8 @@ public interface Signature<T extends Tuple<T>, C, D> {
 
     Term<C> apply(Term<D> head, ValueTerm<T> tail);
 
+    Term<D> curry(Term<F<T, C>> x);
+
     record Result<A>(Type<A>type) implements Signature<N, A, A> {
         @Override
         public Term<A> stepThunk(Term<F<N, A>> f) {
@@ -31,6 +33,11 @@ public interface Signature<T extends Tuple<T>, C, D> {
         @Override
         public Term<A> apply(Term<A> head, ValueTerm<N> tail) {
             return head;
+        }
+
+        @Override
+        public Term<A> curry(Term<F<N, A>> x) {
+            return Term.apply(x, NilTupleValue.NIL);
         }
 
         @Override
@@ -74,6 +81,11 @@ public interface Signature<T extends Tuple<T>, C, D> {
             var p = (TuplePairValue<H, T>) list;
             var f = Term.apply(head, p.head());
             return tail.apply(f, p.tail());
+        }
+
+        @Override
+        public Term<F<H, D>> curry(Term<F<P<H, T>, C>> f) {
+            return head.l(h -> tail.curry(tail.argType().l(t -> Term.apply(f, new TuplePairValue<>(h, Interpreter.normalize(t))))));
         }
 
         @Override

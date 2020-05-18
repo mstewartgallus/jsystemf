@@ -82,7 +82,6 @@ public record ApplyThunk<A, B>(Term<F<A, B>>f, Term<A>x) implements ThunkTerm<B>
         if (fNorm instanceof LambdaValue<A, B> lambda) {
             return lambda.apply(x);
         }
-        System.err.println(fNorm + " " + x);
         return INVOKE_TERM.apply(fNorm, x);
     }
 

@@ -17,7 +17,7 @@ import static org.objectweb.asm.Opcodes.*;
 /**
  * Unfortunately the standard libary MethodHandleProxies creates boxes arguments it passes through with Object[]...
  */
-public abstract class TermInvoker<T> extends Value<T> {
+public abstract class TermInvoker {
     private static final Handle BOOTSTRAP = new Handle(H_INVOKESTATIC, Type.getInternalName(TermInvoker.class), "bootstrap",
             methodType(CallSite.class, MethodHandles.Lookup.class, String.class, MethodType.class).descriptorString(),
             false);

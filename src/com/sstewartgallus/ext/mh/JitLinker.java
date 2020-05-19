@@ -14,33 +14,12 @@ import static java.lang.invoke.MethodHandles.dropArguments;
 public final class JitLinker implements TypeBasedGuardingDynamicLinker {
     @Override
     public boolean canLinkType(Class<?> aClass) {
-        return JitLambdaValue.class.isAssignableFrom(aClass) || JitValue.class.isAssignableFrom(aClass);
+        return JitValue.class.isAssignableFrom(aClass);
     }
-
 
     @Override
     public GuardedInvocation getGuardedInvocation(LinkRequest linkRequest, LinkerServices linkerServices) {
         var receiver = linkRequest.getReceiver();
-
-        if (receiver instanceof JitValue<?, ?, ?> jitValueReceiver) {
-            // fixme.. how to avoid all the currying and such...
-            var handle = jitValueReceiver.methodHandle();
-            var newType = handle.type();
-            {
-                var len = newType.parameterCount();
-                var newArgs = new Class[len];
-                Arrays.fill(newArgs, Term.class);
-                newType = newType.dropParameterTypes(0, len).appendParameterTypes(newArgs);
-            }
-
-            handle = linkerServices.asType(handle, newType);
-            handle = handle.asSpreader(Term[].class, handle.type().parameterCount());
-
-            handle = dropArguments(handle, 0, JitValue.class, Void.class);
-
-            return new GuardedInvocation(handle, Guards.getIdentityGuard(jitValueReceiver));
-        }
-
 
         if (receiver instanceof JitLambdaValue<?, ?, ?, ?, ?> jitValueReceiver) {
             // fixme.. how to avoid all the currying and such...

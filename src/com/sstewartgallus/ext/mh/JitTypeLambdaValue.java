@@ -9,28 +9,25 @@ import java.lang.invoke.MethodHandle;
 
 import static java.lang.invoke.MethodHandles.lookup;
 
-// fixme... could be an abstract class I suppose or another pass could lower to that...
-// fixme... establish an invariant that this must always be a function or a forall.
-public final class JitLambdaValue<A extends Tuple<A>, B, X, Y, C extends F<X, Y>> extends LambdaValue<X, Y> implements JitValue<F<X, Y>> {
+public final class JitTypeLambdaValue<A extends Tuple<A>, B, X, Y, C extends V<X, Y>> extends TypeLambdaValue<X, Y> implements JitValue<V<X, Y>> {
 
     private static final JitInvoker INVOKE_TERM = TermInvoker.newInstance(lookup(), JitInvoker.class);
     private final MethodHandle methodHandle;
     private final Signature<A, B, C> sig;
 
-    public JitLambdaValue(Signature<A, B, C> sig,
-                          MethodHandle methodHandle) {
-        super(((FunctionType) sig.type()).domain());
+    public JitTypeLambdaValue(Signature<A, B, C> sig,
+                              MethodHandle methodHandle) {
         this.sig = sig;
         this.methodHandle = methodHandle;
     }
 
     @Override
-    public Type<F<X, Y>> type() throws TypeCheckException {
+    public Type<V<X, Y>> type() throws TypeCheckException {
         return (Type) sig.type();
     }
 
     @Override
-    public Term<F<X, Y>> visitChildren(Visitor visitor) {
+    public Term<V<X, Y>> visitChildren(Visitor visitor) {
         return this;
     }
 
@@ -39,7 +36,7 @@ public final class JitLambdaValue<A extends Tuple<A>, B, X, Y, C extends F<X, Y>
     }
 
     @Override
-    public Term<Y> apply(Term<X> x) {
+    public Term<Y> apply(Type<X> x) {
         return INVOKE_TERM.apply(this, x);
     }
 
@@ -49,6 +46,6 @@ public final class JitLambdaValue<A extends Tuple<A>, B, X, Y, C extends F<X, Y>
 
     @FunctionalInterface
     public interface JitInvoker {
-        <A, B> Term<B> apply(Term<F<A, B>> f, Term<A> x);
+        <A, B> Term<B> apply(Term<V<A, B>> f, Type<A> x);
     }
 }

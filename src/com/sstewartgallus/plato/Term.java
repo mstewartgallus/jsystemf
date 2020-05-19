@@ -27,7 +27,7 @@ public interface Term<A> {
     }
 
     static <A, B> Term<V<A, B>> v(Function<Type<A>, Term<B>> f) {
-        return new TypeLambdaValue<>(f);
+        return new SimpleTypeLambdaValue<>(f);
     }
 
     static <A, B> Term<F<A, B>> constant(Type<A> type, Term<B> term) {

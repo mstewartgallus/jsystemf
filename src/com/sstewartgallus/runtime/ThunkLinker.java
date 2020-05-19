@@ -15,10 +15,8 @@ import static java.lang.invoke.MethodHandles.lookup;
 import static java.lang.invoke.MethodType.methodType;
 
 public final class ThunkLinker implements TypeBasedGuardingDynamicLinker {
-
     // fixme... can we have a better normalize than just abstract dispatch?
     private static final MethodHandle NORMALIZE_MH;
-    private static final InvalidationException INVALIDATION_EXCEPTION = new InvalidationException();
 
     static {
         try {
@@ -47,11 +45,5 @@ public final class ThunkLinker implements TypeBasedGuardingDynamicLinker {
         var guard = linkerServices.getGuardedInvocation(linkRequest.replaceArguments(cs, args));
 
         return guard.filterArguments(0, NORMALIZE_MH.asType(methodType(methodType.parameterType(0), Term.class)));
-    }
-
-    static final class InvalidationException extends Throwable {
-        InvalidationException() {
-            super(null, null, false, false);
-        }
     }
 }

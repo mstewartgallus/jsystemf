@@ -2,32 +2,25 @@ package com.sstewartgallus.plato;
 
 import com.sstewartgallus.ext.pretty.PrettyType;
 
-import java.util.Objects;
-import java.util.function.Function;
-
-public record TypeLambdaValue<A, B>(Function<Type<A>, Term<B>>f) implements ValueTerm<V<A, B>>, LambdaTerm<V<A, B>> {
-    public TypeLambdaValue {
-        Objects.requireNonNull(f);
-    }
-
+public abstract class TypeLambdaValue<A, B> implements ValueTerm<V<A, B>>, LambdaTerm<V<A, B>> {
     @Override
     public Term<V<A, B>> visitChildren(Visitor visitor) {
-        return new TypeLambdaValue<>(x -> visitor.term(f.apply(x)));
+        var self = this;
+        return new SimpleTypeLambdaValue<>(x -> visitor.term(self.apply(x)));
     }
 
     @Override
     public Type<V<A, B>> type() {
-        return Type.v(x -> f.apply(x).type());
+        var self = this;
+        return Type.v(x -> self.apply(x).type());
     }
 
-    public Term<B> apply(Type<A> x) {
-        return this.f.apply(x);
-    }
+    public abstract Term<B> apply(Type<A> x);
 
     @Override
     public String toString() {
         try (var pretty = PrettyType.<A>generate()) {
-            var body = f.apply(pretty);
+            var body = apply(pretty);
             return "(∀" + pretty + " → " + body + ")";
         }
     }

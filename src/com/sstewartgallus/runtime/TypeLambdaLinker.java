@@ -1,8 +1,8 @@
 package com.sstewartgallus.runtime;
 
+import com.sstewartgallus.plato.SimpleTypeLambdaValue;
 import com.sstewartgallus.plato.Term;
 import com.sstewartgallus.plato.Type;
-import com.sstewartgallus.plato.TypeLambdaValue;
 import jdk.dynalink.linker.GuardedInvocation;
 import jdk.dynalink.linker.LinkRequest;
 import jdk.dynalink.linker.LinkerServices;
@@ -22,7 +22,7 @@ public final class TypeLambdaLinker implements TypeBasedGuardingDynamicLinker {
 
     static {
         try {
-            APPLY_MH = lookup().findVirtual(TypeLambdaValue.class, "apply", MethodType.methodType(Term.class, Type.class));
+            APPLY_MH = lookup().findVirtual(SimpleTypeLambdaValue.class, "apply", MethodType.methodType(Term.class, Type.class));
         } catch (NoSuchMethodException | IllegalAccessException e) {
             throw new RuntimeException(e);
         }
@@ -30,12 +30,12 @@ public final class TypeLambdaLinker implements TypeBasedGuardingDynamicLinker {
 
     @Override
     public boolean canLinkType(Class<?> aClass) {
-        return TypeLambdaValue.class.isAssignableFrom(aClass);
+        return SimpleTypeLambdaValue.class.isAssignableFrom(aClass);
     }
 
     @Override
     public GuardedInvocation getGuardedInvocation(LinkRequest linkRequest, LinkerServices linkerServices) {
-        var receiver = (TypeLambdaValue<?, ?>) linkRequest.getReceiver();
+        var receiver = (SimpleTypeLambdaValue<?, ?>) linkRequest.getReceiver();
         var cs = linkRequest.getCallSiteDescriptor();
         var methodType = cs.getMethodType();
 
@@ -61,6 +61,6 @@ public final class TypeLambdaLinker implements TypeBasedGuardingDynamicLinker {
             mh = foldArguments(handleTheRest, mh);
         }
         System.err.println("linked " + mh + " " + Arrays.toString(linkRequest.getArguments()));
-        return new GuardedInvocation(mh, Guards.isOfClass(TypeLambdaValue.class, methodType));
+        return new GuardedInvocation(mh, Guards.isOfClass(SimpleTypeLambdaValue.class, methodType));
     }
 }

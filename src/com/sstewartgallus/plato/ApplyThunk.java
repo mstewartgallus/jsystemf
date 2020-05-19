@@ -7,10 +7,7 @@ import com.sstewartgallus.ext.variables.VarValue;
 
 import java.util.Objects;
 
-import static java.lang.invoke.MethodHandles.lookup;
-
 public record ApplyThunk<A, B>(Term<F<A, B>>f, Term<A>x) implements ThunkTerm<B>, LambdaTerm<B> {
-    private static final TermInvoker INVOKE_TERM = com.sstewartgallus.runtime.TermInvoker.newInstance(lookup(), TermInvoker.class);
 
     public ApplyThunk {
         Objects.requireNonNull(f);
@@ -77,17 +74,6 @@ public record ApplyThunk<A, B>(Term<F<A, B>>f, Term<A>x) implements ThunkTerm<B>
 
     @Override
     public Term<B> stepThunk() {
-        var fNorm = Interpreter.normalize(f);
-        // fixme... consider an environment parameter with a lookup() at least..
-        if (fNorm instanceof LambdaValue<A, B> lambda) {
-            return lambda.apply(x);
-        }
-        return INVOKE_TERM.apply(fNorm, x);
+        return ((LambdaValue<A, B>) Interpreter.normalize(f)).apply(x);
     }
-
-    @FunctionalInterface
-    public interface TermInvoker {
-        <A, B> Term<B> apply(Term<F<A, B>> f, Term<A> x);
-    }
-
 }

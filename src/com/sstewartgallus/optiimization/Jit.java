@@ -1,6 +1,6 @@
 package com.sstewartgallus.optiimization;
 
-import com.sstewartgallus.ext.mh.JitValue;
+import com.sstewartgallus.ext.mh.JitLambdaValue;
 import com.sstewartgallus.ext.pointfree.CallThunk;
 import com.sstewartgallus.ext.tuples.*;
 import com.sstewartgallus.plato.*;
@@ -89,7 +89,7 @@ public final class Jit {
         handle = dropArguments(handle, handle.type().parameterCount(), after);
 
         var sig = new Signature.AddArg<>(index.domain(), new Signature.Result<>(head));
-        return new JitValue<>(sig, handle);
+        return new JitLambdaValue<>(sig, handle);
     }
 
     private static <A, B> Term<B> jitApply(ApplyThunk<A, B> apply) {
@@ -116,6 +116,6 @@ public final class Jit {
 
     private static <A> Term<F<A, A>> jitIdentity(Type<A> type) {
         var mh = identity(type.erase());
-        return new JitValue<>(new Signature.AddArg<>(type, new Signature.Result<>(type)), mh);
+        return new JitLambdaValue<>(new Signature.AddArg<>(type, new Signature.Result<>(type)), mh);
     }
 }

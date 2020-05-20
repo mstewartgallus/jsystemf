@@ -3,7 +3,6 @@ package com.sstewartgallus.ext.mh;
 import com.sstewartgallus.ext.tuples.Signature;
 import com.sstewartgallus.ext.tuples.Tuple;
 import com.sstewartgallus.plato.*;
-import com.sstewartgallus.runtime.TermInvoker;
 
 import java.lang.invoke.MethodHandle;
 
@@ -13,7 +12,7 @@ import static java.lang.invoke.MethodHandles.lookup;
 // fixme... establish an invariant that this must always be a function or a forall.
 public final class JitLambdaValue<A extends Tuple<A>, B, X, Y> implements ThunkTerm<F<X, Y>>, JitValue<F<X, Y>> {
 
-    private static final JitInvoker INVOKE_TERM = TermInvoker.newInstance(lookup(), JitInvoker.class);
+    private static final TermInvoker INVOKE_TERM = com.sstewartgallus.runtime.TermInvoker.newInstance(lookup(), TermInvoker.class);
     private final MethodHandle methodHandle;
     private final Signature<A, B, F<X, Y>> sig;
 
@@ -49,7 +48,7 @@ public final class JitLambdaValue<A extends Tuple<A>, B, X, Y> implements ThunkT
     }
 
     @FunctionalInterface
-    public interface JitInvoker {
-        <A, B> Term<B> apply(Term<F<A, B>> f, Term<A> x);
+    public interface TermInvoker {
+        <A, B> Term<B> apply(JitLambdaValue<?, ?, A, B> f, Term<A> x);
     }
 }

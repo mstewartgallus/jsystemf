@@ -1,10 +1,6 @@
 package com.sstewartgallus.plato;
 
-import com.sstewartgallus.ext.pointfree.CallThunk;
-import com.sstewartgallus.ext.pointfree.ConstantThunk;
-import com.sstewartgallus.ext.pointfree.IdentityThunk;
 import com.sstewartgallus.ext.tuples.AtTupleIndexThunk;
-import com.sstewartgallus.ext.variables.VarValue;
 import org.objectweb.asm.Handle;
 import org.objectweb.asm.MethodVisitor;
 import org.objectweb.asm.Opcodes;
@@ -28,15 +24,6 @@ public record ApplyThunk<A, B>(Term<F<A, B>>f, Term<A>x) implements ThunkTerm<B>
         Objects.requireNonNull(x);
     }
 
-    private static <X, A, B> Term<F<X, B>> call(Term<F<X, F<A, B>>> fValue, Term<F<X, A>> xValue) {
-        var fType = (FunctionType<X, F<A, B>>) fValue.type();
-        var fRange = (FunctionType<A, B>) fType.range();
-
-        var z = fType.domain();
-        var a = fRange.domain();
-        var b = fRange.range();
-        return Term.apply(Term.apply(Term.apply(Term.apply(Term.apply(new CallThunk<>(), z), a), b), fValue), xValue);
-    }
 
     @Override
     public Term<B> visitChildren(Visitor visitor) {
@@ -58,24 +45,6 @@ public record ApplyThunk<A, B>(Term<F<A, B>>f, Term<A>x) implements ThunkTerm<B>
 
         var t = ((FunctionType<A, B>) f.type()).range().erase();
         mw.visitInvokeDynamicInsn("CALL", methodType(t, f.type().erase(), Void.class, x.type().erase()).descriptorString(), HANDLE);
-    }
-
-    @Override
-    public <X> Term<F<X, B>> pointFree(VarValue<X> varValue) {
-        var fValue = f.pointFree(varValue);
-        var xValue = x.pointFree(varValue);
-
-        if (fValue instanceof IdentityThunk) {
-            return (Term) xValue;
-        }
-
-        if (fValue instanceof ApplyThunk<?, F<X, F<A, B>>> apply) {
-            if (apply.f() instanceof ConstantThunk) {
-                return (Term) apply.x();
-            }
-        }
-
-        return call(fValue, xValue);
     }
 
     @Override

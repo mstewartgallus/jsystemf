@@ -1,7 +1,5 @@
 package com.sstewartgallus.plato;
 
-import com.sstewartgallus.ext.pointfree.ConstantThunk;
-import com.sstewartgallus.ext.variables.VarValue;
 import org.objectweb.asm.MethodVisitor;
 
 import java.util.function.Function;
@@ -31,10 +29,6 @@ public interface Term<A> {
         return new SimpleTypeLambdaValue<>(f);
     }
 
-    static <A, B> Term<F<A, B>> constant(Type<A> type, Term<B> term) {
-        return Term.apply(Term.apply(Term.apply(new ConstantThunk<>(), term.type()), type), term);
-    }
-
     <B> Term<B> stepThunk(Function<ValueTerm<A>, Term<B>> k);
 
     Type<A> type() throws TypeCheckException;
@@ -44,10 +38,6 @@ public interface Term<A> {
     }
 
     Term<A> visitChildren(Visitor visitor);
-
-    default <X> Term<F<X, A>> pointFree(VarValue<X> varValue) {
-        throw new UnsupportedOperationException(getClass().toString());
-    }
 
     default void jit(MethodVisitor methodVisitor) {
         throw new UnsupportedOperationException(getClass().toString());

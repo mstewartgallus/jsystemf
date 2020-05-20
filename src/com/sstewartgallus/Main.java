@@ -129,7 +129,7 @@ public final class Main {
         var elim = EliminateUncurryCurry.eliminate(uncurry);
         outputT("Rewrite uncurry ⚬ curry", elim);
 
-        var pf = ConvertPointFree.pointFree(elim);
+        var pf = Jit.jit(elim);
         outputT("JIT", pf);
 
         System.exit(0);

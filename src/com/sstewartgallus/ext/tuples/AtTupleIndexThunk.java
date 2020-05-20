@@ -1,6 +1,5 @@
 package com.sstewartgallus.ext.tuples;
 
-import com.sstewartgallus.ext.variables.VarValue;
 import com.sstewartgallus.plato.*;
 import org.objectweb.asm.MethodVisitor;
 
@@ -36,11 +35,6 @@ public final class AtTupleIndexThunk<B extends Tuple<B>, X extends Tuple<X>, A> 
     @Override
     public Term<F<X, A>> visitChildren(Visitor visitor) {
         return this;
-    }
-
-    @Override
-    public <Z> Term<F<Z, F<X, A>>> pointFree(VarValue<Z> varValue) {
-        return Term.constant(varValue.type(), this);
     }
 
     @Override

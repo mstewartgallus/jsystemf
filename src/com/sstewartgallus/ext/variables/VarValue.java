@@ -1,7 +1,9 @@
 package com.sstewartgallus.ext.variables;
 
-import com.sstewartgallus.ext.pointfree.IdentityThunk;
-import com.sstewartgallus.plato.*;
+import com.sstewartgallus.plato.Term;
+import com.sstewartgallus.plato.Type;
+import com.sstewartgallus.plato.TypeCheckException;
+import com.sstewartgallus.plato.ValueTerm;
 
 import java.util.Objects;
 
@@ -24,14 +26,6 @@ public final class VarValue<A> implements ValueTerm<A>, Comparable<VarValue<?>> 
     @Override
     public Term<A> visitChildren(Visitor visitor) {
         return new VarValue<>(visitor.type(type), variable);
-    }
-
-    @Override
-    public <X> Term<F<X, A>> pointFree(VarValue<X> varValue) {
-        if (varValue.variable == variable) {
-            return (Term) Term.apply(new IdentityThunk<>(), type);
-        }
-        return Term.constant(varValue.type, this);
     }
 
     @Override

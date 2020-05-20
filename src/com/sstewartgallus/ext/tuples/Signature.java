@@ -1,6 +1,9 @@
 package com.sstewartgallus.ext.tuples;
 
-import com.sstewartgallus.plato.*;
+import com.sstewartgallus.plato.F;
+import com.sstewartgallus.plato.Term;
+import com.sstewartgallus.plato.Type;
+import com.sstewartgallus.plato.ValueTerm;
 
 public interface Signature<T extends Tuple<T>, C, D> {
 
@@ -60,10 +63,7 @@ public interface Signature<T extends Tuple<T>, C, D> {
 
         @Override
         public Term<F<H, D>> stepThunk(Term<F<P<H, T>, C>> f) {
-            return head.l(h -> tail.stepThunk(tail.argType().l(t -> {
-                var tNorm = Interpreter.normalize(t);
-                return Term.apply(f, new TuplePairValue<>(h, tNorm));
-            })));
+            return head.l(h -> tail.stepThunk(tail.argType().l(t -> t.stepThunk(tNorm -> Term.apply(f, new TuplePairValue<>(h, tNorm))))));
         }
 
         @Override
@@ -85,7 +85,7 @@ public interface Signature<T extends Tuple<T>, C, D> {
 
         @Override
         public Term<F<H, D>> curry(Term<F<P<H, T>, C>> f) {
-            return head.l(h -> tail.curry(tail.argType().l(t -> Term.apply(f, new TuplePairValue<>(h, Interpreter.normalize(t))))));
+            return head.l(h -> tail.curry(tail.argType().l(t -> t.stepThunk(tNorm -> Term.apply(f, new TuplePairValue<>(h, tNorm))))));
         }
 
         @Override

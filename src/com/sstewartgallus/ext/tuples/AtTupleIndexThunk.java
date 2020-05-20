@@ -42,7 +42,10 @@ public final class AtTupleIndexThunk<B extends Tuple<B>, X extends Tuple<X>, A> 
 
     @Override
     public <C> Term<C> stepThunk(Function<ValueTerm<F<X, A>>, Term<C>> k) {
-        return k.apply(index.domain().l(x -> ((TuplePairValue<A, B>) index.index(Interpreter.normalize(x))).head()));
+        return k.apply(index.domain().l(x -> x.stepThunk(xNorm -> {
+            var xPair = (TuplePairValue<A, B>) index.index(xNorm);
+            return xPair.head();
+        })));
     }
 
     @Override

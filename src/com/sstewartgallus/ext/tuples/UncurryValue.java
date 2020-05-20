@@ -1,6 +1,5 @@
 package com.sstewartgallus.ext.tuples;
 
-import com.sstewartgallus.ext.pretty.PrettyThunk;
 import com.sstewartgallus.plato.*;
 
 import java.util.Objects;
@@ -21,13 +20,10 @@ public final class UncurryValue<L extends Tuple<L>, C, D> implements ThunkTerm<F
 
     @Override
     public <B> Term<B> stepThunk(Function<ValueTerm<F<D, F<L, C>>>, Term<B>> k) {
-        return k.apply(signature.type().l(x -> signature.argType().l(pair -> {
-            if (pair instanceof PrettyThunk) {
-                return null;
-            }
-            var tuple = Interpreter.normalize(pair);
-            return signature.apply(x, tuple);
-        })));
+        return k.apply(signature.type().l(x ->
+                signature.argType().l(pair ->
+                        pair.stepThunk(pairNorm ->
+                                signature.apply(x, pairNorm)))));
     }
 
     @Override

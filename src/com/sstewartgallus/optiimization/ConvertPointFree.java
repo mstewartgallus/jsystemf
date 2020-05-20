@@ -1,6 +1,5 @@
 package com.sstewartgallus.optiimization;
 
-import com.sstewartgallus.ext.variables.VarValue;
 import com.sstewartgallus.plato.F;
 import com.sstewartgallus.plato.SimpleLambdaValue;
 import com.sstewartgallus.plato.Term;
@@ -30,10 +29,6 @@ public final class ConvertPointFree {
     }
 
     private static <A, B> Term<F<A, B>> pointFreeify(SimpleLambdaValue<A, B> lambda) {
-        var domain = lambda.domain();
-
-        var v = new VarValue<>(domain);
-        var body = lambda.apply(v);
-        return body.pointFree(v);
+        return lambda.jit();
     }
 }

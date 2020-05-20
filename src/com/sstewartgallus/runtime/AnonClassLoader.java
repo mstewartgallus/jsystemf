@@ -1,6 +1,6 @@
 package com.sstewartgallus.runtime;
 
-final class AnonClassLoader extends ClassLoader {
+public final class AnonClassLoader extends ClassLoader {
     static {
         registerAsParallelCapable();
     }
@@ -10,7 +10,7 @@ final class AnonClassLoader extends ClassLoader {
         clearAssertionStatus();
     }
 
-    static <T> Class<?> defineClass(ClassLoader parent, byte[] bytes) {
+    public static <T> Class<?> defineClass(ClassLoader parent, byte[] bytes) {
         var inst = new AnonClassLoader(parent);
         var klass = inst.defineClass(null, bytes, 0, bytes.length);
         // load the class as soon as we define it...

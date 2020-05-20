@@ -1,7 +1,5 @@
 package com.sstewartgallus.ext.mh;
 
-import com.sstewartgallus.ext.tuples.Signature;
-import com.sstewartgallus.ext.tuples.Tuple;
 import com.sstewartgallus.plato.*;
 import com.sstewartgallus.runtime.TermInvoker;
 
@@ -12,13 +10,13 @@ import static java.lang.invoke.MethodHandles.lookup;
 
 // fixme... could be an abstract class I suppose or another pass could lower to that...
 // fixme... establish an invariant that this must always be a function or a forall.
-public final class JitLambdaValue<A extends Tuple<A>, B, X, Y> implements ThunkTerm<F<X, Y>>, JitValue<F<X, Y>> {
+public final class JitLambdaValue<A, B> implements ThunkTerm<F<A, B>>, JitValue<F<A, B>> {
 
     private static final JitInvoker INVOKE_TERM = TermInvoker.newInstance(lookup(), JitInvoker.class);
     private final MethodHandle methodHandle;
-    private final Signature<A, B, F<X, Y>> sig;
+    private final Type<F<A, B>> sig;
 
-    public JitLambdaValue(Signature<A, B, F<X, Y>> sig,
+    public JitLambdaValue(Type<F<A, B>> sig,
                           MethodHandle methodHandle) {
         this.sig = sig;
         this.methodHandle = methodHandle;
@@ -29,19 +27,19 @@ public final class JitLambdaValue<A extends Tuple<A>, B, X, Y> implements ThunkT
     }
 
     @Override
-    public <C> Term<C> stepThunk(Function<ValueTerm<F<X, Y>>, Term<C>> k) {
-        var d = ((FunctionType<X, Y>) sig.type()).domain();
+    public <C> Term<C> stepThunk(Function<ValueTerm<F<A, B>>, Term<C>> k) {
+        var d = ((FunctionType<A, B>) sig).domain();
         var self = this;
         return k.apply(d.l(x -> INVOKE_TERM.apply(self, x)));
     }
 
     @Override
-    public Type<F<X, Y>> type() throws TypeCheckException {
-        return sig.type();
+    public Type<F<A, B>> type() throws TypeCheckException {
+        return sig;
     }
 
     @Override
-    public Term<F<X, Y>> visitChildren(Visitor visitor) {
+    public Term<F<A, B>> visitChildren(Visitor visitor) {
         return this;
     }
 
@@ -51,6 +49,6 @@ public final class JitLambdaValue<A extends Tuple<A>, B, X, Y> implements ThunkT
 
     @FunctionalInterface
     public interface JitInvoker {
-        <A, B> Term<B> apply(JitLambdaValue<?, ?, A, B> f, Term<A> x);
+        <A, B> Term<B> apply(JitLambdaValue<A, B> f, Term<A> x);
     }
 }

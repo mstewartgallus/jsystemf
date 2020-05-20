@@ -3,6 +3,7 @@ package com.sstewartgallus.optiimization;
 import com.sstewartgallus.ext.mh.JitLambdaValue;
 import com.sstewartgallus.ext.pointfree.CallThunk;
 import com.sstewartgallus.ext.tuples.*;
+import com.sstewartgallus.ext.variables.VarValue;
 import com.sstewartgallus.plato.*;
 
 import java.util.ArrayList;
@@ -33,6 +34,10 @@ public final class Jit {
                     return jitApply(apply);
                 }
 
+                if (false && term instanceof LambdaValue<?, ?> lambdaValue) {
+                    return (Term) jitLambda(lambdaValue);
+                }
+
                 if (false && term instanceof CallThunk<?, ?, ?> k) {
                     return (Term) jitCallThunk(k);
                 }
@@ -52,6 +57,14 @@ public final class Jit {
                 return term.visitChildren(this);
             }
         });
+    }
+
+    private static <A, B> Term<F<A, B>> jitLambda(LambdaValue<A, B> lambda) {
+        var d = lambda.domain();
+        var v = new VarValue<>(d);
+        var body = lambda.apply(v);
+
+        throw null;
     }
 
     private static <A, B> Term<B> jitTypeApply(TypeApplyThunk<A, B> typeApplyThunk) {
@@ -88,8 +101,7 @@ public final class Jit {
         handle = dropArguments(handle, 0, before);
         handle = dropArguments(handle, handle.type().parameterCount(), after);
 
-        var sig = new Signature.AddArg<>(index.domain(), new Signature.Result<>(head));
-        return new JitLambdaValue<>(sig, handle);
+        return new JitLambdaValue<>(index.domain().to(head), handle);
     }
 
     private static <A, B> Term<B> jitApply(ApplyThunk<A, B> apply) {
@@ -116,6 +128,6 @@ public final class Jit {
 
     private static <A> Term<F<A, A>> jitIdentity(Type<A> type) {
         var mh = identity(type.erase());
-        return new JitLambdaValue<>(new Signature.AddArg<>(type, new Signature.Result<>(type)), mh);
+        return new JitLambdaValue<>(type.to(type), mh);
     }
 }

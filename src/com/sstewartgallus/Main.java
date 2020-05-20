@@ -118,7 +118,7 @@ public final class Main {
         outputT("System F", term);
 
         var captured = Capture.capture(term);
-        outputT("Partial Application", captured, captured.type());
+        outputT("Partial Application", captured);
 
         var curryApply = CurryApply.curryApply(captured);
         outputT("Curry Apply", curryApply);
@@ -130,12 +130,7 @@ public final class Main {
         outputT("Rewrite uncurry ⚬ curry", elim);
 
         var pf = ConvertPointFree.pointFree(elim);
-        outputT("Point Free", pf);
-
-        // fixme... consdier pointfree generics...
-
-        var jit = Jit.jit(pf);
-        outputT("JIT", jit);
+        outputT("JIT", pf);
 
         System.exit(0);
         TO_EXEC = () -> ValueThrowables.clone(TEMPLATE);// API.apply((Value<F<Integer, F<Integer, Integer>>>) main, 3, 3);

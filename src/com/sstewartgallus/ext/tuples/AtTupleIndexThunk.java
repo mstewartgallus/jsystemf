@@ -2,9 +2,12 @@ package com.sstewartgallus.ext.tuples;
 
 import com.sstewartgallus.ext.variables.VarValue;
 import com.sstewartgallus.plato.*;
+import org.objectweb.asm.MethodVisitor;
 
 import java.util.Objects;
 import java.util.function.Function;
+
+import static org.objectweb.asm.Opcodes.*;
 
 public final class AtTupleIndexThunk<B extends Tuple<B>, X extends Tuple<X>, A> implements ThunkTerm<F<X, A>> {
     private final Type<A> head;
@@ -46,6 +49,30 @@ public final class AtTupleIndexThunk<B extends Tuple<B>, X extends Tuple<X>, A> 
             var xPair = (TuplePairValue<A, B>) index.index(xNorm);
             return xPair.head();
         })));
+    }
+
+    public void jit(MethodVisitor mw) {
+        var h = head.erase();
+        var ii = reify;
+        if (h.isPrimitive()) {
+            switch (h.getName()) {
+                case "boolean", "byte", "char", "short", "int" -> {
+                    mw.visitVarInsn(ILOAD, ii);
+                }
+                case "long" -> {
+                    mw.visitVarInsn(LLOAD, ii);
+                }
+                case "float" -> {
+                    mw.visitVarInsn(FLOAD, ii);
+                }
+                case "double" -> {
+                    mw.visitVarInsn(DLOAD, ii);
+                }
+                default -> throw new IllegalStateException(h.getName());
+            }
+        } else {
+            mw.visitVarInsn(ALOAD, ii);
+        }
     }
 
     @Override

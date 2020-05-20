@@ -21,7 +21,7 @@ public final class JitLinker implements TypeBasedGuardingDynamicLinker {
     public GuardedInvocation getGuardedInvocation(LinkRequest linkRequest, LinkerServices linkerServices) {
         var receiver = linkRequest.getReceiver();
 
-        if (receiver instanceof JitLambdaValue<?, ?, ?, ?> jitValueReceiver) {
+        if (receiver instanceof JitLambdaValue<?, ?> jitValueReceiver) {
             // fixme.. how to avoid all the currying and such...
             var handle = jitValueReceiver.methodHandle();
             var newType = handle.type();

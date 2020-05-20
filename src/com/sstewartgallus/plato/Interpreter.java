@@ -15,7 +15,7 @@ public final class Interpreter {
     // fixme... move else where?
     public static <A> ValueTerm<A> normalize(Term<A> term) {
         while (term instanceof ThunkTerm<A> thunk) {
-            term = thunk.stepThunk();
+            term = thunk.stepThunk(t -> t);
         }
         return (ValueTerm<A>) term;
     }

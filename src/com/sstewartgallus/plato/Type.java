@@ -21,7 +21,7 @@ public interface Type<X> {
     // fixme... rethink unification...
     <Y> Type<X> unify(Type<Y> right) throws TypeCheckException;
 
-    default <B> Term<F<X, B>> l(Function<Term<X>, Term<B>> f) {
+    default <B> ValueTerm<F<X, B>> l(Function<Term<X>, Term<B>> f) {
         return new SimpleLambdaValue<>(this, f);
     }
 

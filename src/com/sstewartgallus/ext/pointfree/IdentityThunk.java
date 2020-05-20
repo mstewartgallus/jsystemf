@@ -2,12 +2,14 @@ package com.sstewartgallus.ext.pointfree;
 
 import com.sstewartgallus.plato.*;
 
+import java.util.function.Function;
+
 // fixme... try redoing as
 // V<A, F<A, A>>
 public record IdentityThunk<A>() implements ThunkTerm<V<A, F<A, A>>> {
     @Override
-    public Term<V<A, F<A, A>>> stepThunk() {
-        return Term.v(d -> d.l(x -> x));
+    public <C> Term<C> stepThunk(Function<ValueTerm<V<A, F<A, A>>>, Term<C>> k) {
+        return k.apply(Term.v(d -> d.l(x -> x)));
     }
 
     @Override

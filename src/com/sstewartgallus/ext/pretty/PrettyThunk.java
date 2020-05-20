@@ -1,11 +1,9 @@
 package com.sstewartgallus.ext.pretty;
 
-import com.sstewartgallus.plato.Term;
-import com.sstewartgallus.plato.ThunkTerm;
-import com.sstewartgallus.plato.Type;
-import com.sstewartgallus.plato.TypeCheckException;
+import com.sstewartgallus.plato.*;
 
 import java.util.Objects;
+import java.util.function.Function;
 
 public final class PrettyThunk<A> implements ThunkTerm<A>, AutoCloseable {
     private static final ThreadLocal<Integer> DEPTH = ThreadLocal.withInitial(() -> 0);
@@ -35,6 +33,11 @@ public final class PrettyThunk<A> implements ThunkTerm<A>, AutoCloseable {
     }
 
     @Override
+    public <B> Term<B> stepThunk(Function<ValueTerm<A>, Term<B>> k) {
+        throw new UnsupportedOperationException("only supports toString");
+    }
+
+    @Override
     public Type<A> type() throws TypeCheckException {
         return type;
     }
@@ -42,10 +45,5 @@ public final class PrettyThunk<A> implements ThunkTerm<A>, AutoCloseable {
     @Override
     public Term<A> visitChildren(Visitor visitor) {
         return this;
-    }
-
-    @Override
-    public Term<A> stepThunk() {
-        throw new UnsupportedOperationException("only supports toString");
     }
 }

@@ -6,6 +6,7 @@ import com.sstewartgallus.ext.pointfree.IdentityThunk;
 import com.sstewartgallus.ext.variables.VarValue;
 
 import java.util.Objects;
+import java.util.function.Function;
 
 public record ApplyThunk<A, B>(Term<F<A, B>>f, Term<A>x) implements ThunkTerm<B>, LambdaTerm<B> {
 
@@ -73,7 +74,10 @@ public record ApplyThunk<A, B>(Term<F<A, B>>f, Term<A>x) implements ThunkTerm<B>
     }
 
     @Override
-    public Term<B> stepThunk() {
-        return ((LambdaValue<A, B>) Interpreter.normalize(f)).apply(x);
+    public <C> Term<C> stepThunk(Function<ValueTerm<B>, Term<C>> k) {
+        return f.stepThunk(fValue -> {
+            var fLambda = (LambdaValue<A, B>) fValue;
+            return fLambda.apply(x).stepThunk(k);
+        });
     }
 }

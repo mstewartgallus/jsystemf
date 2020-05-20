@@ -1,12 +1,10 @@
 package com.sstewartgallus.ext;
 
 import com.sstewartgallus.ext.java.J;
-import com.sstewartgallus.plato.Term;
-import com.sstewartgallus.plato.ThunkTerm;
-import com.sstewartgallus.plato.Type;
-import com.sstewartgallus.plato.TypeCheckException;
+import com.sstewartgallus.plato.*;
 
 import java.util.Objects;
+import java.util.function.Function;
 
 // fixme... don't use this...
 public record AddThunk(Term<J<Integer>>left, Term<J<Integer>>right) implements ThunkTerm<J<Integer>> {
@@ -21,6 +19,11 @@ public record AddThunk(Term<J<Integer>>left, Term<J<Integer>>right) implements T
     }
 
     @Override
+    public <B> Term<B> stepThunk(Function<ValueTerm<J<Integer>>, Term<B>> k) {
+        throw null;
+    }
+
+    @Override
     public Type<J<Integer>> type() throws TypeCheckException {
         return Type.INT;
     }
@@ -28,11 +31,5 @@ public record AddThunk(Term<J<Integer>>left, Term<J<Integer>>right) implements T
     @Override
     public String toString() {
         return "(+ " + left + " " + right + ")";
-    }
-
-    @Override
-    public Term<J<Integer>> stepThunk() {
-        throw null;
-        // return Prims.of(Interpreter.normalize(left).extract() + Interpreter.normalize(right).extract());
     }
 }

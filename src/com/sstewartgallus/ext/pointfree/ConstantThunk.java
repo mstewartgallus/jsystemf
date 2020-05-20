@@ -3,10 +3,12 @@ package com.sstewartgallus.ext.pointfree;
 import com.sstewartgallus.ext.variables.VarValue;
 import com.sstewartgallus.plato.*;
 
+import java.util.function.Function;
+
 public record ConstantThunk<A, B>() implements ThunkTerm<V<A, V<B, F<A, F<B, A>>>>> {
     @Override
-    public Term<V<A, V<B, F<A, F<B, A>>>>> stepThunk() {
-        return Term.v(left -> Term.v(right -> left.l(x -> right.l(y -> x))));
+    public <C> Term<C> stepThunk(Function<ValueTerm<V<A, V<B, F<A, F<B, A>>>>>, Term<C>> k) {
+        return k.apply(Term.v(left -> Term.v(right -> left.l(x -> right.l(y -> x)))));
     }
 
     @Override

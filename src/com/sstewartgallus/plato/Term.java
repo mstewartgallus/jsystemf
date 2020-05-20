@@ -26,13 +26,15 @@ public interface Term<A> {
         return new ApplyThunk<>(f, x);
     }
 
-    static <A, B> Term<V<A, B>> v(Function<Type<A>, Term<B>> f) {
+    static <A, B> ValueTerm<V<A, B>> v(Function<Type<A>, Term<B>> f) {
         return new SimpleTypeLambdaValue<>(f);
     }
 
     static <A, B> Term<F<A, B>> constant(Type<A> type, Term<B> term) {
         return Term.apply(Term.apply(Term.apply(new ConstantThunk<>(), term.type()), type), term);
     }
+
+    <B> Term<B> stepThunk(Function<ValueTerm<A>, Term<B>> k);
 
     Type<A> type() throws TypeCheckException;
 

@@ -4,6 +4,7 @@ import com.sstewartgallus.ext.variables.VarValue;
 import com.sstewartgallus.plato.*;
 
 import java.util.Objects;
+import java.util.function.Function;
 
 public final class AtTupleIndexThunk<B extends Tuple<B>, X extends Tuple<X>, A> implements ThunkTerm<F<X, A>> {
     private final Type<A> head;
@@ -40,6 +41,11 @@ public final class AtTupleIndexThunk<B extends Tuple<B>, X extends Tuple<X>, A> 
     }
 
     @Override
+    public <C> Term<C> stepThunk(Function<ValueTerm<F<X, A>>, Term<C>> k) {
+        return k.apply(index.domain().l(x -> ((TuplePairValue<A, B>) index.index(Interpreter.normalize(x))).head()));
+    }
+
+    @Override
     public Type<F<X, A>> type() throws TypeCheckException {
         return index.domain().to(head);
     }
@@ -47,10 +53,5 @@ public final class AtTupleIndexThunk<B extends Tuple<B>, X extends Tuple<X>, A> 
     @Override
     public String toString() {
         return "[" + index + "]";
-    }
-
-    @Override
-    public Term<F<X, A>> stepThunk() {
-        return index.domain().l(x -> ((TuplePairValue<A, B>) index.index(Interpreter.normalize(x))).head());
     }
 }

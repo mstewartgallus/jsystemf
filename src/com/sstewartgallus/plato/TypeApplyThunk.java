@@ -1,14 +1,9 @@
 package com.sstewartgallus.plato;
 
-import com.sstewartgallus.runtime.TermInvoker;
-
 import java.util.Objects;
-
-import static java.lang.invoke.MethodHandles.lookup;
+import java.util.function.Function;
 
 public record TypeApplyThunk<A, B>(Term<V<A, B>>f, Type<A>x) implements ThunkTerm<B>, LambdaTerm<B> {
-    private static final ApplyType INVOKE_TERM = TermInvoker.newInstance(lookup(), ApplyType.class);
-
     public TypeApplyThunk {
         Objects.requireNonNull(f);
         Objects.requireNonNull(x);
@@ -37,16 +32,10 @@ public record TypeApplyThunk<A, B>(Term<V<A, B>>f, Type<A>x) implements ThunkTer
     }
 
     @Override
-    public Term<B> stepThunk() {
-        var fNorm = Interpreter.normalize(f);
-        if (fNorm instanceof TypeLambdaValue<A, B> lambda) {
-            return lambda.apply(x);
-        }
-        return INVOKE_TERM.apply(fNorm, x);
-    }
-
-    @FunctionalInterface
-    public interface ApplyType {
-        <A, B> Term<B> apply(Term<V<A, B>> f, Type<A> x);
+    public <C> Term<C> stepThunk(Function<ValueTerm<B>, Term<C>> k) {
+        return f.stepThunk(fNorm -> {
+            var fLambda = (TypeLambdaValue<A, B>) fNorm;
+            return fLambda.apply(x).stepThunk(k);
+        });
     }
 }

@@ -1,26 +1,26 @@
 package com.sstewartgallus.runtime;
 
-import com.sstewartgallus.plato.Interpreter;
 import com.sstewartgallus.plato.Term;
 import com.sstewartgallus.plato.ThunkTerm;
-import com.sstewartgallus.plato.ValueTerm;
 import jdk.dynalink.linker.GuardedInvocation;
 import jdk.dynalink.linker.LinkRequest;
 import jdk.dynalink.linker.LinkerServices;
 import jdk.dynalink.linker.TypeBasedGuardingDynamicLinker;
+import jdk.dynalink.linker.support.Guards;
 
 import java.lang.invoke.MethodHandle;
+import java.util.function.Function;
 
-import static java.lang.invoke.MethodHandles.lookup;
+import static java.lang.invoke.MethodHandles.*;
 import static java.lang.invoke.MethodType.methodType;
 
 public final class ThunkLinker implements TypeBasedGuardingDynamicLinker {
     // fixme... can we have a better normalize than just abstract dispatch?
-    private static final MethodHandle NORMALIZE_MH;
+    private static final MethodHandle STEP_THUNK_MH;
 
     static {
         try {
-            NORMALIZE_MH = lookup().findStatic(Interpreter.class, "normalize", methodType(ValueTerm.class, Term.class));
+            STEP_THUNK_MH = lookup().findVirtual(ThunkTerm.class, "stepThunk", methodType(Term.class, Function.class));
         } catch (NoSuchMethodException | IllegalAccessException e) {
             throw new RuntimeException(e);
         }
@@ -37,13 +37,17 @@ public final class ThunkLinker implements TypeBasedGuardingDynamicLinker {
 
         var cs = linkRequest.getCallSiteDescriptor();
         var methodType = cs.getMethodType();
-        var oldArgs = linkRequest.getArguments();
-        var args = new Object[methodType.parameterCount()];
-        args[0] = Interpreter.normalize(receiver);
-        System.arraycopy(oldArgs, 1, args, 1, oldArgs.length - 1);
 
-        var guard = linkerServices.getGuardedInvocation(linkRequest.replaceArguments(cs, args));
+        // fixme.... rename kind of the reverse of a closure, grabs all the arguments then applies them to the result...
+        var environment = methodType.dropParameterTypes(0, 2);
+        var closure = Closure.spinFactory(environment);
+        closure = closure.asType(closure.type().changeReturnType(Function.class));
 
-        return guard.filterArguments(0, NORMALIZE_MH.asType(methodType(methodType.parameterType(0), Term.class)));
+        var mh = STEP_THUNK_MH;
+        mh = dropArguments(mh, mh.type().parameterCount(), environment.parameterList());
+
+        mh = foldArguments(mh, 1, closure);
+        mh = dropArguments(mh, 1, Void.class);
+        return new GuardedInvocation(mh, Guards.isOfClass(ThunkTerm.class, methodType));
     }
 }

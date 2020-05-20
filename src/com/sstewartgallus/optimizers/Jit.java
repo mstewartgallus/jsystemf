@@ -1,4 +1,4 @@
-package com.sstewartgallus.optiimization;
+package com.sstewartgallus.optimizers;
 
 import com.sstewartgallus.plato.F;
 import com.sstewartgallus.plato.SimpleLambdaValue;

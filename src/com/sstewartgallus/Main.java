@@ -13,7 +13,7 @@ import com.sstewartgallus.frontend.Entity;
 import com.sstewartgallus.frontend.Environment;
 import com.sstewartgallus.frontend.Frontend;
 import com.sstewartgallus.frontend.Node;
-import com.sstewartgallus.optiimization.*;
+import com.sstewartgallus.optimizers.*;
 import com.sstewartgallus.plato.F;
 import com.sstewartgallus.plato.Term;
 import com.sstewartgallus.plato.Type;

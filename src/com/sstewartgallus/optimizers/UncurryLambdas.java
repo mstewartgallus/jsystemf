@@ -1,4 +1,4 @@
-package com.sstewartgallus.optiimization;
+package com.sstewartgallus.optimizers;
 
 import com.sstewartgallus.ext.tuples.*;
 import com.sstewartgallus.ext.variables.VarValue;

@@ -2,18 +2,14 @@ package com.sstewartgallus;
 
 
 import com.sstewartgallus.ext.java.J;
-import com.sstewartgallus.ext.java.JavaType;
-import com.sstewartgallus.ext.tuples.N;
-import com.sstewartgallus.ext.tuples.P;
-import com.sstewartgallus.ext.tuples.Signature;
-import com.sstewartgallus.ext.tuples.UncurryValue;
 import com.sstewartgallus.ext.variables.VarType;
 import com.sstewartgallus.ext.variables.VarValue;
 import com.sstewartgallus.frontend.Entity;
 import com.sstewartgallus.frontend.Environment;
 import com.sstewartgallus.frontend.Frontend;
 import com.sstewartgallus.frontend.Node;
-import com.sstewartgallus.optimizers.*;
+import com.sstewartgallus.optimizers.Capture;
+import com.sstewartgallus.optimizers.Jit;
 import com.sstewartgallus.plato.F;
 import com.sstewartgallus.plato.Term;
 import com.sstewartgallus.plato.Type;
@@ -120,16 +116,7 @@ public final class Main {
         var captured = Capture.capture(term);
         outputT("Partial Application", captured);
 
-        var curryApply = CurryApply.curryApply(captured);
-        outputT("Curry Apply", curryApply);
-
-        var uncurry = UncurryLambdas.uncurry(curryApply);
-        outputT("Uncurry Lambda", uncurry);
-
-        var elim = EliminateUncurryCurry.eliminate(uncurry);
-        outputT("Rewrite uncurry ⚬ curry", elim);
-
-        var pf = Jit.jit(elim);
+        var pf = Jit.jit(captured);
         outputT("JIT", pf);
 
         System.exit(0);
@@ -181,11 +168,7 @@ public final class Main {
 
     static void outputT(String stage, Term<F<J<Integer>, F<J<Integer>, J<Integer>>>> term) {
         outputT(stage, term, term.type());
-
-        var i = new JavaType<>(int.class);
-        var sig = new Signature.AddArg<>(i, new Signature.AddArg<>(i, new Signature.Result<>(i)));
-        var uncurry = new UncurryValue<>(sig);
-        var output = API.apply(Term.apply(uncurry, term), 2, 5);
+        var output = API.apply(term, 2, 5);
         outputT(" ⇒", output, "-");
     }
 
@@ -203,7 +186,7 @@ public final class Main {
 
     @FunctionalInterface
     public interface ApplyInt {
-        int apply(Term<F<P<J<Integer>, P<J<Integer>, N>>, J<Integer>>> f, int x, int y);
+        int apply(Term<F<J<Integer>, F<J<Integer>, J<Integer>>>> f, int x, int y);
     }
 
     static class MyThrowable extends ValueThrowable {

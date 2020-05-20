@@ -1,12 +1,13 @@
 package com.sstewartgallus.plato;
 
-import com.sstewartgallus.ext.tuples.AtTupleIndexThunk;
+import com.sstewartgallus.ext.variables.VarValue;
 import org.objectweb.asm.Handle;
 import org.objectweb.asm.MethodVisitor;
 import org.objectweb.asm.Opcodes;
 
 import java.lang.invoke.CallSite;
 import java.lang.invoke.MethodHandles;
+import java.util.Map;
 import java.util.Objects;
 import java.util.function.Function;
 
@@ -31,17 +32,12 @@ public record ApplyThunk<A, B>(Term<F<A, B>>f, Term<A>x) implements ThunkTerm<B>
     }
 
     @Override
-    public void jit(MethodVisitor mw) {
-        if (f instanceof AtTupleIndexThunk tuple) {
-            tuple.jit(mw);
-            return;
-        }
-
-        f.jit(mw);
+    public void jit(MethodVisitor mw, Map<VarValue<?>, VarData> varDataMap) {
+        f.jit(mw, varDataMap);
 
         mw.visitInsn(Opcodes.ACONST_NULL);
 
-        x.jit(mw);
+        x.jit(mw, varDataMap);
 
         var t = ((FunctionType<A, B>) f.type()).range().erase();
         mw.visitInvokeDynamicInsn("CALL", methodType(t, f.type().erase(), Void.class, x.type().erase()).descriptorString(), HANDLE);

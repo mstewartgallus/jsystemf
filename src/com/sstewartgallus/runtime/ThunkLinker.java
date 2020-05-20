@@ -48,6 +48,6 @@ public final class ThunkLinker implements TypeBasedGuardingDynamicLinker {
 
         mh = foldArguments(mh, 1, closure);
         mh = dropArguments(mh, 1, Void.class);
-        return new GuardedInvocation(mh, Guards.isOfClass(ThunkTerm.class, methodType));
+        return new GuardedInvocation(mh, Guards.isInstance(ThunkTerm.class, methodType));
     }
 }

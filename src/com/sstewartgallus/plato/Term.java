@@ -1,7 +1,9 @@
 package com.sstewartgallus.plato;
 
+import com.sstewartgallus.ext.variables.VarValue;
 import org.objectweb.asm.MethodVisitor;
 
+import java.util.Map;
 import java.util.function.Function;
 
 /**
@@ -39,7 +41,7 @@ public interface Term<A> {
 
     Term<A> visitChildren(Visitor visitor);
 
-    default void jit(MethodVisitor methodVisitor) {
+    default void jit(MethodVisitor methodVisitor, Map<VarValue<?>, VarData> varDataMap) {
         throw new UnsupportedOperationException(getClass().toString());
     }
 
@@ -51,5 +53,8 @@ public interface Term<A> {
         public <T> Term<T> term(Term<T> term) {
             return term;
         }
+    }
+
+    record VarData(int argument) {
     }
 }

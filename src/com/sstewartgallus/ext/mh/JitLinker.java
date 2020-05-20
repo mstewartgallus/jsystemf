@@ -1,15 +1,14 @@
 package com.sstewartgallus.ext.mh;
 
 import com.sstewartgallus.plato.Term;
+import com.sstewartgallus.runtime.TermLinker;
 import jdk.dynalink.linker.GuardedInvocation;
 import jdk.dynalink.linker.LinkRequest;
 import jdk.dynalink.linker.LinkerServices;
 import jdk.dynalink.linker.TypeBasedGuardingDynamicLinker;
 import jdk.dynalink.linker.support.Guards;
 
-import java.util.Arrays;
-
-import static java.lang.invoke.MethodHandles.dropArguments;
+import static java.lang.invoke.MethodHandles.*;
 
 public final class JitLinker implements TypeBasedGuardingDynamicLinker {
     @Override
@@ -25,19 +24,36 @@ public final class JitLinker implements TypeBasedGuardingDynamicLinker {
             // fixme.. how to avoid all the currying and such...
             var handle = jitValueReceiver.methodHandle();
             var newType = handle.type();
-            {
-                var len = newType.parameterCount();
-                var newArgs = new Class[len];
-                Arrays.fill(newArgs, Term.class);
-                newType = newType.dropParameterTypes(0, len).appendParameterTypes(newArgs);
+            var cs = linkRequest.getCallSiteDescriptor();
+            var methodType = cs.getMethodType();
+
+            var parameterCount = methodType.parameterCount();
+            // fixme.. cleanly handle super saturated calls, under saturated, etc....
+            if (parameterCount <= handle.type().parameterCount() + 2) {
+                var mh = handle;
+                mh = dropArguments(mh, 0, Term.class, Void.class);
+                return new GuardedInvocation(
+                        linkerServices.asType(mh, methodType),
+                        Guards.getIdentityGuard(receiver));
             }
 
-            handle = linkerServices.asType(handle, newType);
-            handle = handle.asSpreader(Term[].class, handle.type().parameterCount());
+            var newMethodType = methodType;
+            var theRest = newMethodType.dropParameterTypes(0, handle.type().parameterCount() + 2);
+            newMethodType = theRest.insertParameterTypes(0, Term.class, Void.class);
 
-            handle = dropArguments(handle, 0, JitLambdaValue.class, Void.class);
+            var mh = handle;
 
-            return new GuardedInvocation(handle, Guards.getIdentityGuard(jitValueReceiver));
+            // fixme... attach properly... to the result...
+            var handleTheRest = TermLinker.link(cs.getLookup(), cs.getOperation(), newMethodType).dynamicInvoker();
+            handleTheRest = insertArguments(handleTheRest, 1, new Object[]{null});
+            handleTheRest = dropArguments(handleTheRest, 1, mh.type().parameterList());
+
+            mh = dropArguments(mh, mh.type().parameterCount(), theRest.parameterList());
+            mh = foldArguments(handleTheRest, mh);
+            mh = dropArguments(mh, 1, Void.class);
+            return new GuardedInvocation(
+                    linkerServices.asType(mh, methodType),
+                    Guards.getIdentityGuard(receiver));
         }
 
         return null;

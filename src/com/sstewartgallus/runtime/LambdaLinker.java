@@ -1,10 +1,7 @@
 package com.sstewartgallus.runtime;
 
-import com.sstewartgallus.ext.tuples.NilTupleValue;
-import com.sstewartgallus.ext.tuples.TuplePairValue;
 import com.sstewartgallus.plato.LambdaValue;
 import com.sstewartgallus.plato.Term;
-import com.sstewartgallus.plato.ValueTerm;
 import jdk.dynalink.linker.GuardedInvocation;
 import jdk.dynalink.linker.LinkRequest;
 import jdk.dynalink.linker.LinkerServices;
@@ -20,7 +17,6 @@ public final class LambdaLinker implements TypeBasedGuardingDynamicLinker {
 
     // fixme... can we have a better normalize than just abstract dispatch?
     private static final MethodHandle APPLY_MH;
-    private static final MethodHandle TUPLE_MH;
 
     static {
         try {
@@ -28,22 +24,6 @@ public final class LambdaLinker implements TypeBasedGuardingDynamicLinker {
         } catch (NoSuchMethodException | IllegalAccessException e) {
             throw new RuntimeException(e);
         }
-    }
-
-    static {
-        try {
-            TUPLE_MH = lookup().findStatic(LambdaLinker.class, "tuple", MethodType.methodType(Term.class, Term[].class));
-        } catch (NoSuchMethodException | IllegalAccessException e) {
-            throw new RuntimeException(e);
-        }
-    }
-
-    static Term<?> tuple(Term<?>[] args) {
-        ValueTerm current = NilTupleValue.NIL;
-        for (var ii = args.length - 1; ii >= 0; --ii) {
-            current = new TuplePairValue(args[ii], current);
-        }
-        return current;
     }
 
     @Override
@@ -57,25 +37,32 @@ public final class LambdaLinker implements TypeBasedGuardingDynamicLinker {
         var cs = linkRequest.getCallSiteDescriptor();
         var methodType = cs.getMethodType();
 
-        var mh = APPLY_MH;
-
         var parameterCount = methodType.parameterCount();
-
         if (parameterCount <= 3) {
+            var mh = APPLY_MH;
             mh = dropArguments(mh, 1, Void.class);
             return new GuardedInvocation(
                     linkerServices.asType(mh, methodType),
                     Guards.isOfClass(LambdaValue.class, methodType));
         }
 
-        mh = dropArguments(mh, 1, Void.class);
-        mh = filterArguments(mh, 2, TUPLE_MH);
-        mh = mh.asCollector(2, Term[].class, methodType.parameterCount() - 2);
+        var newMethodType = methodType;
+        var theRest = newMethodType.dropParameterTypes(0, 3);
+        newMethodType = theRest.insertParameterTypes(0, Term.class, Void.class);
 
+        var mh = APPLY_MH;
+
+        // fixme... attach properly... to the result...
+        var handleTheRest = TermLinker.link(cs.getLookup(), cs.getOperation(), newMethodType).dynamicInvoker();
+        handleTheRest = insertArguments(handleTheRest, 1, new Object[]{null});
+        handleTheRest = dropArguments(handleTheRest, 1, mh.type().parameterList());
+
+        mh = dropArguments(mh, mh.type().parameterCount(), theRest.parameterList());
+        mh = foldArguments(handleTheRest, mh);
+        mh = dropArguments(mh, 1, Void.class);
         return new GuardedInvocation(
                 linkerServices.asType(mh, methodType),
                 Guards.isOfClass(LambdaValue.class, methodType));
     }
-
 }
 

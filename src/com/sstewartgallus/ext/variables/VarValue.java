@@ -4,8 +4,12 @@ import com.sstewartgallus.plato.Term;
 import com.sstewartgallus.plato.Type;
 import com.sstewartgallus.plato.TypeCheckException;
 import com.sstewartgallus.plato.ValueTerm;
+import org.objectweb.asm.MethodVisitor;
 
+import java.util.Map;
 import java.util.Objects;
+
+import static org.objectweb.asm.Opcodes.*;
 
 // fixme... should be a nonpure extension to the list language ?
 public final class VarValue<A> implements ValueTerm<A>, Comparable<VarValue<?>> {
@@ -21,6 +25,32 @@ public final class VarValue<A> implements ValueTerm<A>, Comparable<VarValue<?>> 
         Objects.requireNonNull(variable);
         this.type = type;
         this.variable = variable;
+    }
+
+    @Override
+    public void jit(MethodVisitor methodVisitor, Map<VarValue<?>, VarData> varDataMap) {
+        var data = varDataMap.get(this);
+        var clazz = type.erase();
+        var ii = data.argument();
+        if (clazz.isPrimitive()) {
+            switch (clazz.getName()) {
+                case "boolean", "byte", "char", "short", "int" -> {
+                    methodVisitor.visitVarInsn(ILOAD, ii);
+                }
+                case "long" -> {
+                    methodVisitor.visitVarInsn(LLOAD, ii);
+                }
+                case "float" -> {
+                    methodVisitor.visitVarInsn(FLOAD, ii);
+                }
+                case "double" -> {
+                    methodVisitor.visitVarInsn(DLOAD, ii);
+                }
+                default -> throw new IllegalStateException(clazz.getName());
+            }
+        } else {
+            methodVisitor.visitVarInsn(ALOAD, ii);
+        }
     }
 
     @Override

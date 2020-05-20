@@ -10,6 +10,8 @@ import org.objectweb.asm.util.TraceClassVisitor;
 import java.io.PrintWriter;
 import java.io.StringWriter;
 import java.lang.invoke.MethodHandle;
+import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.Objects;
 
 import static java.lang.invoke.MethodHandles.lookup;
@@ -29,6 +31,7 @@ public abstract class LambdaValue<A, B> implements ValueTerm<F<A, B>>, LambdaTer
         return domain;
     }
 
+    // perhaps use a kontinuation like thunks?
     public abstract Term<B> apply(Term<A> x);
 
     @Override
@@ -40,11 +43,31 @@ public abstract class LambdaValue<A, B> implements ValueTerm<F<A, B>>, LambdaTer
 
     // fixme... attach all lambdas in an expression to the same class?
     public final Term<F<A, B>> jit() {
-        var v = new VarValue<>(domain());
-        var body = apply(v);
+        LambdaValue<?, ?> current = this;
 
-        var args = domain().flatten();
-        var range = body.type().erase();
+        var args = new ArrayList<Class<?>>();
+
+        Class<?> range;
+        Term<?> body;
+        var varDataMap = new HashMap<VarValue<?>, VarData>();
+        var ii = 0;
+        for (; ; ) {
+            var v = new VarValue<>(current.domain);
+            varDataMap.put(v, new VarData(ii));
+            // fixme.. handle longs/doubles
+            ++ii;
+
+            body = current.apply((VarValue) v);
+            args.add(current.domain.erase());
+            range = body.type().erase();
+
+            if (body instanceof LambdaValue<?, ?> lambda) {
+                current = lambda;
+                continue;
+            }
+
+            break;
+        }
 
         var methodType = methodType(range, args);
 
@@ -63,7 +86,7 @@ public abstract class LambdaValue<A, B> implements ValueTerm<F<A, B>>, LambdaTer
             var mw = cv.visitMethod(ACC_PUBLIC | ACC_STATIC, "apply", methodType.descriptorString(), null, null);
             mw.visitCode();
 
-            body.jit(mw);
+            body.jit(mw, varDataMap);
 
             if (range.isPrimitive()) {
                 switch (range.getName()) {
@@ -101,7 +124,7 @@ public abstract class LambdaValue<A, B> implements ValueTerm<F<A, B>>, LambdaTer
             throw new RuntimeException(e);
         }
 
-        return new JitLambdaValue<>(str.toString(), domain().to(body.type()), mh);
+        return new JitLambdaValue<>(str.toString(), type(), mh);
     }
 
     @Override

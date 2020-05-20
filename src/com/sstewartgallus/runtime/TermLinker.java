@@ -2,7 +2,6 @@ package com.sstewartgallus.runtime;
 
 import com.sstewartgallus.ext.java.IntValue;
 import com.sstewartgallus.ext.mh.JitLinker;
-import com.sstewartgallus.ext.tuples.TuplePairValue;
 import com.sstewartgallus.plato.Interpreter;
 import com.sstewartgallus.plato.Term;
 import com.sstewartgallus.plato.ValueTerm;
@@ -17,7 +16,6 @@ import java.lang.invoke.CallSite;
 import java.lang.invoke.MethodHandle;
 import java.lang.invoke.MethodHandles;
 import java.lang.invoke.MethodType;
-import java.util.ArrayList;
 import java.util.List;
 import java.util.function.Supplier;
 
@@ -31,7 +29,6 @@ public final class TermLinker implements TypeBasedGuardingDynamicLinker, Guardin
     // fixme.. look more into https://gitlab.haskell.org/ghc/ghc/-/wikis/commentary/rts/haskell-execution/function-calls
     private static final MethodHandle INT_VALUE_CONSTRUCTOR_MH;
     private static final MethodHandle INT_VALUE_MH;
-    private static final MethodHandle UNWRAP_MH;
 
     static {
         var linkers = List.of(new JitLinker(), new TypeLambdaLinker(), new LambdaLinker(), new ThunkLinker(), new TermLinker());
@@ -65,29 +62,11 @@ public final class TermLinker implements TypeBasedGuardingDynamicLinker, Guardin
         }
     }
 
-    static {
-        try {
-            UNWRAP_MH = lookup().findStatic(TermLinker.class, "unwrap", methodType(Term[].class, ValueTerm.class));
-        } catch (NoSuchMethodException | IllegalAccessException e) {
-            throw new RuntimeException(e);
-        }
-    }
-
     // fixme... no need for so many uses...
     public static CallSite link(MethodHandles.Lookup lookup, Operation operation, MethodType methodType) {
         return DYNAMIC_LINKER.link(
                 new SimpleRelinkableCallSite(
                         new CallSiteDescriptor(lookup, operation, methodType)));
-    }
-
-    private static Term<?>[] unwrap(ValueTerm<?> tuple) {
-        var current = tuple;
-        var list = new ArrayList<Term<?>>();
-        while (current instanceof TuplePairValue<?, ?> pair) {
-            list.add(pair.head());
-            current = pair.tail();
-        }
-        return list.toArray(Term[]::new);
     }
 
     @Override
@@ -118,9 +97,6 @@ public final class TermLinker implements TypeBasedGuardingDynamicLinker, Guardin
         }
 
         if (ValueTerm.class.isAssignableFrom(sourceType)) {
-            if (Term[].class == targetType) {
-                return new GuardedInvocation(UNWRAP_MH);
-            }
             if (int.class == targetType) {
                 // fixme... check int type dynamically by calling type()
                 return new GuardedInvocation(INT_VALUE_MH.asType(methodType(int.class, sourceType)));

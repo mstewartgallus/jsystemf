@@ -64,8 +64,4 @@ public final class VarValue<A> implements ValueTerm<A>, Comparable<VarValue<?>> 
     public Type<A> type() throws TypeCheckException {
         return type;
     }
-
-    public Id<A> variable() {
-        return variable;
-    }
 }

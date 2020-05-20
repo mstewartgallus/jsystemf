@@ -5,24 +5,23 @@ import com.sstewartgallus.plato.*;
 
 import java.util.Objects;
 
-public final class UncurryValue<L extends Tuple<L>, C, D> extends LambdaValue<D, F<L, C>> {
+public final class UncurryValue<L extends Tuple<L>, C, D> implements ThunkTerm<F<D, F<L, C>>> {
     private final Signature<L, C, D> signature;
 
     public UncurryValue(Signature<L, C, D> signature) {
-        super(signature.type());
         Objects.requireNonNull(signature);
         this.signature = signature;
     }
 
     @Override
-    public Term<F<L, C>> apply(Term<D> x) {
-        return signature.argType().l(pair -> {
+    public Term<F<D, F<L, C>>> stepThunk() {
+        return signature.type().l(x -> signature.argType().l(pair -> {
             if (pair instanceof PrettyThunk) {
                 return null;
             }
             var tuple = Interpreter.normalize(pair);
             return signature.apply(x, tuple);
-        });
+        }));
     }
 
     @Override
@@ -45,4 +44,5 @@ public final class UncurryValue<L extends Tuple<L>, C, D> extends LambdaValue<D,
     public Signature<L, C, D> signature() {
         return signature;
     }
+
 }

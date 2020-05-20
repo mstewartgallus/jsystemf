@@ -55,7 +55,7 @@ interface Vars<A extends Tuple<A>, B, C> {
         @Override
         public <X extends Tuple<X>> Term<B> collapse(Term<X> source, TupleIndex<X, P<A, T>> args) {
             var tail = f.apply(new VarValue<>(domain)).arguments();
-            var deref = new AtTupleIndexValue<>(domain, tail, args);
+            var deref = new AtTupleIndexThunk<>(domain, tail, args);
             var body = f.apply(Term.apply(deref, source));
             return body.collapse(source, new TupleIndex.Succ<>(args));
         }

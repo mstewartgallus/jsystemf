@@ -37,7 +37,7 @@ public final class Jit {
                     return (Term) jitCallThunk(k);
                 }
 
-                if (term instanceof AtTupleIndexValue<?, ?, ?> derefThunk) {
+                if (term instanceof AtTupleIndexThunk<?, ?, ?> derefThunk) {
                     return (Term) jitDeref(derefThunk);
                 }
 
@@ -74,7 +74,7 @@ public final class Jit {
         return new FlatValue<>(consValue.type(), Collections.unmodifiableList(terms));
     }
 
-    private static <A extends Tuple<A>, B extends Tuple<B>, C> Term<F<B, C>> jitDeref(AtTupleIndexValue<A, B, C> derefThunk) {
+    private static <A extends Tuple<A>, B extends Tuple<B>, C> Term<F<B, C>> jitDeref(AtTupleIndexThunk<A, B, C> derefThunk) {
         var index = derefThunk.index();
         var head = derefThunk.head();
         var indexInt = index.reify();

@@ -5,15 +5,14 @@ import com.sstewartgallus.plato.*;
 
 import java.util.Objects;
 
-public final class AtTupleIndexValue<B extends Tuple<B>, X extends Tuple<X>, A> extends LambdaValue<X, A> {
+public final class AtTupleIndexThunk<B extends Tuple<B>, X extends Tuple<X>, A> implements ThunkTerm<F<X, A>> {
     private final Type<A> head;
     private final Type<B> tail;
     private final TupleIndex<X, P<A, B>> index;
     private final int reify;
 
-    public AtTupleIndexValue(Type<A> head, Type<B> tail,
+    public AtTupleIndexThunk(Type<A> head, Type<B> tail,
                              TupleIndex<X, P<A, B>> index) {
-        super(index.domain());
         this.head = head;
         this.tail = tail;
         this.index = index;
@@ -28,11 +27,6 @@ public final class AtTupleIndexValue<B extends Tuple<B>, X extends Tuple<X>, A> 
 
     public TupleIndex<X, P<A, B>> index() {
         return index;
-    }
-
-    @Override
-    public Term<A> apply(Term<X> x) {
-        return ((TuplePairValue<A, B>) index.index(Interpreter.normalize(x))).head();
     }
 
     @Override
@@ -55,4 +49,8 @@ public final class AtTupleIndexValue<B extends Tuple<B>, X extends Tuple<X>, A> 
         return "[" + index + "]";
     }
 
+    @Override
+    public Term<F<X, A>> stepThunk() {
+        return index.domain().l(x -> ((TuplePairValue<A, B>) index.index(Interpreter.normalize(x))).head());
+    }
 }

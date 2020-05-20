@@ -101,7 +101,7 @@ public final class Jit {
         handle = dropArguments(handle, 0, before);
         handle = dropArguments(handle, handle.type().parameterCount(), after);
 
-        return new JitLambdaValue<>(index.domain().to(head), handle);
+        return new JitLambdaValue<>(null, index.domain().to(head), handle);
     }
 
     private static <A, B> Term<B> jitApply(ApplyThunk<A, B> apply) {
@@ -124,10 +124,5 @@ public final class Jit {
         //      mh = dropArguments(mh, 1, right.erase());
         //    return new MethodHandleThunk<>(new Sig.Cons<>(f, new Sig.Cons<>(x, new Sig.Cons<>(z, new Sig.Zero<>(b)))), mh);
         throw null;
-    }
-
-    private static <A> Term<F<A, A>> jitIdentity(Type<A> type) {
-        var mh = identity(type.erase());
-        return new JitLambdaValue<>(type.to(type), mh);
     }
 }

@@ -15,9 +15,13 @@ public final class JitLambdaValue<A, B> implements ThunkTerm<F<A, B>>, JitValue<
     private static final JitInvoker INVOKE_TERM = TermInvoker.newInstance(lookup(), JitInvoker.class);
     private final MethodHandle methodHandle;
     private final Type<F<A, B>> sig;
+    private final String source;
 
-    public JitLambdaValue(Type<F<A, B>> sig,
+    // fixme...
+    public JitLambdaValue(String source,
+                          Type<F<A, B>> sig,
                           MethodHandle methodHandle) {
+        this.source = source;
         this.sig = sig;
         this.methodHandle = methodHandle;
     }
@@ -44,7 +48,7 @@ public final class JitLambdaValue<A, B> implements ThunkTerm<F<A, B>>, JitValue<
     }
 
     public String toString() {
-        return "JIT@" + sig;
+        return source;
     }
 
     @FunctionalInterface

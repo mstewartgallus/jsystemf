@@ -4,8 +4,10 @@ import com.sstewartgallus.plato.Term;
 import com.sstewartgallus.plato.Type;
 import com.sstewartgallus.plato.TypeCheckException;
 import com.sstewartgallus.plato.ValueTerm;
+import org.objectweb.asm.ClassVisitor;
 import org.objectweb.asm.MethodVisitor;
 
+import java.lang.constant.ClassDesc;
 import java.util.Map;
 import java.util.Objects;
 
@@ -28,7 +30,7 @@ public final class VarValue<A> implements ValueTerm<A>, Comparable<VarValue<?>> 
     }
 
     @Override
-    public void jit(MethodVisitor methodVisitor, Map<VarValue<?>, VarData> varDataMap) {
+    public void jit(ClassDesc thisClass, ClassVisitor classVisitor, MethodVisitor methodVisitor, Map<VarValue<?>, VarData> varDataMap) {
         var data = varDataMap.get(this);
         var clazz = type.erase();
         var ii = data.argument();

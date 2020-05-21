@@ -1,20 +1,19 @@
 package com.sstewartgallus.plato;
 
-import com.sstewartgallus.ext.mh.JitLambdaValue;
 import com.sstewartgallus.ext.pretty.PrettyThunk;
 import com.sstewartgallus.ext.variables.VarValue;
-import com.sstewartgallus.runtime.AnonClassLoader;
-import org.objectweb.asm.ClassWriter;
-import org.objectweb.asm.util.TraceClassVisitor;
+import com.sstewartgallus.runtime.TermDesc;
+import org.objectweb.asm.ClassVisitor;
+import org.objectweb.asm.MethodVisitor;
 
-import java.io.PrintWriter;
-import java.io.StringWriter;
-import java.lang.invoke.MethodHandle;
+import java.lang.constant.ClassDesc;
+import java.lang.constant.DirectMethodHandleDesc;
+import java.lang.constant.MethodHandleDesc;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.Map;
 import java.util.Objects;
 
-import static java.lang.invoke.MethodHandles.lookup;
 import static java.lang.invoke.MethodType.methodType;
 import static org.objectweb.asm.Opcodes.*;
 
@@ -41,8 +40,13 @@ public abstract class LambdaValue<A, B> implements ValueTerm<F<A, B>>, LambdaTer
         return new SimpleLambdaValue<>(visitor.type(domain()), x -> v.substituteIn(body, x));
     }
 
-    // fixme... attach all lambdas in an expression to the same class?
-    public final Term<F<A, B>> jit() {
+    @Override
+    public void jit(ClassDesc thisClass, ClassVisitor classVisitor, MethodVisitor mw, Map<VarValue<?>, VarData> varDataMap) {
+        var term = jit(thisClass, classVisitor);
+        mw.visitLdcInsn(AsmUtils.toAsm(term));
+    }
+
+    public final TermDesc<F<A, B>> jit(ClassDesc thisClass, ClassVisitor cv) {
         LambdaValue<?, ?> current = this;
 
         var args = new ArrayList<Class<?>>();
@@ -69,24 +73,16 @@ public abstract class LambdaValue<A, B> implements ValueTerm<F<A, B>>, LambdaTer
             break;
         }
 
+        // fixme... generate unique name...
+        var methodName = "apply";
+
         var methodType = methodType(range, args);
 
-        var myname = org.objectweb.asm.Type.getInternalName(LambdaValue.class);
-        var newclassname = myname + "Impl";
-
-        // fixme... privatise as much as possible...
-        var cw = new ClassWriter(ClassWriter.COMPUTE_FRAMES | ClassWriter.COMPUTE_MAXS);
-
-        var str = new StringWriter();
-        var cv = new TraceClassVisitor(cw, new PrintWriter(str));
-
-        cv.visit(V14, ACC_FINAL | ACC_PUBLIC, newclassname, null, myname, null);
-
         {
-            var mw = cv.visitMethod(ACC_PUBLIC | ACC_STATIC, "apply", methodType.descriptorString(), null, null);
+            var mw = cv.visitMethod(ACC_PUBLIC | ACC_STATIC, methodName, methodType.descriptorString(), null, null);
             mw.visitCode();
 
-            body.jit(mw, varDataMap);
+            body.jit(thisClass, cv, mw, varDataMap);
 
             if (range.isPrimitive()) {
                 switch (range.getName()) {
@@ -112,19 +108,9 @@ public abstract class LambdaValue<A, B> implements ValueTerm<F<A, B>>, LambdaTer
             mw.visitEnd();
         }
 
-        cv.visitEnd();
-
-        var bytes = cw.toByteArray();
-
-        var definedClass = AnonClassLoader.defineClass(LambdaValue.class.getClassLoader(), bytes);
-        MethodHandle mh;
-        try {
-            mh = lookup().findStatic(definedClass, "apply", methodType);
-        } catch (NoSuchMethodException | IllegalAccessException e) {
-            throw new RuntimeException(e);
-        }
-
-        return new JitLambdaValue<>(str.toString(), type(), mh);
+        var td = type().describeConstable().get();
+        var mh = MethodHandleDesc.ofMethod(DirectMethodHandleDesc.Kind.STATIC, thisClass, methodName, methodType.describeConstable().get());
+        return TermDesc.ofMethod(td, mh);
     }
 
     @Override

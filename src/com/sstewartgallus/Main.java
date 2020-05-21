@@ -19,7 +19,9 @@ import com.sstewartgallus.runtime.ValueThrowable;
 import com.sstewartgallus.runtime.ValueThrowables;
 
 import java.io.IOException;
+import java.io.PrintWriter;
 import java.io.StringReader;
+import java.io.StringWriter;
 import java.lang.annotation.ElementType;
 import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
@@ -116,8 +118,12 @@ public final class Main {
         var captured = Capture.capture(term);
         outputT("Partial Application", captured);
 
-        var pf = Jit.jit(captured);
+        var str = new StringWriter();
+        var writer = new PrintWriter(str);
+        var pf = Jit.jit(captured, writer);
         outputT("JIT", pf);
+
+        System.err.println(str.toString());
 
         System.exit(0);
         TO_EXEC = () -> ValueThrowables.clone(TEMPLATE);// API.apply((Value<F<Integer, F<Integer, Integer>>>) main, 3, 3);

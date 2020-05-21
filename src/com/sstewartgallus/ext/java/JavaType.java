@@ -2,13 +2,24 @@ package com.sstewartgallus.ext.java;
 
 import com.sstewartgallus.plato.Type;
 import com.sstewartgallus.plato.TypeCheckException;
+import com.sstewartgallus.runtime.TypeDesc;
 
 import java.util.Objects;
+import java.util.Optional;
 
 public record JavaType<A>(Class<A>clazz) implements Type<J<A>> {
-
     public JavaType {
         Objects.requireNonNull(clazz);
+    }
+
+    @Override
+    public Optional<TypeDesc<J<A>>> describeConstable() {
+        var cConst = clazz.describeConstable();
+
+        if (cConst.isEmpty()) {
+            return Optional.empty();
+        }
+        return Optional.of((TypeDesc) TypeDesc.ofJavaClass(cConst.get()));
     }
 
     public Class<?> erase() {

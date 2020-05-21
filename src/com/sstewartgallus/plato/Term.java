@@ -1,9 +1,14 @@
 package com.sstewartgallus.plato;
 
 import com.sstewartgallus.ext.variables.VarValue;
+import com.sstewartgallus.runtime.TermDesc;
+import org.objectweb.asm.ClassVisitor;
 import org.objectweb.asm.MethodVisitor;
 
+import java.lang.constant.ClassDesc;
+import java.lang.constant.Constable;
 import java.util.Map;
+import java.util.Optional;
 import java.util.function.Function;
 
 /**
@@ -17,8 +22,7 @@ import java.util.function.Function;
  * and https://github.com/DanBurton/Blog/blob/master/Literate%20Haskell/SystemF.lhs
  * for inspiration.
  */
-public interface Term<A> {
-
+public interface Term<A> extends Constable {
     static <A, B> Term<B> apply(Term<V<A, B>> f, Type<A> x) {
         return new TypeApplyThunk<>(f, x);
     }
@@ -31,6 +35,10 @@ public interface Term<A> {
         return new SimpleTypeLambdaValue<>(f);
     }
 
+    default Optional<TermDesc<A>> describeConstable() {
+        throw null;
+    }
+
     <B> Term<B> stepThunk(Function<ValueTerm<A>, Term<B>> k);
 
     Type<A> type() throws TypeCheckException;
@@ -41,7 +49,7 @@ public interface Term<A> {
 
     Term<A> visitChildren(Visitor visitor);
 
-    default void jit(MethodVisitor methodVisitor, Map<VarValue<?>, VarData> varDataMap) {
+    default void jit(ClassDesc thisClass, ClassVisitor classVisitor, MethodVisitor methodVisitor, Map<VarValue<?>, VarData> varDataMap) {
         throw new UnsupportedOperationException(getClass().toString());
     }
 

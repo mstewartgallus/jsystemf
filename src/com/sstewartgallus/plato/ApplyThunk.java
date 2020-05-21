@@ -1,10 +1,12 @@
 package com.sstewartgallus.plato;
 
 import com.sstewartgallus.ext.variables.VarValue;
+import org.objectweb.asm.ClassVisitor;
 import org.objectweb.asm.Handle;
 import org.objectweb.asm.MethodVisitor;
 import org.objectweb.asm.Opcodes;
 
+import java.lang.constant.ClassDesc;
 import java.lang.invoke.CallSite;
 import java.lang.invoke.MethodHandles;
 import java.util.Map;
@@ -32,12 +34,13 @@ public record ApplyThunk<A, B>(Term<F<A, B>>f, Term<A>x) implements ThunkTerm<B>
     }
 
     @Override
-    public void jit(MethodVisitor mw, Map<VarValue<?>, VarData> varDataMap) {
-        f.jit(mw, varDataMap);
+    public void jit(ClassDesc thisClass, ClassVisitor classVisitor, MethodVisitor mw, Map<VarValue<?>, VarData> varDataMap) {
+        // fixme.. unroll multiple applications.
+        f.jit(thisClass, classVisitor, mw, varDataMap);
 
         mw.visitInsn(Opcodes.ACONST_NULL);
 
-        x.jit(mw, varDataMap);
+        x.jit(thisClass, classVisitor, mw, varDataMap);
 
         var t = ((FunctionType<A, B>) f.type()).range().erase();
         mw.visitInvokeDynamicInsn("CALL", methodType(t, f.type().erase(), Void.class, x.type().erase()).descriptorString(), HANDLE);

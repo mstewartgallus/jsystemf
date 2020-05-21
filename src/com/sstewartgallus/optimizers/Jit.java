@@ -1,6 +1,6 @@
 package com.sstewartgallus.optimizers;
 
-import com.sstewartgallus.plato.LambdaValue;
+import com.sstewartgallus.plato.LambdaTerm;
 import com.sstewartgallus.plato.Term;
 import com.sstewartgallus.runtime.AnonClassLoader;
 import org.objectweb.asm.ClassWriter;
@@ -26,7 +26,7 @@ public final class Jit {
 
         var cv = new TraceClassVisitor(cw, writer);
 
-        var myname = org.objectweb.asm.Type.getInternalName(LambdaValue.class);
+        var myname = org.objectweb.asm.Type.getInternalName(LambdaTerm.class);
         var newclassname = myname + "Impl";
 
         var thisClass = ClassDesc.of(newclassname.replace('/', '.'));
@@ -48,7 +48,7 @@ public final class Jit {
 
         var bytes = cw.toByteArray();
 
-        var definedClass = AnonClassLoader.defineClass(LambdaValue.class.getClassLoader(), bytes);
+        var definedClass = AnonClassLoader.defineClass(LambdaTerm.class.getClassLoader(), bytes);
         MethodHandle mh;
         try {
             mh = lookup().findStatic(definedClass, "get", methodType(Term.class));

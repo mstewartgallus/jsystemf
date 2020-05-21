@@ -1,6 +1,6 @@
 package com.sstewartgallus.runtime;
 
-import com.sstewartgallus.plato.LambdaValue;
+import com.sstewartgallus.plato.LambdaTerm;
 import com.sstewartgallus.plato.Term;
 import jdk.dynalink.linker.GuardedInvocation;
 import jdk.dynalink.linker.LinkRequest;
@@ -20,7 +20,7 @@ public final class LambdaLinker implements TypeBasedGuardingDynamicLinker {
 
     static {
         try {
-            APPLY_MH = lookup().findVirtual(LambdaValue.class, "apply", MethodType.methodType(Term.class, Term.class));
+            APPLY_MH = lookup().findVirtual(LambdaTerm.class, "apply", MethodType.methodType(Term.class, Term.class));
         } catch (NoSuchMethodException | IllegalAccessException e) {
             throw new RuntimeException(e);
         }
@@ -28,12 +28,12 @@ public final class LambdaLinker implements TypeBasedGuardingDynamicLinker {
 
     @Override
     public boolean canLinkType(Class<?> aClass) {
-        return LambdaValue.class.isAssignableFrom(aClass);
+        return LambdaTerm.class.isAssignableFrom(aClass);
     }
 
     @Override
     public GuardedInvocation getGuardedInvocation(LinkRequest linkRequest, LinkerServices linkerServices) throws Exception {
-        var receiver = (LambdaValue<?, ?>) linkRequest.getReceiver();
+        var receiver = (LambdaTerm<?, ?>) linkRequest.getReceiver();
         var cs = linkRequest.getCallSiteDescriptor();
         var methodType = cs.getMethodType();
 
@@ -43,7 +43,7 @@ public final class LambdaLinker implements TypeBasedGuardingDynamicLinker {
             mh = dropArguments(mh, 1, Void.class);
             return new GuardedInvocation(
                     linkerServices.asType(mh, methodType),
-                    Guards.isOfClass(LambdaValue.class, methodType));
+                    Guards.isOfClass(LambdaTerm.class, methodType));
         }
 
         var newMethodType = methodType;
@@ -62,7 +62,7 @@ public final class LambdaLinker implements TypeBasedGuardingDynamicLinker {
         mh = dropArguments(mh, 1, Void.class);
         return new GuardedInvocation(
                 linkerServices.asType(mh, methodType),
-                Guards.isOfClass(LambdaValue.class, methodType));
+                Guards.isOfClass(LambdaTerm.class, methodType));
     }
 }
 

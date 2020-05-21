@@ -2,7 +2,7 @@ package com.sstewartgallus.plato;
 
 import com.sstewartgallus.ext.java.J;
 import com.sstewartgallus.ext.java.JavaTag;
-import com.sstewartgallus.ext.pretty.PrettyThunk;
+import com.sstewartgallus.ext.pretty.PrettyTag;
 import com.sstewartgallus.runtime.TypeDesc;
 
 import java.lang.constant.Constable;
@@ -39,9 +39,9 @@ public interface Type<X> extends Constable {
 
     default <B> ValueTerm<F<X, B>> l(Function<Term<X>, Term<B>> f) {
         // fixme... how to fix type inference...
-        try (var pretty = PrettyThunk.generate(this)) {
-            var range = f.apply(pretty).type();
-            return new SimpleLambdaValue<>(this, range, f);
+        try (var pretty = PrettyTag.<X>generate()) {
+            var range = f.apply(NominalTerm.ofTag(pretty, this)).type();
+            return new SimpleLambdaTerm<>(this, range, f);
         }
     }
 

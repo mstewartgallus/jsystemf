@@ -4,7 +4,6 @@ import com.sstewartgallus.plato.*;
 import com.sstewartgallus.runtime.TermInvoker;
 
 import java.lang.invoke.MethodHandle;
-import java.util.function.Function;
 
 import static java.lang.invoke.MethodHandles.lookup;
 
@@ -15,13 +14,13 @@ public final class JitValue<A> implements ThunkTerm<A>, ValueTerm<A> {
     private static final JitInvoker INVOKE_TERM = TermInvoker.newInstance(lookup(), JitInvoker.class);
     private final MethodHandle methodHandle;
     private final Type<A> type;
-    private final String name;
+    private final String source;
 
     // fixme...
-    public JitValue(String name,
+    public JitValue(String source,
                     Type<A> type,
                     MethodHandle methodHandle) {
-        this.name = name;
+        this.source = source;
         this.type = type;
         this.methodHandle = methodHandle;
     }
@@ -31,7 +30,7 @@ public final class JitValue<A> implements ThunkTerm<A>, ValueTerm<A> {
     }
 
     @Override
-    public <C> Term<C> stepThunk(Function<ValueTerm<A>, Term<C>> k) {
+    public <C> Term<C> step(TermCont<A, C> k) {
         var self = this;
         return k.apply(INVOKE_TERM.apply(self));
     }
@@ -47,7 +46,7 @@ public final class JitValue<A> implements ThunkTerm<A>, ValueTerm<A> {
     }
 
     public String toString() {
-        return name;
+        return source;
     }
 
     @FunctionalInterface

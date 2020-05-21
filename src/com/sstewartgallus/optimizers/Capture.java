@@ -2,7 +2,8 @@ package com.sstewartgallus.optimizers;
 
 import com.sstewartgallus.ext.variables.VarValue;
 import com.sstewartgallus.plato.F;
-import com.sstewartgallus.plato.LambdaValue;
+import com.sstewartgallus.plato.LambdaTerm;
+import com.sstewartgallus.plato.NominalTerm;
 import com.sstewartgallus.plato.Term;
 
 import java.util.HashSet;
@@ -19,21 +20,21 @@ public final class Capture {
         return root.visit(new CaptureVisitor());
     }
 
-    private static <A, B> Results<F<A, B>> captureLambda(LambdaValue<A, B> lambda) {
+    private static <A, B> Results<F<A, B>> captureLambda(LambdaTerm<A, B> lambda) {
         var results = captureLambdaInner(lambda);
         var captured = results.captured;
         List<VarValue<?>> free = captured.stream().sorted().collect(Collectors.toUnmodifiableList());
         return new Results<>(captured, helper(free, 0, results.value));
     }
 
-    private static <A, B> Results<F<A, B>> captureLambdaInner(LambdaValue<A, B> lambda) {
+    private static <A, B> Results<F<A, B>> captureLambdaInner(LambdaTerm<A, B> lambda) {
         var domain = lambda.domain();
         var v = new VarValue<>(domain);
 
-        var body = lambda.apply(v);
+        var body = lambda.apply(NominalTerm.ofTag(v, domain));
         Set<VarValue<?>> captured;
         Term<B> value;
-        if (body instanceof LambdaValue<?, ?> lambdaBody) {
+        if (body instanceof LambdaTerm<?, ?> lambdaBody) {
             var results = (Results<B>) captureLambdaInner(lambdaBody);
             captured = results.captured;
             value = results.value;
@@ -57,7 +58,7 @@ public final class Capture {
 
     private static <A, B> Term<A> helper(List<VarValue<?>> free, int ii, VarValue<B> freeVar, Term<A> body) {
         var f = freeVar.type().l(x -> freeVar.substituteIn(body, x));
-        return Term.apply(helper(free, ii + 1, f), freeVar);
+        return Term.apply(helper(free, ii + 1, f), NominalTerm.ofTag(freeVar, freeVar.type()));
     }
 
     static final class CaptureVisitor extends Term.Visitor {
@@ -65,12 +66,12 @@ public final class Capture {
 
         @Override
         public <T> Term<T> term(Term<T> term) {
-            if (term instanceof VarValue<T> v) {
+            if (term instanceof NominalTerm<T> nominalTerm && nominalTerm.tag() instanceof VarValue<T> v) {
                 captured.add(v);
-                return v;
+                return nominalTerm;
             }
 
-            if (!(term instanceof LambdaValue<?, ?> thunk)) {
+            if (!(term instanceof LambdaTerm<?, ?> thunk)) {
                 var child = new CaptureVisitor();
                 var result = term.visitChildren(child);
                 captured.addAll(child.captured);

@@ -1,20 +1,22 @@
 package com.sstewartgallus.ext.variables;
 
+import com.sstewartgallus.plato.NominalTerm;
 import com.sstewartgallus.plato.Term;
+import com.sstewartgallus.plato.TermTag;
 import com.sstewartgallus.plato.Type;
-import com.sstewartgallus.plato.TypeCheckException;
-import com.sstewartgallus.plato.ValueTerm;
 import org.objectweb.asm.ClassVisitor;
 import org.objectweb.asm.MethodVisitor;
 
 import java.lang.constant.ClassDesc;
+import java.lang.constant.ConstantDesc;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Optional;
 
 import static org.objectweb.asm.Opcodes.*;
 
 // fixme... should be a nonpure extension to the list language ?
-public final class VarValue<A> implements ValueTerm<A>, Comparable<VarValue<?>> {
+public final class VarValue<A> implements TermTag<A>, Comparable<VarValue<?>> {
     private final Type<A> type;
     private final Id<A> variable;
 
@@ -29,10 +31,15 @@ public final class VarValue<A> implements ValueTerm<A>, Comparable<VarValue<?>> 
         this.variable = variable;
     }
 
+    public Type<A> type() {
+        return type;
+    }
+
+    // fixme.. pretty sure this is wrong....
     @Override
-    public void jit(ClassDesc thisClass, ClassVisitor classVisitor, MethodVisitor methodVisitor, Map<VarValue<?>, VarData> varDataMap) {
+    public void jit(ClassDesc thisClass, ClassVisitor classVisitor, MethodVisitor methodVisitor, Map<VarValue<?>, Term.VarData> varDataMap) {
         var data = varDataMap.get(this);
-        var clazz = type.erase();
+        var clazz = data.type().erase();
         var ii = data.argument();
         if (clazz.isPrimitive()) {
             switch (clazz.getName()) {
@@ -56,27 +63,22 @@ public final class VarValue<A> implements ValueTerm<A>, Comparable<VarValue<?>> 
     }
 
     @Override
-    public Term<A> visitChildren(Visitor visitor) {
-        return new VarValue<>(visitor.type(type), variable);
-    }
-
-    @Override
     public String toString() {
         return "v" + variable;
     }
 
     public <X> Term<X> substituteIn(Term<X> root, Term<A> replacement) {
-        return root.visit(new Visitor() {
+        return root.visit(new Term.Visitor() {
             @Override
             public <T> Term<T> term(Term<T> term) {
-                if (!(term instanceof VarValue<T> varValue)) {
+                if (!(term instanceof NominalTerm<T> nominalTerm && nominalTerm.tag() instanceof VarValue<T> varValue)) {
                     return term.visitChildren(this);
                 }
 
                 if (varValue.variable == variable) {
                     return (Term) replacement;
                 }
-                return varValue;
+                return nominalTerm;
             }
         });
     }
@@ -87,7 +89,7 @@ public final class VarValue<A> implements ValueTerm<A>, Comparable<VarValue<?>> 
     }
 
     @Override
-    public Type<A> type() throws TypeCheckException {
-        return type;
+    public Optional<? extends ConstantDesc> describeConstable() {
+        return Optional.empty();
     }
 }

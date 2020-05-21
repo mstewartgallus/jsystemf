@@ -12,13 +12,12 @@ import java.lang.invoke.MethodHandles;
 import java.lang.invoke.MethodType;
 import java.util.Map;
 import java.util.Objects;
-import java.util.function.Function;
 
 import static java.lang.invoke.MethodType.methodType;
 
-public record ApplyThunk<A, B>(Term<F<A, B>>f, Term<A>x) implements ThunkTerm<B>, LambdaTerm<B> {
+public record ApplyTerm<A, B>(Term<F<A, B>>f, Term<A>x) implements ThunkTerm<B>, Term<B> {
 
-    public ApplyThunk {
+    public ApplyTerm {
         Objects.requireNonNull(f);
         Objects.requireNonNull(x);
     }
@@ -39,7 +38,7 @@ public record ApplyThunk<A, B>(Term<F<A, B>>f, Term<A>x) implements ThunkTerm<B>
         x.jit(thisClass, classVisitor, mw, varDataMap);
 
         // fixme....
-        var range = ((LambdaValue<A, B>) f).range();
+        var range = ((LambdaTerm<A, B>) f).range();
         var t = range.erase();
         var methodTypeDesc = methodType(t, this.f.type().erase(), Void.class, this.x.type().erase()).describeConstable().get();
 
@@ -54,7 +53,7 @@ public record ApplyThunk<A, B>(Term<F<A, B>>f, Term<A>x) implements ThunkTerm<B>
     @Override
     public Type<B> type() throws TypeCheckException {
         // fixme....
-        var range = ((LambdaValue<A, B>) f).range();
+        var range = ((LambdaTerm<A, B>) f).range();
 
         f.type().unify(x.type().to(range));
 
@@ -62,11 +61,16 @@ public record ApplyThunk<A, B>(Term<F<A, B>>f, Term<A>x) implements ThunkTerm<B>
     }
 
     @Override
-    public <C> Term<C> stepThunk(Function<ValueTerm<B>, Term<C>> k) {
+    public boolean reducible() {
+        return f.reducible() || f instanceof LambdaTerm;
+    }
+
+    @Override
+    public <C> Term<C> step(TermCont<B, C> k) {
         var theX = x;
-        return f.stepThunk(fValue -> {
-            var fLambda = (LambdaValue<A, B>) fValue;
-            return fLambda.apply(theX).stepThunk(k);
+        return f.step(fValue -> {
+            var fLambda = (LambdaTerm<A, B>) fValue;
+            return fLambda.apply(theX).step(k);
         });
     }
 }

@@ -1,7 +1,7 @@
 package com.sstewartgallus.runtime;
 
+import com.sstewartgallus.plato.ApplyTerm;
 import com.sstewartgallus.plato.Term;
-import com.sstewartgallus.plato.TermCont;
 import com.sstewartgallus.plato.ThunkTerm;
 import jdk.dynalink.linker.GuardedInvocation;
 import jdk.dynalink.linker.LinkRequest;
@@ -15,13 +15,13 @@ import java.util.function.Function;
 import static java.lang.invoke.MethodHandles.*;
 import static java.lang.invoke.MethodType.methodType;
 
-public final class ThunkLinker implements TypeBasedGuardingDynamicLinker {
+public final class ApplyLinker implements TypeBasedGuardingDynamicLinker {
     // fixme... can we have a better normalize than just abstract dispatch?
     private static final MethodHandle STEP_THUNK_MH;
 
     static {
         try {
-            STEP_THUNK_MH = lookup().findVirtual(ThunkTerm.class, "step", methodType(Term.class, TermCont.class));
+            STEP_THUNK_MH = lookup().findVirtual(ThunkTerm.class, "step", methodType(Term.class, Function.class));
         } catch (NoSuchMethodException | IllegalAccessException e) {
             throw new RuntimeException(e);
         }
@@ -29,17 +29,17 @@ public final class ThunkLinker implements TypeBasedGuardingDynamicLinker {
 
     @Override
     public boolean canLinkType(Class<?> aClass) {
-        return ThunkTerm.class.isAssignableFrom(aClass);
+        return ApplyTerm.class.isAssignableFrom(aClass);
     }
 
     @Override
     public GuardedInvocation getGuardedInvocation(LinkRequest linkRequest, LinkerServices linkerServices) throws Exception {
-        var receiver = (ThunkTerm<?>) linkRequest.getReceiver();
-
-        System.err.println("fixme.. move away from thunks");
+        var receiver = (ApplyTerm<?, ?>) linkRequest.getReceiver();
 
         var cs = linkRequest.getCallSiteDescriptor();
         var methodType = cs.getMethodType();
+
+        // fixme... specialize for apply
 
         // fixme.... rename kind of the reverse of a closure, grabs all the arguments then applies them to the result...
         var environment = methodType.dropParameterTypes(0, 2);
@@ -51,6 +51,6 @@ public final class ThunkLinker implements TypeBasedGuardingDynamicLinker {
 
         mh = foldArguments(mh, 1, closure);
         mh = dropArguments(mh, 1, Void.class);
-        return new GuardedInvocation(mh, Guards.isInstance(ThunkTerm.class, methodType));
+        return new GuardedInvocation(mh, Guards.isInstance(ApplyTerm.class, methodType));
     }
 }

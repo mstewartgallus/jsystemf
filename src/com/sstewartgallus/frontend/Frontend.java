@@ -1,6 +1,7 @@
 package com.sstewartgallus.frontend;
 
 import com.sstewartgallus.ext.variables.VarValue;
+import com.sstewartgallus.plato.NominalTerm;
 import com.sstewartgallus.plato.Term;
 import com.sstewartgallus.plato.Type;
 import com.sstewartgallus.primitives.Prims;
@@ -102,7 +103,7 @@ public class Frontend {
 
     public static <A> Term<?> getTerm(String binder, Type<A> binderType, Node.Array rest, Environment environment) {
         var variable = new VarValue<>(binderType);
-        var entity = new Entity.TermEntity(binder, variable);
+        var entity = new Entity.TermEntity(binder, NominalTerm.ofTag(variable, binderType));
         var newEnv = environment.put(binder, entity);
 
         var theTerm = toTerm(rest, newEnv);

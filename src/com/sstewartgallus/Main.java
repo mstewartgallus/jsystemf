@@ -10,11 +10,7 @@ import com.sstewartgallus.frontend.Frontend;
 import com.sstewartgallus.frontend.Node;
 import com.sstewartgallus.optimizers.Capture;
 import com.sstewartgallus.optimizers.Jit;
-import com.sstewartgallus.plato.F;
-import com.sstewartgallus.plato.NominalType;
-import com.sstewartgallus.plato.Term;
-import com.sstewartgallus.plato.Type;
-import com.sstewartgallus.primitives.Prims;
+import com.sstewartgallus.plato.*;
 import com.sstewartgallus.runtime.TermInvoker;
 import com.sstewartgallus.runtime.ValueThrowable;
 import com.sstewartgallus.runtime.ValueThrowables;
@@ -47,8 +43,7 @@ public final class Main {
     static final Supplier<Object> TO_EXEC;
     private static final MyThrowable TEMPLATE = new MyThrowable();
     private static final ApplyInt API = TermInvoker.newInstance(lookup(), ApplyInt.class);
-    @PutEnv("+")
-    private static final Term<?> ADD = Type.INT.l(x -> Type.INT.l(y -> Prims.add(x, y)));
+
     @PutEnv("int")
     private static final Type<?> INT_TYPE = Type.INT;
     private static final Environment DEFAULT_ENV =
@@ -142,7 +137,7 @@ public final class Main {
         var type = Frontend.toType(binderType, environment);
 
         var v = new VarValue<>(type);
-        environment = environment.put(binderName, new Entity.TermEntity(binderName, v));
+        environment = environment.put(binderName, new Entity.TermEntity(binderName, NominalTerm.ofTag(v, (Type) type)));
 
         var theTerm = Frontend.toTerm(rest, environment);
 

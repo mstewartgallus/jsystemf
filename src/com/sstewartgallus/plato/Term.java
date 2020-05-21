@@ -24,22 +24,25 @@ import java.util.function.Function;
  */
 public interface Term<A> extends Constable {
     static <A, B> Term<B> apply(Term<V<A, B>> f, Type<A> x) {
-        return new TypeApplyThunk<>(f, x);
+        return new TypeApplyTerm<>(f, x);
     }
 
     static <A, B> Term<B> apply(Term<F<A, B>> f, Term<A> x) {
-        return new ApplyThunk<>(f, x);
+        return new ApplyTerm<>(f, x);
     }
 
     static <A, B> ValueTerm<V<A, B>> v(Function<Type<A>, Term<B>> f) {
-        return new SimpleTypeLambdaValue<>(f);
+        return new SimpleTypeLambdaTerm<>(f);
     }
 
     default Optional<TermDesc<A>> describeConstable() {
         throw null;
     }
 
-    <B> Term<B> stepThunk(Function<ValueTerm<A>, Term<B>> k);
+    // fixme.. reimplement as continuation monad..
+    boolean reducible();
+
+    <B> Term<B> step(TermCont<A, B> k);
 
     Type<A> type() throws TypeCheckException;
 
@@ -63,6 +66,6 @@ public interface Term<A> extends Constable {
         }
     }
 
-    record VarData(int argument) {
+    record VarData(int argument, Type<?>type) {
     }
 }

@@ -1,6 +1,6 @@
 package com.sstewartgallus;
 
-import com.sstewartgallus.ext.pretty.PrettyThunk;
+import com.sstewartgallus.ext.pretty.PrettyTag;
 import com.sstewartgallus.ext.pretty.PrettyType;
 import com.sstewartgallus.plato.*;
 
@@ -31,22 +31,22 @@ public class PrettyPrint {
     }
 
     static <A> String prettyPrint(Term<A> term) {
-        if (term instanceof LambdaValue<?, ?> lambda) {
+        if (term instanceof LambdaTerm<?, ?> lambda) {
             return prettyPrintLambda(lambda);
         }
-        if (term instanceof ApplyThunk<?, A> applyThunk) {
+        if (term instanceof ApplyTerm<?, A> applyThunk) {
             return prettyPrintApply(applyThunk);
         }
-        if (term instanceof TypeLambdaValue<?, ?> lambda) {
+        if (term instanceof TypeLambdaTerm<?, ?> lambda) {
             return prettyPrintTypeLambda(lambda);
         }
-        if (term instanceof TypeApplyThunk<?, A> applyThunk) {
+        if (term instanceof TypeApplyTerm<?, A> applyThunk) {
             return prettyPrintTypeApply(applyThunk);
         }
         return term.toString();
     }
 
-    private static <A, B> String prettyPrintTypeLambda(TypeLambdaValue<A, B> lambda) {
+    private static <A, B> String prettyPrintTypeLambda(TypeLambdaTerm<A, B> lambda) {
         try (var pretty = PrettyType.<A>generate()) {
             var p = NominalType.ofTag(pretty);
             var body = lambda.apply(p);
@@ -54,43 +54,43 @@ public class PrettyPrint {
         }
     }
 
-    private static <A> String prettyPrintTypeApply(TypeApplyThunk<?, A> applyThunk) {
+    private static <A> String prettyPrintTypeApply(TypeApplyTerm<?, A> applyThunk) {
         return "(" + noBrackets(applyThunk) + ")";
     }
 
-    private static <A, B> String noBrackets(TypeApplyThunk<A, B> applyThunk) {
+    private static <A, B> String noBrackets(TypeApplyTerm<A, B> applyThunk) {
         var f = applyThunk.f();
         var x = applyThunk.x();
-        if (f instanceof TypeApplyThunk<?, V<A, B>> fApply) {
+        if (f instanceof TypeApplyTerm<?, V<A, B>> fApply) {
             return noBrackets(fApply) + " " + prettyPrint(x);
         }
         return prettyPrint(f) + " " + prettyPrint(x);
     }
 
 
-    private static <A> String prettyPrintApply(ApplyThunk<?, A> applyThunk) {
+    private static <A> String prettyPrintApply(ApplyTerm<?, A> applyThunk) {
         return "(" + noBrackets(applyThunk) + ")";
     }
 
-    private static <A, B> String noBrackets(ApplyThunk<A, B> apply) {
+    private static <A, B> String noBrackets(ApplyTerm<A, B> apply) {
         var f = apply.f();
         var x = apply.x();
-        if (f instanceof ApplyThunk<?, F<A, B>> fApply) {
+        if (f instanceof ApplyTerm<?, F<A, B>> fApply) {
             return noBrackets(fApply) + " " + prettyPrint(x);
         }
         return prettyPrint(f) + " " + prettyPrint(x);
     }
 
-    private static <A, B> String prettyPrintLambda(LambdaValue<A, B> lambda) {
+    private static <A, B> String prettyPrintLambda(LambdaTerm<A, B> lambda) {
         return "(" + noBrackets(lambda) + ")";
     }
 
-    private static <A, B> String noBrackets(LambdaValue<A, B> lambda) {
+    private static <A, B> String noBrackets(LambdaTerm<A, B> lambda) {
         var domain = lambda.domain();
-        try (var pretty = PrettyThunk.generate(domain)) {
-            var body = lambda.apply(pretty);
-            if (body instanceof LambdaValue<?, ?> lambdaValue) {
-                return "λ (" + pretty + " " + domain + ") " + noBrackets(lambdaValue);
+        try (var pretty = PrettyTag.<A>generate()) {
+            var body = lambda.apply(NominalTerm.ofTag(pretty, domain));
+            if (body instanceof LambdaTerm<?, ?> lambdaTerm) {
+                return "λ (" + pretty + " " + domain + ") " + noBrackets(lambdaTerm);
             }
             return "λ (" + pretty + " " + domain + ") " + prettyPrint(body);
         }

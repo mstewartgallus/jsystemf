@@ -4,25 +4,18 @@ import com.sstewartgallus.runtime.TypeDesc;
 
 import java.util.Optional;
 
-// fixme.. make just a tag!
-public record FunctionType<A, B>(Type<A>domain, Type<B>range) implements CoreType<F<A, B>>, Type<F<A, B>> {
+public record FunctionType<A, B>() implements CoreType<V<A, V<B, F<A, B>>>>, Type<V<A, V<B, F<A, B>>>> {
     @Override
-    public Optional<TypeDesc<F<A, B>>> describeConstable() {
-        var dConst = domain.describeConstable();
-        var rConst = range.describeConstable();
-
-        if (dConst.isEmpty() || rConst.isEmpty()) {
-            return Optional.empty();
-        }
-        return Optional.of(TypeDesc.ofFunction(dConst.get(), rConst.get()));
+    public Optional<TypeDesc<V<A, V<B, F<A, B>>>>> describeConstable() {
+        return Optional.of(TypeDesc.ofFunction());
     }
 
     @Override
-    public <Y> Type<F<A, B>> unify(Type<Y> right) throws TypeCheckException {
+    public <Y> Type<V<A, V<B, F<A, B>>>> unify(Type<Y> right) throws TypeCheckException {
         if (!(right instanceof FunctionType<?, ?> funType)) {
             throw new TypeCheckException(this, right);
         }
-        return new FunctionType<>(domain.unify(funType.domain), range.unify(funType.range));
+        return this;
     }
 
     public Class<?> erase() {

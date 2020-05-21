@@ -6,7 +6,6 @@ import com.sstewartgallus.ext.pretty.PrettyThunk;
 import com.sstewartgallus.runtime.TypeDesc;
 
 import java.lang.constant.Constable;
-import java.util.List;
 import java.util.Optional;
 import java.util.function.Function;
 
@@ -40,7 +39,14 @@ public interface Type<X> extends Constable {
     }
 
     default <B> Type<F<X, B>> to(Type<B> range) {
-        return new FunctionType<>(this, range);
+        return new TypeApplyType<>(new TypeApplyType<>(new FunctionType<>(), this), range);
+    }
+
+    static <A, B> Type<B> apply(Type<V<A, B>> f, Type<A> x) {
+        if (f instanceof ForallType<A, B> forall) {
+            return forall.f().apply(x);
+        }
+        return new TypeApplyType<>(f, x);
     }
 
     default Type<X> visitChildren(Term.Visitor visitor) {

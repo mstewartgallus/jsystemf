@@ -38,7 +38,9 @@ public record ApplyThunk<A, B>(Term<F<A, B>>f, Term<A>x) implements ThunkTerm<B>
 
         x.jit(thisClass, classVisitor, mw, varDataMap);
 
-        var t = ((FunctionType<A, B>) f.type()).range().erase();
+        // fixme....
+        var range = ((LambdaValue<A, B>) f).range();
+        var t = range.erase();
         var methodTypeDesc = methodType(t, this.f.type().erase(), Void.class, this.x.type().erase()).describeConstable().get();
 
         var mt = MethodTypeDesc.ofDescriptor(methodType(CallSite.class, MethodHandles.Lookup.class, String.class, MethodType.class).descriptorString());
@@ -51,16 +53,12 @@ public record ApplyThunk<A, B>(Term<F<A, B>>f, Term<A>x) implements ThunkTerm<B>
 
     @Override
     public Type<B> type() throws TypeCheckException {
-        var fType = f.type();
+        // fixme....
+        var range = ((LambdaValue<A, B>) f).range();
 
-        var funType = (FunctionType<A, B>) fType;
-        var range = funType.range();
+        f.type().unify(x.type().to(range));
 
-        var argType = x.type();
-
-        fType.unify(argType.to(range));
-
-        return funType.range();
+        return range;
     }
 
     @Override

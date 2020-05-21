@@ -127,4 +127,8 @@ public abstract class LambdaValue<A, B> implements ValueTerm<F<A, B>>, LambdaTer
     public final Type<F<A, B>> type() throws TypeCheckException {
         return domain.to(range);
     }
+
+    public Type<B> range() {
+        return range;
+    }
 }

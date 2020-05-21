@@ -11,6 +11,7 @@ import com.sstewartgallus.frontend.Node;
 import com.sstewartgallus.optimizers.Capture;
 import com.sstewartgallus.optimizers.Jit;
 import com.sstewartgallus.plato.F;
+import com.sstewartgallus.plato.NominalType;
 import com.sstewartgallus.plato.Term;
 import com.sstewartgallus.plato.Type;
 import com.sstewartgallus.primitives.Prims;
@@ -161,7 +162,7 @@ public final class Main {
         var rest = new Node.Array(nodes.subList(2, nodes.size()));
 
         var variable = new VarType<>();
-        var entity = new Entity.TypeEntity(binder, variable);
+        var entity = new Entity.TypeEntity(binder, NominalType.ofTag(variable));
         var newEnv = environment.put(binder, entity);
 
         var theTerm = Frontend.toTerm(rest, newEnv);

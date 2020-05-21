@@ -1,9 +1,6 @@
 package com.sstewartgallus.ext.java;
 
-import com.sstewartgallus.plato.Term;
-import com.sstewartgallus.plato.Type;
-import com.sstewartgallus.plato.TypeCheckException;
-import com.sstewartgallus.plato.ValueTerm;
+import com.sstewartgallus.plato.*;
 
 import java.util.Objects;
 
@@ -24,6 +21,6 @@ public record ObjectValue<A>(A value) implements ValueTerm<J<A>>, JavaTerm<A> {
 
     @Override
     public Type<J<A>> type() throws TypeCheckException {
-        return new JavaType<A>((Class) value.getClass());
+        return NominalType.ofTag(new JavaTag<>((Class) value.getClass()));
     }
 }

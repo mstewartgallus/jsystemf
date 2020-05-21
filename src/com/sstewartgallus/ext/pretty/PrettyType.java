@@ -1,9 +1,11 @@
 package com.sstewartgallus.ext.pretty;
 
-import com.sstewartgallus.plato.Type;
-import com.sstewartgallus.plato.TypeCheckException;
+import com.sstewartgallus.plato.TypeTag;
 
-public final class PrettyType<A> implements Type<A>, AutoCloseable {
+import java.lang.constant.ConstantDesc;
+import java.util.Optional;
+
+public final class PrettyType<A> implements TypeTag<A>, AutoCloseable {
     private static final ThreadLocal<Integer> DEPTH = ThreadLocal.withInitial(() -> 0);
     private final int depth;
 
@@ -28,7 +30,17 @@ public final class PrettyType<A> implements Type<A>, AutoCloseable {
     }
 
     @Override
-    public <Y> Type<A> unify(Type<Y> right) throws TypeCheckException {
+    public boolean equals(Object right) {
+        return right instanceof PrettyType<?> pretty && depth == pretty.depth;
+    }
+
+    @Override
+    public Class<?> erase() {
+        throw null;
+    }
+
+    @Override
+    public Optional<? extends ConstantDesc> describeConstable() {
         throw null;
     }
 }

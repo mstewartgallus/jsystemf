@@ -1,9 +1,14 @@
 package com.sstewartgallus.ext.variables;
 
+import com.sstewartgallus.plato.NominalType;
 import com.sstewartgallus.plato.Term;
 import com.sstewartgallus.plato.Type;
+import com.sstewartgallus.plato.TypeTag;
 
-public final class VarType<T> implements Type<T> {
+import java.lang.constant.ConstantDesc;
+import java.util.Optional;
+
+public final class VarType<T> implements TypeTag<T> {
     public VarType() {
     }
 
@@ -12,24 +17,19 @@ public final class VarType<T> implements Type<T> {
         return "t" + hashCode();
     }
 
-    @Override
-    public <Y> Type<T> unify(Type<Y> right) {
-        throw new UnsupportedOperationException("unimplemented");
-    }
-
     public <A> Term<A> substituteIn(Term<A> root, Type<T> replacement) {
         var self = this;
         return root.visit(new Term.Visitor() {
             @Override
             public <T> Type<T> type(Type<T> type) {
-                if (!(type instanceof VarType<T> varType)) {
+                if (!(type instanceof NominalType<T> nominalType && nominalType.tag() instanceof VarType<T> varType)) {
                     return type.visitChildren(this);
                 }
 
                 if (varType == self) {
                     return (Type) replacement;
                 }
-                return varType;
+                return nominalType;
             }
         });
     }
@@ -39,15 +39,25 @@ public final class VarType<T> implements Type<T> {
         return root.visit(new Term.Visitor() {
             @Override
             public <T> Type<T> type(Type<T> type) {
-                if (!(type instanceof VarType<T> varType)) {
+                if (!(type instanceof NominalType<T> nominalType && nominalType.tag() instanceof VarType<T> varType)) {
                     return type.visitChildren(this);
                 }
 
                 if (varType == self) {
                     return (Type) replacement;
                 }
-                return varType;
+                return nominalType;
             }
         });
+    }
+
+    @Override
+    public Class<?> erase() {
+        throw null;
+    }
+
+    @Override
+    public Optional<? extends ConstantDesc> describeConstable() {
+        throw null;
     }
 }

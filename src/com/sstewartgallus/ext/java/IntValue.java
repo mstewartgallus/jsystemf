@@ -1,9 +1,6 @@
 package com.sstewartgallus.ext.java;
 
-import com.sstewartgallus.plato.Term;
-import com.sstewartgallus.plato.Type;
-import com.sstewartgallus.plato.TypeCheckException;
-import com.sstewartgallus.plato.ValueTerm;
+import com.sstewartgallus.plato.*;
 
 public record IntValue(int value) implements ValueTerm<J<Integer>>, JavaTerm<Integer> {
     @Override
@@ -13,7 +10,7 @@ public record IntValue(int value) implements ValueTerm<J<Integer>>, JavaTerm<Int
 
     @Override
     public Type<J<Integer>> type() throws TypeCheckException {
-        return new JavaType<>(int.class);
+        return NominalType.ofTag(new JavaTag<>(int.class));
     }
 
     @Override

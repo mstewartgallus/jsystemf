@@ -4,7 +4,12 @@ public abstract class TypeLambdaValue<A, B> implements ValueTerm<V<A, B>>, Lambd
     @Override
     public Term<V<A, B>> visitChildren(Visitor visitor) {
         var self = this;
-        return new SimpleTypeLambdaValue<>(x -> visitor.term(self.apply(x)));
+        return new TypeLambdaValue<>() {
+            @Override
+            public Term<B> apply(Type<A> x) {
+                return visitor.term(self.apply(x));
+            }
+        };
     }
 
     @Override

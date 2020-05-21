@@ -24,7 +24,8 @@ public class PrettyPrint {
 
     private static <A, B> String prettyPrintForall(ForallType<A, B> lambda) {
         try (var pretty = PrettyType.<A>generate()) {
-            var body = lambda.f().apply(pretty);
+            var p = NominalType.ofTag(pretty);
+            var body = lambda.f().apply(p);
             return "(∀" + pretty + " → " + prettyPrint(body) + ")";
         }
     }
@@ -47,7 +48,8 @@ public class PrettyPrint {
 
     private static <A, B> String prettyPrintTypeLambda(TypeLambdaValue<A, B> lambda) {
         try (var pretty = PrettyType.<A>generate()) {
-            var body = lambda.apply(pretty);
+            var p = NominalType.ofTag(pretty);
+            var body = lambda.apply(p);
             return "(∀" + pretty + " → " + body + ")";
         }
     }

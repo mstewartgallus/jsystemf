@@ -1,7 +1,7 @@
 package com.sstewartgallus.plato;
 
 import com.sstewartgallus.ext.java.J;
-import com.sstewartgallus.ext.java.JavaType;
+import com.sstewartgallus.ext.java.JavaTag;
 import com.sstewartgallus.ext.pretty.PrettyThunk;
 import com.sstewartgallus.runtime.TypeDesc;
 
@@ -16,7 +16,7 @@ import java.util.function.Function;
  */
 public interface Type<X> extends Constable {
     // fixme... move out...
-    Type<J<Integer>> INT = new JavaType<>(int.class);
+    Type<J<Integer>> INT = NominalType.ofTag(new JavaTag<>(int.class));
 
     static <A, B> Type<V<A, B>> v(Function<Type<A>, Type<B>> f) {
         return new ForallType<>(f);

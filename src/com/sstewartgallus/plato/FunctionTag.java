@@ -21,4 +21,9 @@ public final class FunctionTag<A, B> implements TypeTag<V<A, V<B, F<A, B>>>> {
     public Optional<? extends ConstantDesc> describeConstable() {
         return Optional.of(TypeDesc.ofFunction());
     }
+
+    @Override
+    public Class<?> erase() {
+        return Object.class;
+    }
 }

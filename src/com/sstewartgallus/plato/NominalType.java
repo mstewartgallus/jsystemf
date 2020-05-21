@@ -32,11 +32,21 @@ public final class NominalType<A> implements Type<A> {
         return this;
     }
 
+    @Override
     public Optional<TypeDesc<A>> describeConstable() {
         var tagC = tag.describeConstable();
         if (tagC.isEmpty()) {
             return Optional.empty();
         }
         return Optional.of(TypeDesc.ofNominal(tagC.get()));
+    }
+
+    @Override
+    public Class<?> erase() {
+        return tag.erase();
+    }
+
+    public String toString() {
+        return tag.toString();
     }
 }

@@ -12,7 +12,7 @@ public class TypeDesc<A> extends DynamicConstantDesc<Type<A>> {
     private static final ClassDesc CD_NominalType = ClassDesc.of("com.sstewartgallus.plato", "NominalType");
     private static final ClassDesc CD_TypeTag = ClassDesc.of("com.sstewartgallus.plato", "TypeTag");
     private static final ClassDesc CD_FunctionTag = ClassDesc.of("com.sstewartgallus.plato", "FunctionTag");
-    private static final ClassDesc CD_JavaType = ClassDesc.of("com.sstewartgallus.ext.java", "JavaType");
+    private static final ClassDesc CD_JavaTag = ClassDesc.of("com.sstewartgallus.ext.java", "JavaTag");
 
     private static final DirectMethodHandleDesc FUNCTION_MH;
     private static final DirectMethodHandleDesc NOMINAL_MH;
@@ -35,7 +35,7 @@ public class TypeDesc<A> extends DynamicConstantDesc<Type<A>> {
     }
 
     static {
-        JAVACLASS_MH = MethodHandleDesc.ofConstructor(CD_JavaType, ConstantDescs.CD_Class);
+        JAVACLASS_MH = MethodHandleDesc.ofConstructor(CD_JavaTag, ConstantDescs.CD_Class);
     }
 
     protected TypeDesc(DirectMethodHandleDesc bootstrapMethod, String constantName, ClassDesc constantType, ConstantDesc... bootstrapArgs) {
@@ -46,8 +46,8 @@ public class TypeDesc<A> extends DynamicConstantDesc<Type<A>> {
         return DynamicConstantDesc.of(ConstantDescs.BSM_INVOKE, FUNCTION_MH);
     }
 
-    public static TypeDesc<?> ofJavaClass(ClassDesc classDesc) {
-        return new TypeDesc<>(ConstantDescs.BSM_INVOKE, classDesc.displayName(), CD_Type, JAVACLASS_MH, classDesc);
+    public static ConstantDesc ofJavaClass(ClassDesc classDesc) {
+        return DynamicConstantDesc.of(ConstantDescs.BSM_INVOKE, JAVACLASS_MH, classDesc);
     }
 
     public static <A, B> TypeDesc<B> ofApply(TypeDesc<V<A, B>> f, TypeDesc<A> x) {

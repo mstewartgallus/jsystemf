@@ -47,6 +47,10 @@ public abstract class LambdaValue<A, B> implements ValueTerm<F<A, B>>, LambdaTer
     }
 
     public final TermDesc<F<A, B>> jit(ClassDesc thisClass, ClassVisitor cv) {
+
+        var td = type().describeConstable().get();
+
+
         LambdaValue<?, ?> current = this;
 
         var args = new ArrayList<Class<?>>();
@@ -77,9 +81,12 @@ public abstract class LambdaValue<A, B> implements ValueTerm<F<A, B>>, LambdaTer
         var methodName = "apply";
 
         var methodType = methodType(range, args);
+        var methodTypeDesc = methodType.describeConstable().get();
+
+        var mh = MethodHandleDesc.ofMethod(DirectMethodHandleDesc.Kind.STATIC, thisClass, methodName, methodTypeDesc);
 
         {
-            var mw = cv.visitMethod(ACC_PUBLIC | ACC_STATIC, methodName, methodType.descriptorString(), null, null);
+            var mw = cv.visitMethod(ACC_PRIVATE | ACC_STATIC, methodName, methodType.descriptorString(), null, null);
             mw.visitCode();
 
             body.jit(thisClass, cv, mw, varDataMap);
@@ -108,8 +115,6 @@ public abstract class LambdaValue<A, B> implements ValueTerm<F<A, B>>, LambdaTer
             mw.visitEnd();
         }
 
-        var td = type().describeConstable().get();
-        var mh = MethodHandleDesc.ofMethod(DirectMethodHandleDesc.Kind.STATIC, thisClass, methodName, methodType.describeConstable().get());
         return TermDesc.ofMethod(td, mh);
     }
 

@@ -16,6 +16,7 @@ public final class TermDesc<A> extends DynamicConstantDesc<Term<A>> {
                 CD_Type, ConstantDescs.CD_MethodHandle);
         OF_METHOD = MethodHandleDesc.ofMethod(DirectMethodHandleDesc.Kind.STATIC, CD_TermBootstraps, "ofMethod", mt);
     }
+
     protected TermDesc(DirectMethodHandleDesc bootstrapMethod, String constantName, ClassDesc constantType, ConstantDesc... bootstrapArgs) {
         super(bootstrapMethod, constantName, constantType, bootstrapArgs);
     }

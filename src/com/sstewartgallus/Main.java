@@ -97,7 +97,7 @@ public final class Main {
 
     static {
         // fixme... still need to introduce lazy proper laziness, strictness analysis and tail recursion..
-        var source = "λ (x int) λ (y int) x";
+        var source = "λ (x int) λ (y int) (λ (z int) z) x";
 
         output("Source", source);
 

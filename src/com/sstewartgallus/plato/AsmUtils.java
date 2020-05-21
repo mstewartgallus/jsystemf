@@ -3,13 +3,20 @@ package com.sstewartgallus.plato;
 import org.objectweb.asm.ConstantDynamic;
 import org.objectweb.asm.Handle;
 
-import java.lang.constant.ClassDesc;
-import java.lang.constant.ConstantDesc;
-import java.lang.constant.DirectMethodHandleDesc;
-import java.lang.constant.DynamicConstantDesc;
+import java.lang.constant.*;
 
 public class AsmUtils {
-    private static Handle toAsm(DirectMethodHandleDesc desc) {
+
+    public static final ClassDesc CD_TermBootstraps = ClassDesc.of("com.sstewartgallus.runtime", "TermBootstraps");
+
+    public static Handle toHandle(MethodHandleDesc desc) {
+        if (desc instanceof DirectMethodHandleDesc direct) {
+            return toHandle(direct);
+        }
+        throw new UnsupportedOperationException(desc.toString());
+    }
+
+    public static Handle toHandle(DirectMethodHandleDesc desc) {
         return new Handle(desc.refKind(), toAsm(desc.owner()), desc.methodName(), desc.lookupDescriptor(), desc.isOwnerInterface());
     }
 
@@ -17,13 +24,13 @@ public class AsmUtils {
         return (owner.packageName() + "." + owner.displayName()).replace('.', '/');
     }
 
-    static Object toAsm(ConstantDesc desc) {
+    public static Object toAsm(ConstantDesc desc) {
         if (desc instanceof Integer || desc instanceof Float || desc instanceof String) {
             return desc;
         }
 
         if (desc instanceof DynamicConstantDesc<?> dynamic) {
-            return new ConstantDynamic(dynamic.constantName(), dynamic.constantType().descriptorString(), toAsm(dynamic.bootstrapMethod()),
+            return new ConstantDynamic(dynamic.constantName(), dynamic.constantType().descriptorString(), toHandle(dynamic.bootstrapMethod()),
                     dynamic.bootstrapArgsList().stream().map(AsmUtils::toAsm).toArray());
         }
         if (desc instanceof DirectMethodHandleDesc direct) {

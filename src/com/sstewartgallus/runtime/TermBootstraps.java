@@ -6,12 +6,24 @@ import com.sstewartgallus.plato.F;
 import com.sstewartgallus.plato.FunctionType;
 import com.sstewartgallus.plato.Term;
 import com.sstewartgallus.plato.Type;
+import jdk.dynalink.StandardOperation;
 
+import java.lang.invoke.CallSite;
 import java.lang.invoke.MethodHandle;
 import java.lang.invoke.MethodHandles;
+import java.lang.invoke.MethodType;
 
+@SuppressWarnings("unused")
 public final class TermBootstraps {
     private TermBootstraps() {
+    }
+
+    @SuppressWarnings("unused")
+    public static CallSite invoke(MethodHandles.Lookup lookup, String name, MethodType methodType) {
+        if (!name.equals("CALL")) {
+            return null;
+        }
+        return TermLinker.link(lookup, StandardOperation.CALL, methodType);
     }
 
     // fixme... eliminate with BSM_INVOKE if possible...

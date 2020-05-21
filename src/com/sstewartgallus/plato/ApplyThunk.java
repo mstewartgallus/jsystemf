@@ -6,9 +6,10 @@ import org.objectweb.asm.Handle;
 import org.objectweb.asm.MethodVisitor;
 import org.objectweb.asm.Opcodes;
 
-import java.lang.constant.ClassDesc;
+import java.lang.constant.*;
 import java.lang.invoke.CallSite;
 import java.lang.invoke.MethodHandles;
+import java.lang.invoke.MethodType;
 import java.util.Map;
 import java.util.Objects;
 import java.util.function.Function;
@@ -43,7 +44,14 @@ public record ApplyThunk<A, B>(Term<F<A, B>>f, Term<A>x) implements ThunkTerm<B>
         x.jit(thisClass, classVisitor, mw, varDataMap);
 
         var t = ((FunctionType<A, B>) f.type()).range().erase();
-        mw.visitInvokeDynamicInsn("CALL", methodType(t, f.type().erase(), Void.class, x.type().erase()).descriptorString(), HANDLE);
+        var methodTypeDesc = methodType(t, this.f.type().erase(), Void.class, this.x.type().erase()).describeConstable().get();
+
+        var mt = MethodTypeDesc.ofDescriptor(methodType(CallSite.class, MethodHandles.Lookup.class, String.class, MethodType.class).descriptorString());
+        var bsm = MethodHandleDesc.ofMethod(DirectMethodHandleDesc.Kind.STATIC, AsmUtils.CD_TermBootstraps, "invoke", mt);
+        var indy = DynamicCallSiteDesc.of(bsm, "CALL", methodTypeDesc);
+
+        Handle boot = AsmUtils.toHandle(indy.bootstrapMethod());
+        mw.visitInvokeDynamicInsn(indy.invocationName(), indy.invocationType().descriptorString(), boot);
     }
 
     @Override

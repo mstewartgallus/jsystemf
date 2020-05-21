@@ -52,7 +52,7 @@ public final class LambdaLinker implements TypeBasedGuardingDynamicLinker {
 
         var mh = APPLY_MH;
 
-        // fixme... attach properly... to the result...
+        // fixme... use linker services if possible...
         var handleTheRest = TermLinker.link(cs.getLookup(), cs.getOperation(), newMethodType).dynamicInvoker();
         handleTheRest = insertArguments(handleTheRest, 1, new Object[]{null});
         handleTheRest = dropArguments(handleTheRest, 1, mh.type().parameterList());

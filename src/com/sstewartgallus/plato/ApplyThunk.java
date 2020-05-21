@@ -15,19 +15,13 @@ import java.util.Objects;
 import java.util.function.Function;
 
 import static java.lang.invoke.MethodType.methodType;
-import static org.objectweb.asm.Opcodes.H_INVOKESTATIC;
 
 public record ApplyThunk<A, B>(Term<F<A, B>>f, Term<A>x) implements ThunkTerm<B>, LambdaTerm<B> {
-
-    private static final Handle HANDLE = new Handle(H_INVOKESTATIC, "bar", "gar",
-            methodType(CallSite.class, MethodHandles.Lookup.class, String.class, Class.class).descriptorString(),
-            false);
 
     public ApplyThunk {
         Objects.requireNonNull(f);
         Objects.requireNonNull(x);
     }
-
 
     @Override
     public Term<B> visitChildren(Visitor visitor) {
@@ -36,6 +30,7 @@ public record ApplyThunk<A, B>(Term<F<A, B>>f, Term<A>x) implements ThunkTerm<B>
 
     @Override
     public void jit(ClassDesc thisClass, ClassVisitor classVisitor, MethodVisitor mw, Map<VarValue<?>, VarData> varDataMap) {
+
         // fixme.. unroll multiple applications.
         f.jit(thisClass, classVisitor, mw, varDataMap);
 
@@ -66,18 +61,6 @@ public record ApplyThunk<A, B>(Term<F<A, B>>f, Term<A>x) implements ThunkTerm<B>
         fType.unify(argType.to(range));
 
         return funType.range();
-    }
-
-    @Override
-    public String toString() {
-        return "(" + noBrackets() + ")";
-    }
-
-    private String noBrackets() {
-        if (f instanceof ApplyThunk<?, F<A, B>> fApply) {
-            return fApply.noBrackets() + " " + x;
-        }
-        return f + " " + x;
     }
 
     @Override

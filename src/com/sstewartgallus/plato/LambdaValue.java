@@ -1,6 +1,5 @@
 package com.sstewartgallus.plato;
 
-import com.sstewartgallus.ext.pretty.PrettyThunk;
 import com.sstewartgallus.ext.variables.VarValue;
 import com.sstewartgallus.runtime.TermDesc;
 import org.objectweb.asm.ClassVisitor;
@@ -20,10 +19,12 @@ import static org.objectweb.asm.Opcodes.*;
 
 public abstract class LambdaValue<A, B> implements ValueTerm<F<A, B>>, LambdaTerm<F<A, B>> {
     private final Type<A> domain;
+    private final Type<B> range;
 
-    public LambdaValue(Type<A> domain) {
+    public LambdaValue(Type<A> domain, Type<B> range) {
         Objects.requireNonNull(domain);
         this.domain = domain;
+        this.range = range;
     }
 
     public final Type<A> domain() {
@@ -37,7 +38,12 @@ public abstract class LambdaValue<A, B> implements ValueTerm<F<A, B>>, LambdaTer
     public final Term<F<A, B>> visitChildren(Visitor visitor) {
         var v = new VarValue<>(domain());
         var body = visitor.term(apply(v));
-        return new SimpleLambdaValue<>(visitor.type(domain()), x -> v.substituteIn(body, x));
+        return new LambdaValue<>(visitor.type(domain()), visitor.type(range)) {
+            @Override
+            public Term<B> apply(Term<A> x) {
+                return v.substituteIn(body, x);
+            }
+        };
     }
 
     @Override
@@ -49,7 +55,6 @@ public abstract class LambdaValue<A, B> implements ValueTerm<F<A, B>>, LambdaTer
     public final TermDesc<F<A, B>> jit(ClassDesc thisClass, ClassVisitor cv) {
 
         var td = type().describeConstable().get();
-
 
         LambdaValue<?, ?> current = this;
 
@@ -120,25 +125,6 @@ public abstract class LambdaValue<A, B> implements ValueTerm<F<A, B>>, LambdaTer
 
     @Override
     public final Type<F<A, B>> type() throws TypeCheckException {
-        try (var pretty = PrettyThunk.generate(domain())) {
-            var range = apply(pretty).type();
-            return new FunctionType<>(domain(), range);
-        }
+        return domain.to(range);
     }
-
-    @Override
-    public final String toString() {
-        return "(" + noBrackets() + ")";
-    }
-
-    private String noBrackets() {
-        try (var pretty = PrettyThunk.generate(domain())) {
-            var body = apply(pretty);
-            if (body instanceof LambdaValue<?, ?> lambdaValue) {
-                return "λ (" + pretty + " " + domain() + ") " + lambdaValue.noBrackets();
-            }
-            return "λ (" + pretty + " " + domain() + ") " + body;
-        }
-    }
-
 }

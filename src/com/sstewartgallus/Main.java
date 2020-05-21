@@ -2,6 +2,7 @@ package com.sstewartgallus;
 
 
 import com.sstewartgallus.ext.java.J;
+import com.sstewartgallus.ext.pretty.PrettyThunk;
 import com.sstewartgallus.ext.variables.VarType;
 import com.sstewartgallus.ext.variables.VarValue;
 import com.sstewartgallus.frontend.Entity;
@@ -10,9 +11,7 @@ import com.sstewartgallus.frontend.Frontend;
 import com.sstewartgallus.frontend.Node;
 import com.sstewartgallus.optimizers.Capture;
 import com.sstewartgallus.optimizers.Jit;
-import com.sstewartgallus.plato.F;
-import com.sstewartgallus.plato.Term;
-import com.sstewartgallus.plato.Type;
+import com.sstewartgallus.plato.*;
 import com.sstewartgallus.primitives.Prims;
 import com.sstewartgallus.runtime.TermInvoker;
 import com.sstewartgallus.runtime.ValueThrowable;
@@ -173,9 +172,51 @@ public final class Main {
     }
 
     static void outputT(String stage, Term<F<J<Integer>, F<J<Integer>, J<Integer>>>> term) {
-        outputT(stage, term, term.type());
+        outputT(stage, prettyPrint(term), prettyPrint(term.type()));
         var output = API.apply(term, 2, 5);
         outputT(" ⇒", output, "-");
+    }
+
+    private static String prettyPrint(Type<?> type) {
+        return type.toString();
+    }
+
+    private static <A> String prettyPrint(Term<A> term) {
+        if (term instanceof LambdaValue<?, ?> lambda) {
+            return prettyPrintLambda(lambda);
+        }
+        if (term instanceof ApplyThunk<?, A> applyThunk) {
+            return prettyPrintApply(applyThunk);
+        }
+        return term.toString();
+    }
+
+    private static <A> String prettyPrintApply(ApplyThunk<?, A> applyThunk) {
+        return "(" + noBrackets(applyThunk) + ")";
+    }
+
+    private static <A, B> String noBrackets(ApplyThunk<A, B> apply) {
+        var f = apply.f();
+        var x = apply.x();
+        if (f instanceof ApplyThunk<?, F<A, B>> fApply) {
+            return noBrackets(fApply) + " " + prettyPrint(x);
+        }
+        return prettyPrint(f) + " " + prettyPrint(x);
+    }
+
+    private static <A, B> String prettyPrintLambda(LambdaValue<A, B> lambda) {
+        return "(" + noBrackets(lambda) + ")";
+    }
+
+    private static <A, B> String noBrackets(LambdaValue<A, B> lambda) {
+        var domain = lambda.domain();
+        try (var pretty = PrettyThunk.generate(domain)) {
+            var body = lambda.apply(pretty);
+            if (body instanceof LambdaValue<?, ?> lambdaValue) {
+                return "λ (" + pretty + " " + domain + ") " + noBrackets(lambdaValue);
+            }
+            return "λ (" + pretty + " " + domain + ") " + prettyPrint(body);
+        }
     }
 
     static void outputT(String stage, Object term, Object type) {

@@ -3,12 +3,12 @@ package com.sstewartgallus.plato;
 import java.util.Objects;
 import java.util.function.Function;
 
-public final class SimpleLambdaValue<A, B> extends LambdaValue<A, B> implements ValueTerm<F<A, B>>, LambdaTerm<F<A, B>> {
+final class SimpleLambdaValue<A, B> extends LambdaValue<A, B> implements ValueTerm<F<A, B>>, LambdaTerm<F<A, B>> {
     private final Function<Term<A>, Term<B>> f;
 
-    public SimpleLambdaValue(Type<A> domain,
+    public SimpleLambdaValue(Type<A> domain, Type<B> range,
                              Function<Term<A>, Term<B>> f) {
-        super(domain);
+        super(domain, range);
         Objects.requireNonNull(f);
         this.f = f;
     }

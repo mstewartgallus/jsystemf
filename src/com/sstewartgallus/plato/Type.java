@@ -2,6 +2,7 @@ package com.sstewartgallus.plato;
 
 import com.sstewartgallus.ext.java.J;
 import com.sstewartgallus.ext.java.JavaType;
+import com.sstewartgallus.ext.pretty.PrettyThunk;
 import com.sstewartgallus.runtime.TypeDesc;
 
 import java.lang.constant.Constable;
@@ -29,7 +30,10 @@ public interface Type<X> extends Constable {
     <Y> Type<X> unify(Type<Y> right) throws TypeCheckException;
 
     default <B> ValueTerm<F<X, B>> l(Function<Term<X>, Term<B>> f) {
-        return new SimpleLambdaValue<>(this, f);
+        try (var pretty = PrettyThunk.generate(this)) {
+            var range = f.apply(pretty).type();
+            return new SimpleLambdaValue<>(this, range, f);
+        }
     }
 
     default <B> Type<F<X, B>> to(Type<B> range) {

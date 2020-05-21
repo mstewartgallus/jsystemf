@@ -20,18 +20,6 @@ public record TypeApplyThunk<A, B>(Term<V<A, B>>f, Type<A>x) implements ThunkTer
     }
 
     @Override
-    public String toString() {
-        return "(" + noBrackets() + ")";
-    }
-
-    private String noBrackets() {
-        if (f instanceof TypeApplyThunk<?, V<A, B>> fApply) {
-            return fApply.noBrackets() + " " + x;
-        }
-        return f + " " + x;
-    }
-
-    @Override
     public <C> Term<C> stepThunk(Function<ValueTerm<B>, Term<C>> k) {
         return f.stepThunk(fNorm -> {
             var fLambda = (TypeLambdaValue<A, B>) fNorm;

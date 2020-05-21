@@ -16,12 +16,14 @@ import java.util.function.Function;
  * Any processing should happen AFTER this step.
  */
 public interface Type<X> extends Constable {
+    // fixme... move out...
     Type<J<Integer>> INT = new JavaType<>(int.class);
 
     static <A, B> Type<V<A, B>> v(Function<Type<A>, Type<B>> f) {
         return new ForallType<>(f);
     }
 
+    // fixme... how to move out...
     default Optional<TypeDesc<X>> describeConstable() {
         throw new UnsupportedOperationException(getClass().toString());
     }
@@ -30,6 +32,7 @@ public interface Type<X> extends Constable {
     <Y> Type<X> unify(Type<Y> right) throws TypeCheckException;
 
     default <B> ValueTerm<F<X, B>> l(Function<Term<X>, Term<B>> f) {
+        // fixme... how to fix type inference...
         try (var pretty = PrettyThunk.generate(this)) {
             var range = f.apply(pretty).type();
             return new SimpleLambdaValue<>(this, range, f);
@@ -48,11 +51,8 @@ public interface Type<X> extends Constable {
         return visitor.type(this);
     }
 
+    // fixme.. how to move out... ?
     default Class<?> erase() {
         throw new UnsupportedOperationException(getClass().toString());
-    }
-
-    default List<Class<?>> flatten() {
-        return List.of(erase());
     }
 }

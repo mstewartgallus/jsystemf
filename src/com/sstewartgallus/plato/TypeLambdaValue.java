@@ -1,7 +1,5 @@
 package com.sstewartgallus.plato;
 
-import com.sstewartgallus.ext.pretty.PrettyType;
-
 public abstract class TypeLambdaValue<A, B> implements ValueTerm<V<A, B>>, LambdaTerm<V<A, B>> {
     @Override
     public Term<V<A, B>> visitChildren(Visitor visitor) {
@@ -16,12 +14,4 @@ public abstract class TypeLambdaValue<A, B> implements ValueTerm<V<A, B>>, Lambd
     }
 
     public abstract Term<B> apply(Type<A> x);
-
-    @Override
-    public String toString() {
-        try (var pretty = PrettyType.<A>generate()) {
-            var body = apply(pretty);
-            return "(∀" + pretty + " → " + body + ")";
-        }
-    }
 }

@@ -4,6 +4,7 @@ import com.sstewartgallus.runtime.TypeDesc;
 
 import java.util.Optional;
 
+// fixme.. make just a tag!
 public record FunctionType<A, B>(Type<A>domain, Type<B>range) implements CoreType<F<A, B>>, Type<F<A, B>> {
     @Override
     public Optional<TypeDesc<F<A, B>>> describeConstable() {
@@ -23,19 +24,6 @@ public record FunctionType<A, B>(Type<A>domain, Type<B>range) implements CoreTyp
         }
         return new FunctionType<>(domain.unify(funType.domain), range.unify(funType.range));
     }
-
-    @Override
-    public String toString() {
-        return "(" + noBrackets() + ")";
-    }
-
-    private String noBrackets() {
-        if (range instanceof FunctionType<?, ?> rangeF) {
-            return domain + " → " + rangeF.noBrackets();
-        }
-        return domain + " → " + range;
-    }
-
 
     public Class<?> erase() {
         return Term.class;

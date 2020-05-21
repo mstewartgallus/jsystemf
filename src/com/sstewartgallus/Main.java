@@ -10,7 +10,9 @@ import com.sstewartgallus.frontend.Frontend;
 import com.sstewartgallus.frontend.Node;
 import com.sstewartgallus.optimizers.Capture;
 import com.sstewartgallus.optimizers.Jit;
-import com.sstewartgallus.plato.*;
+import com.sstewartgallus.plato.F;
+import com.sstewartgallus.plato.Term;
+import com.sstewartgallus.plato.Type;
 import com.sstewartgallus.primitives.Prims;
 import com.sstewartgallus.runtime.TermInvoker;
 import com.sstewartgallus.runtime.ValueThrowable;
@@ -119,9 +121,9 @@ public final class Main {
         var str = new StringWriter();
         var writer = new PrintWriter(str);
         var pf = Jit.jit(captured, writer);
+        System.err.println(str.toString());
         outputT("JIT", pf);
 
-        System.err.println(str.toString());
 
         System.exit(0);
         TO_EXEC = () -> ValueThrowables.clone(TEMPLATE);// API.apply((Value<F<Integer, F<Integer, Integer>>>) main, 3, 3);

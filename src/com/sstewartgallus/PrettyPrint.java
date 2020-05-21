@@ -9,24 +9,17 @@ public class PrettyPrint {
         if (type instanceof ForallType<?, ?> lambda) {
             return prettyPrintForall(lambda);
         }
-        if (type instanceof FunctionType<?, ?> lambda) {
-            return prettyPrintFunction(lambda);
+        if (type instanceof NominalType<?> nominal) {
+            return nominal.tag().toString();
+        }
+        if (type instanceof TypeApplyType<?, ?> apply) {
+            return prettyPrintTypeApply(apply);
         }
         return type.toString();
     }
 
-    private static String prettyPrintFunction(FunctionType<?, ?> func) {
-        return "(" + noBrackets(func) + ")";
-    }
-
-    private static String noBrackets(FunctionType<?, ?> func) {
-        var domain = func.domain();
-        var range = func.range();
-
-        if (range instanceof FunctionType<?, ?> rangeF) {
-            return prettyPrint(domain) + " → " + noBrackets(rangeF);
-        }
-        return prettyPrint(domain) + " → " + prettyPrint(range);
+    private static String prettyPrintTypeApply(TypeApplyType<?, ?> apply) {
+        return "(" + prettyPrint(apply.f()) + " " + prettyPrint(apply.x()) + ")";
     }
 
     private static <A, B> String prettyPrintForall(ForallType<A, B> lambda) {

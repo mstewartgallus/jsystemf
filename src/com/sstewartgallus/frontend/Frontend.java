@@ -1,7 +1,6 @@
 package com.sstewartgallus.frontend;
 
 import com.sstewartgallus.ext.variables.VarValue;
-import com.sstewartgallus.plato.FunctionType;
 import com.sstewartgallus.plato.Term;
 import com.sstewartgallus.plato.Type;
 import com.sstewartgallus.primitives.Prims;
@@ -92,15 +91,6 @@ public class Frontend {
             }
             return toTerm((Node.Array) node, environment);
         }).reduce((f, x) -> {
-            var fType = f.type();
-            var xType = x.type();
-
-            if (!(fType instanceof FunctionType<?, ?> funType)) {
-                throw new UnsupportedOperationException("applying nonfunction");
-            }
-
-            funType.domain().unify(xType);
-
             // fixme... do this more safely..
             return (Term<?>) Term.apply((Term) f, x);
         });

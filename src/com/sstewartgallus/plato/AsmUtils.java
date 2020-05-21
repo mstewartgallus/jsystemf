@@ -25,7 +25,10 @@ public class AsmUtils {
     }
 
     public static Object toAsm(ConstantDesc desc) {
-        if (desc instanceof Integer || desc instanceof Float || desc instanceof String) {
+        if (desc instanceof String) {
+            throw new Error(desc.toString());
+        }
+        if (desc instanceof Integer || desc instanceof Float) {
             return desc;
         }
 
@@ -37,6 +40,9 @@ public class AsmUtils {
             return new Handle(direct.refKind(), toAsm(direct.owner()), direct.methodName(), direct.lookupDescriptor(), direct.isOwnerInterface());
         }
 
+        if (desc instanceof ClassDesc classDesc) {
+            return org.objectweb.asm.Type.getType(classDesc.descriptorString());
+        }
         throw new UnsupportedOperationException(desc.toString());
     }
 }

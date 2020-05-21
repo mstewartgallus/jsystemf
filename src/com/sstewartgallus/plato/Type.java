@@ -22,6 +22,13 @@ public interface Type<X> extends Constable {
         return new ForallType<>(f);
     }
 
+    static <A, B> Type<B> apply(Type<V<A, B>> f, Type<A> x) {
+        if (f instanceof ForallType<A, B> forall) {
+            return forall.f().apply(x);
+        }
+        return new TypeApplyType<>(f, x);
+    }
+
     // fixme... how to move out...
     default Optional<TypeDesc<X>> describeConstable() {
         throw new UnsupportedOperationException(getClass().toString());
@@ -39,14 +46,7 @@ public interface Type<X> extends Constable {
     }
 
     default <B> Type<F<X, B>> to(Type<B> range) {
-        return new TypeApplyType<>(new TypeApplyType<>(new FunctionType<>(), this), range);
-    }
-
-    static <A, B> Type<B> apply(Type<V<A, B>> f, Type<A> x) {
-        if (f instanceof ForallType<A, B> forall) {
-            return forall.f().apply(x);
-        }
-        return new TypeApplyType<>(f, x);
+        return new TypeApplyType<>(new TypeApplyType<>(Helper.function(), this), range);
     }
 
     default Type<X> visitChildren(Term.Visitor visitor) {
@@ -60,5 +60,13 @@ public interface Type<X> extends Constable {
     // fixme.. how to move out... ?
     default Class<?> erase() {
         throw new UnsupportedOperationException(getClass().toString());
+    }
+}
+
+class Helper {
+    static final NominalType FUNCTION = NominalType.ofTag(FunctionTag.function());
+
+    static <A, B> Type<V<A, V<B, F<A, B>>>> function() {
+        return FUNCTION;
     }
 }

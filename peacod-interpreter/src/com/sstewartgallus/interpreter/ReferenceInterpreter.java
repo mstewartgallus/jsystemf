@@ -11,12 +11,14 @@ import java.util.function.Function;
  * Loosely based around CESK
  */
 public final class ReferenceInterpreter<X, A> extends Interpreter<X, A> {
+    final Environment env;
     private final Stack<X, A> stack;
     private final Effect<X> ip;
     private final A halted;
 
-    ReferenceInterpreter(Effect<X> ip, Stack<X, A> stack, A halted) {
+    ReferenceInterpreter(Effect<X> ip, Environment environment, Stack<X, A> stack, A halted) {
         this.ip = ip;
+        this.env = environment;
         this.stack = stack;
         this.halted = halted;
     }
@@ -42,8 +44,23 @@ public final class ReferenceInterpreter<X, A> extends Interpreter<X, A> {
     }
 
     @Override
+    public <C> Interpreter<?, A> thunk(Equal<X, Effect<C>> witness, X effect) {
+        var newEnv = new Environment(env);
+        var effectId = newEnv.put(effect);
+        return stack.step(Effect.load(witness, effectId)).returnTo(new ReferenceInterpreter<>(ip, newEnv, stack, null));
+    }
+
+    @Override
+    public <C> Interpreter<?, A> load(Equal<C, Effect<X>> witness, Id<C> effectId) {
+        var result = env.get(effectId);
+        var effect = witness.left().to(result);
+        // fixme... cache result
+        return effect.execute(this);
+    }
+
+    @Override
     public <Z> Interpreter<?, A> bind(Effect<Z> x, Function<Z, Effect<X>> f) {
-        return new ReferenceInterpreter<>(x, (evaluated) -> {
+        return new ReferenceInterpreter<>(x, env, (evaluated) -> {
             var y = f.apply(evaluated);
             return new ContinueFrame<>(y, stack);
         }, null);

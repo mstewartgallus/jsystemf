@@ -9,19 +9,21 @@ import static java.lang.invoke.MethodHandles.lookup;
 
 // fixme... could be an abstract class I suppose or another pass could lower to that...
 // fixme... establish an invariant that this must always be a function or a forall.
-public final class JitValue<A> implements ThunkTerm<A>, ValueTerm<A> {
-
+public final class JitValue<A, B> implements Term<F<A, B>> {
     private static final JitInvoker INVOKE_TERM = TermInvoker.newInstance(lookup(), JitInvoker.class);
     private final MethodHandle methodHandle;
-    private final Type<A> type;
     private final String source;
+    private final Type<B> range;
+    private final Type<A> domain;
 
     // fixme...
     public JitValue(String source,
-                    Type<A> type,
+                    Type<A> domain,
+                    Type<B> range,
                     MethodHandle methodHandle) {
         this.source = source;
-        this.type = type;
+        this.domain = domain;
+        this.range = range;
         this.methodHandle = methodHandle;
     }
 
@@ -30,13 +32,18 @@ public final class JitValue<A> implements ThunkTerm<A>, ValueTerm<A> {
     }
 
     @Override
-    public Type<A> type() throws TypeCheckException {
-        return type;
+    public Type<F<A, B>> type() throws TypeCheckException {
+        return domain.to(range);
     }
 
     @Override
-    public Term<A> visitChildren(Visitor visitor) {
+    public Term<F<A, B>> visitChildren(Visitor visitor) {
         return this;
+    }
+
+    @Override
+    public <X> State<X> step(Interpreter<F<A, B>, X> interpreter) {
+        return interpreter.returnWith(domain.l(x -> INVOKE_TERM.apply(this, x)));
     }
 
     public String toString() {
@@ -45,6 +52,6 @@ public final class JitValue<A> implements ThunkTerm<A>, ValueTerm<A> {
 
     @FunctionalInterface
     public interface JitInvoker {
-        <A> ValueTerm<A> apply(JitValue<A> f);
+        <A, B> Term<B> apply(JitValue<A, B> f, Term<A> x);
     }
 }

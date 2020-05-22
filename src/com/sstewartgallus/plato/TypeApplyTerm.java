@@ -14,6 +14,11 @@ public record TypeApplyTerm<A, B>(Term<V<A, B>>f, Type<A>x) implements ThunkTerm
     }
 
     @Override
+    public <X> State<X> step(Interpreter<B, X> interpreter) {
+        throw null;
+    }
+
+    @Override
     public Type<B> type() throws TypeCheckException {
         return ((ForallType<A, B>) f.type()).f().apply(x);
     }

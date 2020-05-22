@@ -31,7 +31,7 @@ public interface Term<A> extends Constable {
     }
 
     default Optional<TermDesc<A>> describeConstable() {
-        throw null;
+        return Optional.empty();
     }
 
     Type<A> type() throws TypeCheckException;
@@ -42,9 +42,7 @@ public interface Term<A> extends Constable {
 
     Term<A> visitChildren(Visitor visitor);
 
-    default <X> State<X> step(Interpreter<A, X> interpreter) {
-        throw null;
-    }
+    <X> State<X> step(Interpreter<A, X> interpreter);
 
     abstract class Visitor {
         public <T> Type<T> type(Type<T> type) {
@@ -54,8 +52,5 @@ public interface Term<A> extends Constable {
         public <T> Term<T> term(Term<T> term) {
             return term;
         }
-    }
-
-    record VarData(int argument, Type<?>type) {
     }
 }

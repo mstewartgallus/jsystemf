@@ -1,6 +1,7 @@
 package com.sstewartgallus.optimizers;
 
 import com.sstewartgallus.ext.variables.VarValue;
+import com.sstewartgallus.plato.Type;
 import com.sstewartgallus.plato.*;
 import com.sstewartgallus.runtime.AnonClassLoader;
 import com.sstewartgallus.runtime.TermDesc;
@@ -73,7 +74,7 @@ public final class Jit {
         }
     }
 
-    private static <A> void jit(Term<A> term, ClassDesc thisClass, ClassVisitor cv, MethodVisitor mw, Map<VarValue<?>, Term.VarData> varMap) {
+    private static <A> void jit(Term<A> term, ClassDesc thisClass, ClassVisitor cv, MethodVisitor mw, Map<VarValue<?>, VarData> varMap) {
         if (term instanceof ApplyTerm<?, A> applyTerm) {
             jitApply(applyTerm, thisClass, cv, mw, varMap);
             return;
@@ -92,7 +93,7 @@ public final class Jit {
         throw new IllegalStateException(term.toString());
     }
 
-    private static void jitVar(NominalTerm<?> nominalTerm, ClassDesc thisClass, ClassVisitor cv, MethodVisitor mw, Map<VarValue<?>, Term.VarData> varMap) {
+    private static void jitVar(NominalTerm<?> nominalTerm, ClassDesc thisClass, ClassVisitor cv, MethodVisitor mw, Map<VarValue<?>, VarData> varMap) {
         // fixme... doublec check if var
         var data = varMap.get(nominalTerm.tag());
         var clazz = data.type().erase();
@@ -118,9 +119,10 @@ public final class Jit {
         }
     }
 
-    private static void jitLambda(LambdaTerm<?, ?> lambdaTerm, ClassDesc thisClass, ClassVisitor cv, MethodVisitor mw, Map<VarValue<?>, Term.VarData> varMap) {
+    private static void jitLambda(LambdaTerm<?, ?> lambdaTerm, ClassDesc thisClass, ClassVisitor cv, MethodVisitor mw, Map<VarValue<?>, VarData> varMap) {
 
-        var td = lambdaTerm.type().describeConstable().get();
+        var td = lambdaTerm.domain().describeConstable().get();
+        var rangeDesc = lambdaTerm.range().describeConstable().get();
 
         LambdaTerm<?, ?> current = lambdaTerm;
 
@@ -128,11 +130,11 @@ public final class Jit {
 
         Class<?> range;
         Term<?> body;
-        var varDataMap = new HashMap<VarValue<?>, Term.VarData>();
+        var varDataMap = new HashMap<VarValue<?>, VarData>();
         var ii = 0;
         for (; ; ) {
             var v = new VarValue(current.domain());
-            varDataMap.put(v, new Term.VarData(ii, current.domain()));
+            varDataMap.put(v, new VarData(ii, current.domain()));
             // fixme.. handle longs/doubles
             ++ii;
 
@@ -186,12 +188,12 @@ public final class Jit {
             newMethod.visitEnd();
         }
 
-        var desc = TermDesc.ofMethod(td, mh);
+        var desc = TermDesc.ofMethod(td, rangeDesc, mh);
 
         mw.visitLdcInsn(AsmUtils.toAsm(desc));
     }
 
-    private static <A, B> void jitApply(ApplyTerm<A, B> applyTerm, ClassDesc thisClass, ClassVisitor cv, MethodVisitor mw, Map<VarValue<?>, Term.VarData> varMap) {
+    private static <A, B> void jitApply(ApplyTerm<A, B> applyTerm, ClassDesc thisClass, ClassVisitor cv, MethodVisitor mw, Map<VarValue<?>, VarData> varMap) {
         var f = applyTerm.f();
         var x = applyTerm.x();
 
@@ -213,5 +215,8 @@ public final class Jit {
 
         Handle boot = AsmUtils.toHandle(indy.bootstrapMethod());
         mw.visitInvokeDynamicInsn(indy.invocationName(), indy.invocationType().descriptorString(), boot);
+    }
+
+    private static final record VarData(int argument, Type<?>type) {
     }
 }

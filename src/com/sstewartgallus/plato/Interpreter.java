@@ -11,11 +11,11 @@ import java.util.function.Function;
  * Loosely based around CESK
  */
 public record Interpreter<X, A>(Term<X>ip, Stack<X, A>stack) implements State<A> {
-    State<A> returnWith(Term<X> value) {
+    public State<A> returnWith(Term<X> value) {
         return stack.step(this, value);
     }
 
-    <Z> State<A> eval(Term<Z> value, Function<Term<Z>, Term<X>> k) {
+    public <Z> State<A> eval(Term<Z> value, Function<Term<Z>, Term<X>> k) {
         return new Interpreter<>(value, (iterp, evaluated) -> {
             var y = k.apply(evaluated);
             return stack.step(iterp, y);

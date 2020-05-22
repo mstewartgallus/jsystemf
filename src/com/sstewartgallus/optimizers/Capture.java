@@ -1,9 +1,9 @@
 package com.sstewartgallus.optimizers;
 
+import com.sstewartgallus.ext.variables.VarTerm;
 import com.sstewartgallus.plato.F;
 import com.sstewartgallus.plato.LambdaTerm;
 import com.sstewartgallus.plato.Term;
-import com.sstewartgallus.plato.VarTerm;
 
 import java.util.HashSet;
 import java.util.List;

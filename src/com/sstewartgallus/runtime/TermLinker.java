@@ -2,7 +2,7 @@ package com.sstewartgallus.runtime;
 
 import com.sstewartgallus.ext.java.IntValue;
 import com.sstewartgallus.ext.mh.JitLinker;
-import com.sstewartgallus.plato.Interpreter;
+import com.sstewartgallus.interpreter.Interpreter;
 import com.sstewartgallus.plato.Term;
 import com.sstewartgallus.plato.ValueTerm;
 import jdk.dynalink.CallSiteDescriptor;
@@ -40,7 +40,7 @@ public final class TermLinker implements TypeBasedGuardingDynamicLinker, Guardin
 
     static {
         try {
-            NORMALIZE_MH = lookup().findStatic(Interpreter.class, "normalize", methodType(ValueTerm.class, Term.class));
+            NORMALIZE_MH = lookup().findStatic(TermLinker.class, "normalize", methodType(ValueTerm.class, Term.class));
         } catch (NoSuchMethodException | IllegalAccessException e) {
             throw new RuntimeException(e);
         }
@@ -67,6 +67,11 @@ public final class TermLinker implements TypeBasedGuardingDynamicLinker, Guardin
         return DYNAMIC_LINKER.link(
                 new SimpleRelinkableCallSite(
                         new CallSiteDescriptor(lookup, operation, methodType)));
+    }
+
+    private static <A> ValueTerm<A> normalize(Term<A> term) {
+        // fixme... get rid of casting if possible...
+        return (ValueTerm<A>) Interpreter.interpret(term.interpret());
     }
 
     @Override

@@ -1,5 +1,7 @@
 package com.sstewartgallus.plato;
 
+import com.sstewartgallus.ext.variables.VarTerm;
+
 import java.util.Objects;
 
 

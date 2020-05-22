@@ -1,7 +1,7 @@
 package com.sstewartgallus.runtime;
 
+import com.sstewartgallus.interpreter.Interpreter;
 import com.sstewartgallus.plato.ApplyTerm;
-import com.sstewartgallus.plato.Interpreter;
 import jdk.dynalink.linker.GuardedInvocation;
 import jdk.dynalink.linker.LinkRequest;
 import jdk.dynalink.linker.LinkerServices;

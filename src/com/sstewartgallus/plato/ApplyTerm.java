@@ -1,5 +1,7 @@
 package com.sstewartgallus.plato;
 
+import com.sstewartgallus.interpreter.Effect;
+
 import java.util.Objects;
 
 public record ApplyTerm<A, B>(Term<F<A, B>>f, Term<A>x) implements Term<B> {
@@ -9,12 +11,13 @@ public record ApplyTerm<A, B>(Term<F<A, B>>f, Term<A>x) implements Term<B> {
     }
 
     @Override
-    public <X> Interpreter<?, X> step(Interpreter<B, X> interpreter) {
+    public Effect<Term<B>> interpret() {
+        var fEffects = f.interpret();
         var theX = x;
         // fixme... make more like return interpreter.push(x).tailCall(f); ?
-        return interpreter.evaluate(f, fValue -> {
+        return fEffects.bind(fValue -> {
             var fLambda = ((LambdaTerm<A, B>) fValue);
-            return fLambda.apply(theX);
+            return fLambda.apply(theX).interpret();
         });
     }
 

@@ -2,13 +2,18 @@ package com.sstewartgallus;
 
 
 import com.sstewartgallus.ext.java.J;
+import com.sstewartgallus.ext.variables.VarTerm;
+import com.sstewartgallus.ext.variables.VarType;
 import com.sstewartgallus.frontend.Entity;
 import com.sstewartgallus.frontend.Environment;
 import com.sstewartgallus.frontend.Frontend;
 import com.sstewartgallus.frontend.Node;
 import com.sstewartgallus.optimizers.Capture;
 import com.sstewartgallus.optimizers.Jit;
-import com.sstewartgallus.plato.*;
+import com.sstewartgallus.plato.F;
+import com.sstewartgallus.plato.NominalType;
+import com.sstewartgallus.plato.Term;
+import com.sstewartgallus.plato.Type;
 import com.sstewartgallus.runtime.TermInvoker;
 import com.sstewartgallus.runtime.ValueThrowable;
 import com.sstewartgallus.runtime.ValueThrowables;

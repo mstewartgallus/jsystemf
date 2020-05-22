@@ -1,6 +1,10 @@
 package com.sstewartgallus.ext.mh;
 
-import com.sstewartgallus.plato.*;
+import com.sstewartgallus.interpreter.Effect;
+import com.sstewartgallus.plato.F;
+import com.sstewartgallus.plato.Term;
+import com.sstewartgallus.plato.Type;
+import com.sstewartgallus.plato.TypeCheckException;
 import com.sstewartgallus.runtime.TermInvoker;
 
 import java.lang.invoke.MethodHandle;
@@ -41,9 +45,8 @@ public final class JitValue<A, B> implements Term<F<A, B>> {
         return this;
     }
 
-    @Override
-    public <X> Interpreter<?, X> step(Interpreter<F<A, B>, X> interpreter) {
-        return interpreter.returnWith(domain.l(x -> INVOKE_TERM.apply(this, x)));
+    public Effect<Term<F<A, B>>> interpret() {
+        return Effect.pure(domain.l(x -> INVOKE_TERM.apply(this, x)));
     }
 
     public String toString() {

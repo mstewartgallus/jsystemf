@@ -1,8 +1,12 @@
 package com.sstewartgallus.optimizers;
 
+import com.sstewartgallus.ext.variables.VarTerm;
+import com.sstewartgallus.plato.ApplyTerm;
+import com.sstewartgallus.plato.LambdaTerm;
+import com.sstewartgallus.plato.Term;
 import com.sstewartgallus.plato.Type;
-import com.sstewartgallus.plato.*;
 import com.sstewartgallus.runtime.AnonClassLoader;
+import com.sstewartgallus.runtime.SupplierClassValue;
 import com.sstewartgallus.runtime.TermDesc;
 import org.objectweb.asm.*;
 import org.objectweb.asm.util.TraceClassVisitor;
@@ -17,12 +21,19 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Map;
 
-import static java.lang.invoke.MethodHandles.lookup;
 import static java.lang.invoke.MethodType.methodType;
 import static org.objectweb.asm.Opcodes.*;
 
-public final class Jit {
-    private Jit() {
+public abstract class Jit {
+    // fixme... register the jit inside the runtime....
+    private static final SupplierClassValue<Table> JIT_CLASSES = new SupplierClassValue<>(Table::new);
+
+    protected Jit() {
+    }
+
+    @SuppressWarnings("unused")
+    public static void register(MethodHandles.Lookup lookup) {
+        JIT_CLASSES.get(lookup.lookupClass()).lookup = lookup;
     }
 
     public static <A> Term<A> jit(Term<A> root, PrintWriter writer) {
@@ -32,7 +43,7 @@ public final class Jit {
 
         var cv = new TraceClassVisitor(cw, writer);
 
-        var myname = org.objectweb.asm.Type.getInternalName(LambdaTerm.class);
+        var myname = org.objectweb.asm.Type.getInternalName(Jit.class);
         var newclassname = myname + "Impl";
 
         var thisClass = ClassDesc.of(newclassname.replace('/', '.'));
@@ -40,6 +51,18 @@ public final class Jit {
         cv.visit(V14, ACC_FINAL | ACC_PUBLIC, newclassname, null, myname, null);
 
         // fixme... ldc?
+        {
+            var mw = cv.visitMethod(ACC_STATIC, "<clinit>", methodType(void.class).descriptorString(), null, null);
+            mw.visitCode();
+
+            mw.visitMethodInsn(INVOKESTATIC, org.objectweb.asm.Type.getInternalName(MethodHandles.class), "lookup", methodType(MethodHandles.Lookup.class).descriptorString(), false);
+            mw.visitMethodInsn(INVOKESTATIC, myname, "register", methodType(void.class, MethodHandles.Lookup.class).descriptorString(), false);
+
+            mw.visitInsn(RETURN);
+            mw.visitMaxs(0, 0);
+            mw.visitEnd();
+        }
+
         {
             var mw = cv.visitMethod(ACC_PUBLIC | ACC_STATIC, "get", methodType(Term.class).descriptorString(), null, null);
             mw.visitCode();
@@ -56,10 +79,10 @@ public final class Jit {
 
         var bytes = cw.toByteArray();
 
-        var definedClass = AnonClassLoader.defineClass(LambdaTerm.class.getClassLoader(), bytes);
+        var definedClass = AnonClassLoader.defineClass(Jit.class.getClassLoader(), bytes);
         MethodHandle mh;
         try {
-            mh = lookup().findStatic(definedClass, "get", methodType(Term.class));
+            mh = JIT_CLASSES.get(definedClass).lookup.findStatic(definedClass, "get", methodType(Term.class));
         } catch (NoSuchMethodException | IllegalAccessException e) {
             throw new RuntimeException(e);
         }
@@ -214,6 +237,10 @@ public final class Jit {
 
         Handle boot = AsmUtils.toHandle(indy.bootstrapMethod());
         mw.visitInvokeDynamicInsn(indy.invocationName(), indy.invocationType().descriptorString(), boot);
+    }
+
+    static class Table {
+        MethodHandles.Lookup lookup;
     }
 
     private static final record VarData(int argument, Type<?>type) {

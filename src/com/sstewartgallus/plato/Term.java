@@ -1,5 +1,6 @@
 package com.sstewartgallus.plato;
 
+import com.sstewartgallus.interpreter.Effect;
 import com.sstewartgallus.runtime.TermDesc;
 
 import java.lang.constant.Constable;
@@ -42,7 +43,7 @@ public interface Term<A> extends Constable {
 
     Term<A> visitChildren(Visitor visitor);
 
-    <X> Interpreter<?, X> step(Interpreter<A, X> interpreter);
+    Effect<Term<A>> interpret();
 
     abstract class Visitor {
         public <T> Type<T> type(Type<T> type) {

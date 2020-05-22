@@ -1,8 +1,8 @@
 package com.sstewartgallus.frontend;
 
+import com.sstewartgallus.ext.variables.VarTerm;
 import com.sstewartgallus.plato.Term;
 import com.sstewartgallus.plato.Type;
-import com.sstewartgallus.plato.VarTerm;
 import com.sstewartgallus.primitives.Prims;
 
 import java.io.IOException;

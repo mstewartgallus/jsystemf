@@ -1,13 +1,8 @@
 package com.sstewartgallus.plato;
 
-import com.sstewartgallus.ext.variables.VarValue;
 import com.sstewartgallus.runtime.TermDesc;
-import org.objectweb.asm.ClassVisitor;
-import org.objectweb.asm.MethodVisitor;
 
-import java.lang.constant.ClassDesc;
 import java.lang.constant.Constable;
-import java.util.Map;
 import java.util.Optional;
 import java.util.function.Function;
 
@@ -46,10 +41,6 @@ public interface Term<A> extends Constable {
     }
 
     Term<A> visitChildren(Visitor visitor);
-
-    default void jit(ClassDesc thisClass, ClassVisitor classVisitor, MethodVisitor methodVisitor, Map<VarValue<?>, VarData> varDataMap) {
-        throw new UnsupportedOperationException(getClass().toString());
-    }
 
     default <X> State<X> step(Interpreter<A, X> interpreter) {
         throw null;

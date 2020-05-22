@@ -1,11 +1,5 @@
 package com.sstewartgallus.plato;
 
-import com.sstewartgallus.ext.variables.VarValue;
-import org.objectweb.asm.ClassVisitor;
-import org.objectweb.asm.MethodVisitor;
-
-import java.lang.constant.ClassDesc;
-import java.util.Map;
 import java.util.Objects;
 
 public final class NominalTerm<A> implements ValueTerm<A> {
@@ -30,12 +24,6 @@ public final class NominalTerm<A> implements ValueTerm<A> {
     @Override
     public final Term<A> visitChildren(Visitor visitor) {
         return ofTag(tag, visitor.type(type));
-    }
-
-    @Override
-    public void jit(ClassDesc thisClass, ClassVisitor classVisitor, MethodVisitor mw, Map<VarValue<?>, VarData> varDataMap) {
-        // fixme... pretty sure this is wrong...
-        tag.jit(thisClass, classVisitor, mw, varDataMap);
     }
 
     @Override

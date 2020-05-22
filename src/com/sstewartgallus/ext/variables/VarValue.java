@@ -4,16 +4,10 @@ import com.sstewartgallus.plato.NominalTerm;
 import com.sstewartgallus.plato.Term;
 import com.sstewartgallus.plato.TermTag;
 import com.sstewartgallus.plato.Type;
-import org.objectweb.asm.ClassVisitor;
-import org.objectweb.asm.MethodVisitor;
 
-import java.lang.constant.ClassDesc;
 import java.lang.constant.ConstantDesc;
-import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
-
-import static org.objectweb.asm.Opcodes.*;
 
 // fixme... should be a nonpure extension to the list language ?
 public final class VarValue<A> implements TermTag<A>, Comparable<VarValue<?>> {
@@ -33,33 +27,6 @@ public final class VarValue<A> implements TermTag<A>, Comparable<VarValue<?>> {
 
     public Type<A> type() {
         return type;
-    }
-
-    // fixme.. pretty sure this is wrong....
-    @Override
-    public void jit(ClassDesc thisClass, ClassVisitor classVisitor, MethodVisitor methodVisitor, Map<VarValue<?>, Term.VarData> varDataMap) {
-        var data = varDataMap.get(this);
-        var clazz = data.type().erase();
-        var ii = data.argument();
-        if (clazz.isPrimitive()) {
-            switch (clazz.getName()) {
-                case "boolean", "byte", "char", "short", "int" -> {
-                    methodVisitor.visitVarInsn(ILOAD, ii);
-                }
-                case "long" -> {
-                    methodVisitor.visitVarInsn(LLOAD, ii);
-                }
-                case "float" -> {
-                    methodVisitor.visitVarInsn(FLOAD, ii);
-                }
-                case "double" -> {
-                    methodVisitor.visitVarInsn(DLOAD, ii);
-                }
-                default -> throw new IllegalStateException(clazz.getName());
-            }
-        } else {
-            methodVisitor.visitVarInsn(ALOAD, ii);
-        }
     }
 
     @Override

@@ -2,8 +2,6 @@ package com.sstewartgallus;
 
 
 import com.sstewartgallus.ext.java.J;
-import com.sstewartgallus.ext.variables.VarType;
-import com.sstewartgallus.ext.variables.VarValue;
 import com.sstewartgallus.frontend.Entity;
 import com.sstewartgallus.frontend.Environment;
 import com.sstewartgallus.frontend.Frontend;
@@ -136,15 +134,15 @@ public final class Main {
 
         var type = Frontend.toType(binderType, environment);
 
-        var v = new VarValue<>(type);
-        environment = environment.put(binderName, new Entity.TermEntity(binderName, NominalTerm.ofTag(v, (Type) type)));
+        var v = new VarTerm<>(type);
+        environment = environment.put(binderName, new Entity.TermEntity(binderName, v));
 
         var theTerm = Frontend.toTerm(rest, environment);
 
         return getTerm(v, theTerm);
     }
 
-    private static <A, B> Term<F<A, B>> getTerm(VarValue<A> v, Term<B> theTerm) {
+    private static <A, B> Term<F<A, B>> getTerm(VarTerm<A> v, Term<B> theTerm) {
         return v.type().l(x -> v.substituteIn(theTerm, x));
     }
 

@@ -2,7 +2,7 @@ package com.sstewartgallus.plato;
 
 import java.util.Objects;
 
-public record TypeApplyTerm<A, B>(Term<V<A, B>>f, Type<A>x) implements ThunkTerm<B> {
+public record TypeApplyTerm<A, B>(Term<V<A, B>>f, Type<A>x) implements Term<B> {
     public TypeApplyTerm {
         Objects.requireNonNull(f);
         Objects.requireNonNull(x);
@@ -15,7 +15,11 @@ public record TypeApplyTerm<A, B>(Term<V<A, B>>f, Type<A>x) implements ThunkTerm
 
     @Override
     public <X> Interpreter<?, X> step(Interpreter<B, X> interpreter) {
-        throw null;
+        var theX = x;
+        return interpreter.evaluate(f, fValue -> {
+            var fLambda = ((TypeLambdaTerm<A, B>) fValue);
+            return fLambda.apply(theX);
+        });
     }
 
     @Override

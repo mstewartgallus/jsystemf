@@ -1,7 +1,5 @@
 package com.sstewartgallus.plato;
 
-import com.sstewartgallus.ext.variables.VarValue;
-
 import java.util.Objects;
 
 
@@ -24,9 +22,9 @@ public abstract class LambdaTerm<A, B> implements ValueTerm<F<A, B>> {
 
     @Override
     public final Term<F<A, B>> visitChildren(Visitor visitor) {
-        var v = new VarValue<>(domain());
-        var body = visitor.term(apply(NominalTerm.ofTag(v, domain)));
-        return new LambdaTerm<>(visitor.type(domain()), visitor.type(range)) {
+        var v = new VarTerm<>(domain());
+        var body = visitor.term(apply(v));
+        return new LambdaTerm<>(visitor.type(domain), visitor.type(range)) {
             @Override
             public Term<B> apply(Term<A> x) {
                 return v.substituteIn(body, x);

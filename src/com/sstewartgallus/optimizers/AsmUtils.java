@@ -1,4 +1,4 @@
-package com.sstewartgallus.plato;
+package com.sstewartgallus.optimizers;
 
 import org.objectweb.asm.ConstantDynamic;
 import org.objectweb.asm.Handle;

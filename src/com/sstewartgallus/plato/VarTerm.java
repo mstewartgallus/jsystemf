@@ -1,24 +1,20 @@
-package com.sstewartgallus.ext.variables;
+package com.sstewartgallus.plato;
 
-import com.sstewartgallus.plato.NominalTerm;
-import com.sstewartgallus.plato.Term;
-import com.sstewartgallus.plato.TermTag;
-import com.sstewartgallus.plato.Type;
+import com.sstewartgallus.runtime.TermDesc;
 
-import java.lang.constant.ConstantDesc;
 import java.util.Objects;
 import java.util.Optional;
 
 // fixme... should be a nonpure extension to the list language ?
-public final class VarValue<A> implements TermTag<A>, Comparable<VarValue<?>> {
+public final class VarTerm<A> implements ValueTerm<A>, Comparable<VarTerm<?>> {
     private final Type<A> type;
     private final Id<A> variable;
 
-    public VarValue(Type<A> type) {
+    public VarTerm(Type<A> type) {
         this(type, new Id<>());
     }
 
-    private VarValue(Type<A> type, Id<A> variable) {
+    private VarTerm(Type<A> type, Id<A> variable) {
         Objects.requireNonNull(type);
         Objects.requireNonNull(variable);
         this.type = type;
@@ -30,33 +26,43 @@ public final class VarValue<A> implements TermTag<A>, Comparable<VarValue<?>> {
     }
 
     @Override
+    public Term<A> visitChildren(Visitor visitor) {
+        return new VarTerm<>(visitor.type(type), variable);
+    }
+
+    @Override
     public String toString() {
         return "v" + variable;
+    }
+
+    @Override
+    public <X> Interpreter<?, X> step(Interpreter<A, X> interpreter) {
+        return interpreter.returnWith(interpreter.lookup(this));
     }
 
     public <X> Term<X> substituteIn(Term<X> root, Term<A> replacement) {
         return root.visit(new Term.Visitor() {
             @Override
             public <T> Term<T> term(Term<T> term) {
-                if (!(term instanceof NominalTerm<T> nominalTerm && nominalTerm.tag() instanceof VarValue<T> varValue)) {
+                if (!(term instanceof VarTerm<T> varValue)) {
                     return term.visitChildren(this);
                 }
 
                 if (varValue.variable == variable) {
                     return (Term) replacement;
                 }
-                return nominalTerm;
+                return term;
             }
         });
     }
 
     @Override
-    public int compareTo(VarValue<?> o) {
+    public int compareTo(VarTerm<?> o) {
         return variable.compareTo(o.variable);
     }
 
     @Override
-    public Optional<? extends ConstantDesc> describeConstable() {
+    public Optional<TermDesc<A>> describeConstable() {
         return Optional.empty();
     }
 }

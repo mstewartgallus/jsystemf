@@ -1,8 +1,7 @@
 package com.sstewartgallus.runtime;
 
 import com.sstewartgallus.plato.ApplyTerm;
-import com.sstewartgallus.plato.Term;
-import com.sstewartgallus.plato.ThunkTerm;
+import com.sstewartgallus.plato.Interpreter;
 import jdk.dynalink.linker.GuardedInvocation;
 import jdk.dynalink.linker.LinkRequest;
 import jdk.dynalink.linker.LinkerServices;
@@ -16,12 +15,11 @@ import static java.lang.invoke.MethodHandles.*;
 import static java.lang.invoke.MethodType.methodType;
 
 public final class ApplyLinker implements TypeBasedGuardingDynamicLinker {
-    // fixme... can we have a better normalize than just abstract dispatch?
     private static final MethodHandle STEP_THUNK_MH;
 
     static {
         try {
-            STEP_THUNK_MH = lookup().findVirtual(ThunkTerm.class, "step", methodType(Term.class, Function.class));
+            STEP_THUNK_MH = lookup().findVirtual(ApplyTerm.class, "step", methodType(Interpreter.class, Interpreter.class));
         } catch (NoSuchMethodException | IllegalAccessException e) {
             throw new RuntimeException(e);
         }

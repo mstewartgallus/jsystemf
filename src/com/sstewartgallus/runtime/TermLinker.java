@@ -31,7 +31,7 @@ public final class TermLinker implements TypeBasedGuardingDynamicLinker, Guardin
     private static final MethodHandle INT_VALUE_MH;
 
     static {
-        var linkers = List.of(new JitLinker(), new TypeLambdaLinker(), new LambdaLinker(), new ThunkLinker(), new TermLinker());
+        var linkers = List.of(new JitLinker(), new TypeLambdaLinker(), new LambdaLinker(), new TermLinker());
         var factory = new DynamicLinkerFactory();
         factory.setPrioritizedLinkers(linkers);
         factory.setSyncOnRelink(true);

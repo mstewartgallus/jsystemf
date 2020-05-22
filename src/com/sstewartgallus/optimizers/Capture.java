@@ -1,10 +1,9 @@
 package com.sstewartgallus.optimizers;
 
-import com.sstewartgallus.ext.variables.VarValue;
 import com.sstewartgallus.plato.F;
 import com.sstewartgallus.plato.LambdaTerm;
-import com.sstewartgallus.plato.NominalTerm;
 import com.sstewartgallus.plato.Term;
+import com.sstewartgallus.plato.VarTerm;
 
 import java.util.HashSet;
 import java.util.List;
@@ -23,16 +22,16 @@ public final class Capture {
     private static <A, B> Results<F<A, B>> captureLambda(LambdaTerm<A, B> lambda) {
         var results = captureLambdaInner(lambda);
         var captured = results.captured;
-        List<VarValue<?>> free = captured.stream().sorted().collect(Collectors.toUnmodifiableList());
+        List<VarTerm<?>> free = captured.stream().sorted().collect(Collectors.toUnmodifiableList());
         return new Results<>(captured, helper(free, 0, results.value));
     }
 
     private static <A, B> Results<F<A, B>> captureLambdaInner(LambdaTerm<A, B> lambda) {
         var domain = lambda.domain();
-        var v = new VarValue<>(domain);
+        var v = new VarTerm<>(domain);
 
-        var body = lambda.apply(NominalTerm.ofTag(v, domain));
-        Set<VarValue<?>> captured;
+        var body = lambda.apply(v);
+        Set<VarTerm<?>> captured;
         Term<B> value;
         if (body instanceof LambdaTerm<?, ?> lambdaBody) {
             var results = (Results<B>) captureLambdaInner(lambdaBody);
@@ -49,26 +48,26 @@ public final class Capture {
         return new Results<>(captured, domain.l(x -> v.substituteIn(value, x)));
     }
 
-    private static <A> Term<A> helper(List<VarValue<?>> free, int ii, Term<A> body) {
+    private static <A> Term<A> helper(List<VarTerm<?>> free, int ii, Term<A> body) {
         if (ii >= free.size()) {
             return body;
         }
         return helper(free, ii, free.get(ii), body);
     }
 
-    private static <A, B> Term<A> helper(List<VarValue<?>> free, int ii, VarValue<B> freeVar, Term<A> body) {
+    private static <A, B> Term<A> helper(List<VarTerm<?>> free, int ii, VarTerm<B> freeVar, Term<A> body) {
         var f = freeVar.type().l(x -> freeVar.substituteIn(body, x));
-        return Term.apply(helper(free, ii + 1, f), NominalTerm.ofTag(freeVar, freeVar.type()));
+        return Term.apply(helper(free, ii + 1, f), freeVar);
     }
 
     static final class CaptureVisitor extends Term.Visitor {
-        final Set<VarValue<?>> captured = new HashSet<>();
+        final Set<VarTerm<?>> captured = new HashSet<>();
 
         @Override
         public <T> Term<T> term(Term<T> term) {
-            if (term instanceof NominalTerm<T> nominalTerm && nominalTerm.tag() instanceof VarValue<T> v) {
+            if (term instanceof VarTerm<T> v) {
                 captured.add(v);
-                return nominalTerm;
+                return term;
             }
 
             if (!(term instanceof LambdaTerm<?, ?> thunk)) {
@@ -84,7 +83,7 @@ public final class Capture {
         }
     }
 
-    record Results<L>(Set<VarValue<?>>captured, Term<L>value) {
+    record Results<L>(Set<VarTerm<?>>captured, Term<L>value) {
     }
 
 }

@@ -1,6 +1,5 @@
 package com.sstewartgallus.optimizers;
 
-import com.sstewartgallus.ext.variables.VarValue;
 import com.sstewartgallus.plato.Type;
 import com.sstewartgallus.plato.*;
 import com.sstewartgallus.runtime.AnonClassLoader;
@@ -74,7 +73,7 @@ public final class Jit {
         }
     }
 
-    private static <A> void jit(Term<A> term, ClassDesc thisClass, ClassVisitor cv, MethodVisitor mw, Map<VarValue<?>, VarData> varMap) {
+    private static <A> void jit(Term<A> term, ClassDesc thisClass, ClassVisitor cv, MethodVisitor mw, Map<VarTerm<?>, VarData> varMap) {
         if (term instanceof ApplyTerm<?, A> applyTerm) {
             jitApply(applyTerm, thisClass, cv, mw, varMap);
             return;
@@ -84,8 +83,8 @@ public final class Jit {
             return;
         }
         // fixme..make VarValue a regular not nominal term again...
-        if (term instanceof NominalTerm<?> nominalTerm) {
-            jitVar(nominalTerm, thisClass, cv, mw, varMap);
+        if (term instanceof VarTerm<?> varTerm) {
+            jitVar(varTerm, thisClass, cv, mw, varMap);
             return;
         }
 
@@ -93,9 +92,9 @@ public final class Jit {
         throw new IllegalStateException(term.toString());
     }
 
-    private static void jitVar(NominalTerm<?> nominalTerm, ClassDesc thisClass, ClassVisitor cv, MethodVisitor mw, Map<VarValue<?>, VarData> varMap) {
+    private static void jitVar(VarTerm<?> varTerm, ClassDesc thisClass, ClassVisitor cv, MethodVisitor mw, Map<VarTerm<?>, VarData> varMap) {
         // fixme... doublec check if var
-        var data = varMap.get(nominalTerm.tag());
+        var data = varMap.get(varTerm);
         var clazz = data.type().erase();
         var ii = data.argument();
         if (clazz.isPrimitive()) {
@@ -119,7 +118,7 @@ public final class Jit {
         }
     }
 
-    private static void jitLambda(LambdaTerm<?, ?> lambdaTerm, ClassDesc thisClass, ClassVisitor cv, MethodVisitor mw, Map<VarValue<?>, VarData> varMap) {
+    private static void jitLambda(LambdaTerm<?, ?> lambdaTerm, ClassDesc thisClass, ClassVisitor cv, MethodVisitor mw, Map<VarTerm<?>, VarData> varMap) {
 
         var td = lambdaTerm.domain().describeConstable().get();
         var rangeDesc = lambdaTerm.range().describeConstable().get();
@@ -130,15 +129,15 @@ public final class Jit {
 
         Class<?> range;
         Term<?> body;
-        var varDataMap = new HashMap<VarValue<?>, VarData>();
+        var varDataMap = new HashMap<VarTerm<?>, VarData>();
         var ii = 0;
         for (; ; ) {
-            var v = new VarValue(current.domain());
+            var v = new VarTerm(current.domain());
             varDataMap.put(v, new VarData(ii, current.domain()));
             // fixme.. handle longs/doubles
             ++ii;
 
-            body = current.apply(NominalTerm.ofTag(v, current.domain()));
+            body = current.apply(v);
             args.add(current.domain().erase());
             range = body.type().erase();
 
@@ -193,7 +192,7 @@ public final class Jit {
         mw.visitLdcInsn(AsmUtils.toAsm(desc));
     }
 
-    private static <A, B> void jitApply(ApplyTerm<A, B> applyTerm, ClassDesc thisClass, ClassVisitor cv, MethodVisitor mw, Map<VarValue<?>, VarData> varMap) {
+    private static <A, B> void jitApply(ApplyTerm<A, B> applyTerm, ClassDesc thisClass, ClassVisitor cv, MethodVisitor mw, Map<VarTerm<?>, VarData> varMap) {
         var f = applyTerm.f();
         var x = applyTerm.x();
 

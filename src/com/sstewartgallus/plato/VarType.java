@@ -1,9 +1,4 @@
-package com.sstewartgallus.ext.variables;
-
-import com.sstewartgallus.plato.NominalType;
-import com.sstewartgallus.plato.Term;
-import com.sstewartgallus.plato.Type;
-import com.sstewartgallus.plato.TypeTag;
+package com.sstewartgallus.plato;
 
 import java.lang.constant.ConstantDesc;
 import java.util.Optional;

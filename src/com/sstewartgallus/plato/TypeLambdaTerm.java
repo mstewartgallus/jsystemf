@@ -1,6 +1,6 @@
 package com.sstewartgallus.plato;
 
-public abstract class TypeLambdaTerm<A, B> implements ValueTerm<V<A, B>>, Term<V<A, B>> {
+public abstract class TypeLambdaTerm<A, B> implements ValueTerm<V<A, B>> {
     @Override
     public Term<V<A, B>> visitChildren(Visitor visitor) {
         var self = this;

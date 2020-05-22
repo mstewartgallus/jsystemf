@@ -4,11 +4,11 @@ import com.sstewartgallus.interpreter.Effect;
 
 import java.util.Objects;
 
-public final class EffectTerm<A> implements Term<A> {
+public final class IntrinsicTerm<A> implements Term<A> {
     private final Type<A> type;
     private final Effect<Term<A>> effect;
 
-    public EffectTerm(Effect<Term<A>> effect, Type<A> type) {
+    public IntrinsicTerm(Effect<Term<A>> effect, Type<A> type) {
         Objects.requireNonNull(effect);
         Objects.requireNonNull(type);
         this.type = type;
@@ -17,7 +17,7 @@ public final class EffectTerm<A> implements Term<A> {
 
     @Override
     public final Term<A> visitChildren(Visitor visitor) {
-        return new EffectTerm<>(effect, visitor.type(type));
+        return new IntrinsicTerm<>(effect, visitor.type(type));
     }
 
     @Override

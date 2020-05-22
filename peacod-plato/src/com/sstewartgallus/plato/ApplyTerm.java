@@ -13,11 +13,13 @@ public record ApplyTerm<A, B>(Term<F<A, B>>f, Term<A>x) implements Term<B> {
     @Override
     public Effect<Term<B>> interpret() {
         var fEffects = f.interpret();
-        var theX = x;
-        // fixme... track through the interpreter
-        return fEffects.bind(fValue -> {
-            var fLambda = ((LambdaTerm<A, B>) fValue);
-            return fLambda.apply(theX).interpret();
+        var xType = x.type();
+        return Effect.thunk(x.interpret()).bind(xVar -> {
+            // fixme... make more like return interpreter.push(x).tailCall(f); ?
+            return fEffects.bind(fValue -> {
+                var fLambda = ((LambdaTerm<A, B>) fValue);
+                return fLambda.apply(new IntrinsicTerm<>(xVar, xType)).interpret();
+            });
         });
     }
 

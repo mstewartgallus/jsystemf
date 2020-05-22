@@ -1,17 +1,13 @@
 package com.sstewartgallus.runtime;
 
 import com.sstewartgallus.interpreter.Effect;
+import com.sstewartgallus.interpreter.Id;
 import com.sstewartgallus.interpreter.Interpreter;
 
 import java.util.function.Function;
 
 /**
- * This will be a simple obviously correct interpreter.
- * <p>
- * This shall form the bootstrap to a metacircular approach where we interpret the JIT and then JIT the interpreter and
- * the JIT.
- * <p>
- * Loosely based around CESK
+ * This will be a jit interpreter based sort of around partial evaluation.
  */
 public final class JitInterpreter<X, A> extends Interpreter<X, A> {
     private final Stack<X, A> stack;
@@ -42,6 +38,20 @@ public final class JitInterpreter<X, A> extends Interpreter<X, A> {
     @Override
     public Interpreter<?, A> pure(X value) {
         return stack.step(value).returnTo(this);
+    }
+
+    @Override
+    public <C> Interpreter<?, A> thunk(Equal<X, Effect<C>> witness, X effect) {
+        Effect<C> reallyEffect = witness.left().to(effect);
+        return new JitInterpreter<>(reallyEffect, (C evaluated) -> {
+            var from = witness.right().to(Effect.pure(evaluated));
+            return stack.step(from);
+        }, null);
+    }
+
+    @Override
+    public <C> Interpreter<?, A> load(Equal<C, Effect<X>> witness, Id<C> effectId) {
+        throw null;
     }
 
     @Override

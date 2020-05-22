@@ -18,16 +18,4 @@ public record TypeApplyTerm<A, B>(Term<V<A, B>>f, Type<A>x) implements ThunkTerm
         return ((ForallType<A, B>) f.type()).f().apply(x);
     }
 
-    @Override
-    public boolean reducible() {
-        return true;
-    }
-
-    @Override
-    public <C> Term<C> step(TermCont<B, C> k) {
-        return f.step(fNorm -> {
-            TypeLambdaTerm<A, B> fLambda = (TypeLambdaTerm<A, B>) fNorm;
-            return fLambda.apply(x).step(k);
-        });
-    }
 }

@@ -39,11 +39,6 @@ public interface Term<A> extends Constable {
         throw null;
     }
 
-    // fixme.. reimplement as continuation monad..
-    boolean reducible();
-
-    <B> Term<B> step(TermCont<A, B> k);
-
     Type<A> type() throws TypeCheckException;
 
     default Term<A> visit(Visitor visitor) {

@@ -30,12 +30,6 @@ public final class JitValue<A> implements ThunkTerm<A>, ValueTerm<A> {
     }
 
     @Override
-    public <C> Term<C> step(TermCont<A, C> k) {
-        var self = this;
-        return k.apply(INVOKE_TERM.apply(self));
-    }
-
-    @Override
     public Type<A> type() throws TypeCheckException {
         return type;
     }

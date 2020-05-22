@@ -16,7 +16,6 @@ import java.util.Objects;
 import static java.lang.invoke.MethodType.methodType;
 
 public record ApplyTerm<A, B>(Term<F<A, B>>f, Term<A>x) implements ThunkTerm<B>, Term<B> {
-
     public ApplyTerm {
         Objects.requireNonNull(f);
         Objects.requireNonNull(x);
@@ -60,17 +59,4 @@ public record ApplyTerm<A, B>(Term<F<A, B>>f, Term<A>x) implements ThunkTerm<B>,
         return range;
     }
 
-    @Override
-    public boolean reducible() {
-        return f.reducible() || f instanceof LambdaTerm;
-    }
-
-    @Override
-    public <C> Term<C> step(TermCont<B, C> k) {
-        var theX = x;
-        return f.step(fValue -> {
-            var fLambda = (LambdaTerm<A, B>) fValue;
-            return fLambda.apply(theX).step(k);
-        });
-    }
 }

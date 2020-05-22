@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<module type="JAVA_MODULE" version="4">
+  <component name="NewModuleRootManager" inherit-compiler-output="true">
+    <exclude-output />
+    <content url="file://$MODULE_DIR$/../peacod">
+      <sourceFolder url="file://$MODULE_DIR$/../peacod/src" isTestSource="false" />
+    </content>
+    <orderEntry type="inheritedJdk" />
+    <orderEntry type="sourceFolder" forTests="false" />
+    <orderEntry type="library" name="org.ow2.asm:asm-commons:8.0.1" level="project" />
+    <orderEntry type="library" name="org.ow2.asm:asm-util:8.0.1" level="project" />
+    <orderEntry type="module" module-name="peacod-plato" />
+    <orderEntry type="module" module-name="peacod-interpreter" />
+  </component>
+</module>

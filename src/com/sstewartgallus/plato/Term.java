@@ -51,6 +51,10 @@ public interface Term<A> extends Constable {
         throw new UnsupportedOperationException(getClass().toString());
     }
 
+    default <X> State<X> step(Interpreter<A, X> interpreter) {
+        throw null;
+    }
+
     abstract class Visitor {
         public <T> Type<T> type(Type<T> type) {
             return type;

@@ -22,6 +22,15 @@ public record ApplyTerm<A, B>(Term<F<A, B>>f, Term<A>x) implements ThunkTerm<B>,
     }
 
     @Override
+    public <X> State<X> step(Interpreter<B, X> interpreter) {
+        var theX = x;
+        return interpreter.eval(f, fValue -> {
+            var fLambda = ((LambdaTerm<A, B>) fValue);
+            return fLambda.apply(theX);
+        });
+    }
+
+    @Override
     public Term<B> visitChildren(Visitor visitor) {
         return Term.apply(visitor.term(f), visitor.term(x));
     }

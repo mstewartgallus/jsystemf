@@ -47,12 +47,12 @@ public abstract class LambdaTerm<A, B> implements ValueTerm<F<A, B>> {
     }
 
     @Override
-    public void jit(ClassDesc thisClass, ClassVisitor classVisitor, MethodVisitor mw, Map<VarValue<?>, VarData> varDataMap) {
+    public final void jit(ClassDesc thisClass, ClassVisitor classVisitor, MethodVisitor mw, Map<VarValue<?>, VarData> varDataMap) {
         var term = jit(thisClass, classVisitor);
         mw.visitLdcInsn(AsmUtils.toAsm(term));
     }
 
-    public final TermDesc<F<A, B>> jit(ClassDesc thisClass, ClassVisitor cv) {
+    private TermDesc<F<A, B>> jit(ClassDesc thisClass, ClassVisitor cv) {
 
         var td = type().describeConstable().get();
 

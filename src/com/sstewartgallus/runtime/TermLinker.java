@@ -2,7 +2,7 @@ package com.sstewartgallus.runtime;
 
 import com.sstewartgallus.ext.java.IntValue;
 import com.sstewartgallus.ext.mh.JitLinker;
-import com.sstewartgallus.plato.State;
+import com.sstewartgallus.plato.Interpreter;
 import com.sstewartgallus.plato.Term;
 import com.sstewartgallus.plato.ValueTerm;
 import jdk.dynalink.CallSiteDescriptor;
@@ -40,7 +40,7 @@ public final class TermLinker implements TypeBasedGuardingDynamicLinker, Guardin
 
     static {
         try {
-            NORMALIZE_MH = lookup().findStatic(State.class, "normalize", methodType(ValueTerm.class, Term.class));
+            NORMALIZE_MH = lookup().findStatic(Interpreter.class, "normalize", methodType(ValueTerm.class, Term.class));
         } catch (NoSuchMethodException | IllegalAccessException e) {
             throw new RuntimeException(e);
         }

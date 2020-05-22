@@ -42,7 +42,7 @@ public final class JitValue<A, B> implements Term<F<A, B>> {
     }
 
     @Override
-    public <X> State<X> step(Interpreter<F<A, B>, X> interpreter) {
+    public <X> Interpreter<?, X> step(Interpreter<F<A, B>, X> interpreter) {
         return interpreter.returnWith(domain.l(x -> INVOKE_TERM.apply(this, x)));
     }
 

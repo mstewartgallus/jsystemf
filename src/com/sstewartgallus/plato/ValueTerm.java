@@ -5,7 +5,7 @@ package com.sstewartgallus.plato;
  */
 public interface ValueTerm<A> extends Term<A> {
     @Override
-    default <X> State<X> step(Interpreter<A, X> interpreter) {
+    default <X> Interpreter<?, X> step(Interpreter<A, X> interpreter) {
         return interpreter.returnWith(this);
     }
 }

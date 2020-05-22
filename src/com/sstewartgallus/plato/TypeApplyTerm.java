@@ -14,7 +14,7 @@ public record TypeApplyTerm<A, B>(Term<V<A, B>>f, Type<A>x) implements ThunkTerm
     }
 
     @Override
-    public <X> State<X> step(Interpreter<B, X> interpreter) {
+    public <X> Interpreter<?, X> step(Interpreter<B, X> interpreter) {
         throw null;
     }
 

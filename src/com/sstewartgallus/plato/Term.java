@@ -42,7 +42,7 @@ public interface Term<A> extends Constable {
 
     Term<A> visitChildren(Visitor visitor);
 
-    <X> State<X> step(Interpreter<A, X> interpreter);
+    <X> Interpreter<?, X> step(Interpreter<A, X> interpreter);
 
     abstract class Visitor {
         public <T> Type<T> type(Type<T> type) {

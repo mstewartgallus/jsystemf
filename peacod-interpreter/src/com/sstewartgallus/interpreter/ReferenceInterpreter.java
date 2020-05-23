@@ -45,16 +45,18 @@ public final class ReferenceInterpreter<X, A> extends Interpreter<X, A> {
 
     @Override
     public <C> Interpreter<?, A> thunk(Equal<X, Effect<C>> witness, X effect) {
-        var newEnv = new Environment(env);
-        var effectId = newEnv.put(effect);
-        return stack.step(Effect.load(witness, effectId)).returnTo(new ReferenceInterpreter<>(ip, newEnv, stack, null));
+        var effectId = new Id<X>();
+        effectId.value = witness.right().to(witness.left().to(effect).bind((C value) -> {
+            effectId.value = witness.right().to(Effect.pure(value));
+            return Effect.pure(value);
+        }));
+        return stack.step(Effect.load(witness, effectId)).returnTo(this);
     }
 
     @Override
     public <C> Interpreter<?, A> load(Equal<C, Effect<X>> witness, Id<C> effectId) {
-        var result = env.get(effectId);
+        var result = effectId.value;
         var effect = witness.left().to(result);
-        // fixme... cache result
         return effect.execute(this);
     }
 

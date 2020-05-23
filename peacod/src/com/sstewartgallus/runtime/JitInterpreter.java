@@ -42,16 +42,19 @@ public final class JitInterpreter<X, A> extends Interpreter<X, A> {
 
     @Override
     public <C> Interpreter<?, A> thunk(Equal<X, Effect<C>> witness, X effect) {
-        Effect<C> reallyEffect = witness.left().to(effect);
-        return new JitInterpreter<>(reallyEffect, (C evaluated) -> {
-            var from = witness.right().to(Effect.pure(evaluated));
-            return stack.step(from);
-        }, null);
+        var effectId = new Id<X>();
+        effectId.value = witness.right().to(witness.left().to(effect).bind((C value) -> {
+            effectId.value = witness.right().to(Effect.pure(value));
+            return Effect.pure(value);
+        }));
+        return stack.step(Effect.load(witness, effectId)).returnTo(this);
     }
 
     @Override
     public <C> Interpreter<?, A> load(Equal<C, Effect<X>> witness, Id<C> effectId) {
-        throw null;
+        var result = effectId.value;
+        var effect = witness.left().to(result);
+        return effect.execute(this);
     }
 
     @Override

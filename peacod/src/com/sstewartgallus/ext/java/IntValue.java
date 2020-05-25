@@ -17,4 +17,5 @@ public record IntValue(int value) implements ValueTerm<J<Integer>>, JavaTerm<Int
     public Term<J<Integer>> visitChildren(Visitor visitor) {
         return this;
     }
+
 }

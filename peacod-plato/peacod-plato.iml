@@ -8,5 +8,6 @@
     <orderEntry type="inheritedJdk" />
     <orderEntry type="sourceFolder" forTests="false" />
     <orderEntry type="module" module-name="peacod-interpreter" />
+    <orderEntry type="module" module-name="peacod-interpreter" />
   </component>
 </module>

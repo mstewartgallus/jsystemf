@@ -1,6 +1,7 @@
 package com.sstewartgallus.interpreter;
 
 import java.util.function.Function;
+import java.util.function.Predicate;
 
 /**
  * This will be a simple obviously correct interpreter.
@@ -12,11 +13,11 @@ import java.util.function.Function;
  */
 public final class ReferenceInterpreter<X, A> extends Interpreter<X, A> {
     final Environment env;
-    private final Stack<X, A> stack;
-    private final Effect<X> ip;
+    final Stack<X, A> stack;
+    final Code<X> ip;
     private final A halted;
 
-    ReferenceInterpreter(Effect<X> ip, Environment environment, Stack<X, A> stack, A halted) {
+    ReferenceInterpreter(Code<X> ip, Environment environment, Stack<X, A> stack, A halted) {
         this.ip = ip;
         this.env = environment;
         this.stack = stack;
@@ -24,7 +25,35 @@ public final class ReferenceInterpreter<X, A> extends Interpreter<X, A> {
     }
 
     @Override
+    public Interpreter<?, A> pure(X value) {
+        return stack.returnWith(this, value);
+    }
+
+    @Override
+    public Interpreter<?, A> loop(Code<X> init, Predicate<X> pred, Function<X, X> body) {
+        return new ReferenceInterpreter<>(init, env, createLoop(pred, body), null);
+    }
+
+    // fixme... should be possible to use same bits every part of a loop..
+    private Stack<X, A> createLoop(Predicate<X> pred, Function<X, X> body) {
+        return initVal -> {
+            if (pred.test(initVal)) {
+                var nextVal = body.apply(initVal);
+                return new ContinueFrame<>(new PureCode<>(nextVal), createLoop(pred, body));
+            }
+            return stack.step(initVal);
+        };
+    }
+
+    @Override
+    public <C> Interpreter<?, A> apply(Code<Function<C, X>> f, Code<C> x) {
+        return new ReferenceInterpreter<>(f, env, fEval ->
+                new ContinueFrame<>(x, xEval -> stack.step(fEval.apply(xEval))), null);
+    }
+
+    @Override
     protected Interpreter<?, A> step() {
+        System.err.println("step " + ip);
         return ip.execute(this);
     }
 
@@ -38,34 +67,7 @@ public final class ReferenceInterpreter<X, A> extends Interpreter<X, A> {
         return halted;
     }
 
-    @Override
-    public Interpreter<?, A> pure(X value) {
-        return stack.step(value).returnTo(this);
+    public String toString() {
+        return env + " " + stack + " " + ip + " " + halted;
     }
-
-    @Override
-    public <C> Interpreter<?, A> thunk(Equal<X, Effect<C>> witness, X effect) {
-        var effectId = new Id<X>();
-        effectId.value = witness.right().to(witness.left().to(effect).bind((C value) -> {
-            effectId.value = witness.right().to(Effect.pure(value));
-            return Effect.pure(value);
-        }));
-        return stack.step(Effect.load(witness, effectId)).returnTo(this);
-    }
-
-    @Override
-    public <C> Interpreter<?, A> load(Equal<C, Effect<X>> witness, Id<C> effectId) {
-        var result = effectId.value;
-        var effect = witness.left().to(result);
-        return effect.execute(this);
-    }
-
-    @Override
-    public <Z> Interpreter<?, A> bind(Effect<Z> x, Function<Z, Effect<X>> f) {
-        return new ReferenceInterpreter<>(x, env, (evaluated) -> {
-            var y = f.apply(evaluated);
-            return new ContinueFrame<>(y, stack);
-        }, null);
-    }
-
 }

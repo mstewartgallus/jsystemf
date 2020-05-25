@@ -4,23 +4,23 @@ import java.util.Map;
 import java.util.WeakHashMap;
 
 final class Environment {
-    private final Map<Id<?>, Object> map;
+    private final Map<Id<?>, Code<?>> map;
 
     Environment() {
         map = new WeakHashMap<>();
     }
 
-    Environment(Environment toCopy) {
-        map = new WeakHashMap<>(toCopy.map);
+    private Environment(Map<Id<?>, Code<?>> toCopy) {
+        map = toCopy;
     }
 
-    <A> Id<A> put(A value) {
-        var id = new Id<A>();
-        map.put(id, value);
-        return id;
+    <A> Code<A> get(Id<A> id) {
+        return (Code<A>) map.get(id);
     }
 
-    <A> A get(Id<A> id) {
-        return (A) map.get(id);
+    public <Z> Environment put(Id<Z> binder, Code<Z> value) {
+        var newMap = new WeakHashMap<>(map);
+        newMap.put(binder, value);
+        return new Environment(newMap);
     }
 }

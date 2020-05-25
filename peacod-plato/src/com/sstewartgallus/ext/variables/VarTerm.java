@@ -1,9 +1,6 @@
 package com.sstewartgallus.ext.variables;
 
-import com.sstewartgallus.plato.Term;
-import com.sstewartgallus.plato.Type;
-import com.sstewartgallus.plato.ValueTerm;
-import com.sstewartgallus.plato.TermDesc;
+import com.sstewartgallus.plato.*;
 
 import java.util.Objects;
 import java.util.Optional;
@@ -37,7 +34,6 @@ public final class VarTerm<A> implements ValueTerm<A>, Comparable<VarTerm<?>> {
     public String toString() {
         return "v" + variable;
     }
-
 
     public <X> Term<X> substituteIn(Term<X> root, Term<A> replacement) {
         return root.visit(new Term.Visitor() {

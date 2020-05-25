@@ -1,8 +1,11 @@
 package com.sstewartgallus.plato;
 
+import com.sstewartgallus.ext.pretty.PrettyTag;
 import com.sstewartgallus.ext.variables.VarTerm;
+import com.sstewartgallus.interpreter.*;
 
 import java.util.Objects;
+import java.util.function.Function;
 
 
 public abstract class LambdaTerm<A, B> implements ValueTerm<F<A, B>> {
@@ -19,8 +22,17 @@ public abstract class LambdaTerm<A, B> implements ValueTerm<F<A, B>> {
         return domain;
     }
 
-    // perhaps use a kontinuation like thunks?
     public abstract Term<B> apply(Term<A> x);
+
+    public final Code<Function<Term<A>, Term<B>>> compileF() {
+        var v = new Id<Term<A>>();
+        return apply(new IntrinsicTerm<>(new LoadCode<>(v))).compile().pointFree(v);
+    }
+
+    @Override
+    public Code<Term<F<A, B>>> compile() {
+        return new ApplyCode<>(new LamCode<>(domain, range), compileF());
+    }
 
     @Override
     public final Term<F<A, B>> visitChildren(Visitor visitor) {
@@ -39,7 +51,15 @@ public abstract class LambdaTerm<A, B> implements ValueTerm<F<A, B>> {
         return domain.to(range);
     }
 
-    public Type<B> range() {
+    public final Type<B> range() {
         return range;
+    }
+
+    @Override
+    public final String toString() {
+        try (var pretty = PrettyTag.<A>generate()) {
+            var body = apply(NominalTerm.ofTag(pretty, domain));
+            return "(λ (" + pretty + " " + domain + ") " + body + ")";
+        }
     }
 }

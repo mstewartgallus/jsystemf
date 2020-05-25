@@ -1,6 +1,5 @@
 package com.sstewartgallus.ext.mh;
 
-import com.sstewartgallus.interpreter.Effect;
 import com.sstewartgallus.plato.F;
 import com.sstewartgallus.plato.Term;
 import com.sstewartgallus.plato.Type;
@@ -43,10 +42,6 @@ public final class JitValue<A, B> implements Term<F<A, B>> {
     @Override
     public Term<F<A, B>> visitChildren(Visitor visitor) {
         return this;
-    }
-
-    public Effect<Term<F<A, B>>> interpret() {
-        return Effect.pure(domain.l(x -> INVOKE_TERM.apply(this, x)));
     }
 
     public String toString() {

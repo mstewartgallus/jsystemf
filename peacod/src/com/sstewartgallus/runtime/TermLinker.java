@@ -3,6 +3,7 @@ package com.sstewartgallus.runtime;
 import com.sstewartgallus.ext.java.IntValue;
 import com.sstewartgallus.ext.mh.JitLinker;
 import com.sstewartgallus.interpreter.Interpreter;
+import com.sstewartgallus.plato.ForceCode;
 import com.sstewartgallus.plato.Term;
 import com.sstewartgallus.plato.ValueTerm;
 import jdk.dynalink.CallSiteDescriptor;
@@ -16,6 +17,7 @@ import java.lang.invoke.CallSite;
 import java.lang.invoke.MethodHandle;
 import java.lang.invoke.MethodHandles;
 import java.lang.invoke.MethodType;
+import java.util.Arrays;
 import java.util.List;
 import java.util.function.Supplier;
 
@@ -71,7 +73,9 @@ public final class TermLinker implements TypeBasedGuardingDynamicLinker, Guardin
 
     private static <A> ValueTerm<A> normalize(Term<A> term) {
         // fixme... get rid of casting if possible...
-        return (ValueTerm<A>) Interpreter.execute(term.interpret());
+        var code = term.compile();
+        code = new ForceCode<>(code);
+        return (ValueTerm<A>) Interpreter.execute(code);
     }
 
     @Override
@@ -84,7 +88,7 @@ public final class TermLinker implements TypeBasedGuardingDynamicLinker, Guardin
         // fixme... do stuff for other values like MethodHandleThunk?
         var receiver = (Term<?>) linkRequest.getReceiver();
 
-        System.err.println("linking term " + receiver.getClass() + " " + receiver);
+        System.err.println("linking term " + receiver.getClass() + " " + Arrays.toString(linkRequest.getArguments()));
 
         return null;
     }

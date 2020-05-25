@@ -1,6 +1,7 @@
 package com.sstewartgallus.plato;
 
-import com.sstewartgallus.interpreter.Effect;
+import com.sstewartgallus.interpreter.ApplyCode;
+import com.sstewartgallus.interpreter.Code;
 
 import java.util.Objects;
 
@@ -11,21 +12,15 @@ public record ApplyTerm<A, B>(Term<F<A, B>>f, Term<A>x) implements Term<B> {
     }
 
     @Override
-    public Effect<Term<B>> interpret() {
-        var fEffects = f.interpret();
-        var xType = x.type();
-        return Effect.thunk(x.interpret()).bind(xVar -> {
-            // fixme... make more like return interpreter.push(x).tailCall(f); ?
-            return fEffects.bind(fValue -> {
-                var fLambda = ((LambdaTerm<A, B>) fValue);
-                return fLambda.apply(new IntrinsicTerm<>(xVar, xType)).interpret();
-            });
-        });
+    public Term<B> visitChildren(Visitor visitor) {
+        return Term.apply(visitor.term(f), visitor.term(x));
     }
 
     @Override
-    public Term<B> visitChildren(Visitor visitor) {
-        return Term.apply(visitor.term(f), visitor.term(x));
+    public Code<Term<B>> compile() {
+        var fC = f.compile();
+        var xC = x.compile();
+        return new ApplyCode<>(new ApplyCode<>(new EvalCode<>(), fC), xC);
     }
 
     @Override
@@ -38,4 +33,7 @@ public record ApplyTerm<A, B>(Term<F<A, B>>f, Term<A>x) implements Term<B> {
         return range;
     }
 
+    public String toString() {
+        return "(" + f + " " + x + ")";
+    }
 }

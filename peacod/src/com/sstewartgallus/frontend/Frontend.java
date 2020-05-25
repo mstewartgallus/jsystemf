@@ -68,7 +68,7 @@ public class Frontend {
     private static Type<?> lookupType(String str, Environment environment) {
         var maybeEntity = environment.get(str);
         if (maybeEntity.isEmpty()) {
-            throw new IllegalStateException("No binder found for: " + str);
+            throw new IllegalStateException("No id found for: " + str);
         }
         var entity = maybeEntity.get();
         return ((Entity.TypeEntity) entity).type();
@@ -124,7 +124,7 @@ public class Frontend {
 
         var maybeEntity = environment.get(str);
         if (maybeEntity.isEmpty()) {
-            throw new IllegalStateException("No binder found for: " + str);
+            throw new IllegalStateException("No id found for: " + str);
         }
         var entity = maybeEntity.get();
         if (!(entity instanceof Entity.TermEntity termEntity)) {

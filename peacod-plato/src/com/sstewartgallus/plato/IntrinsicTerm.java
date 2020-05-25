@@ -1,37 +1,26 @@
 package com.sstewartgallus.plato;
 
-import com.sstewartgallus.interpreter.Effect;
+import com.sstewartgallus.interpreter.Code;
 
-import java.util.Objects;
-
-public final class IntrinsicTerm<A> implements Term<A> {
-    private final Type<A> type;
-    private final Effect<Term<A>> effect;
-
-    public IntrinsicTerm(Effect<Term<A>> effect, Type<A> type) {
-        Objects.requireNonNull(effect);
-        Objects.requireNonNull(type);
-        this.type = type;
-        this.effect = effect;
+public record IntrinsicTerm<A>(Code<Term<A>>code) implements Term<A> {
+    @Override
+    public Type<A> type() throws TypeCheckException {
+        return null;
     }
 
     @Override
-    public final Term<A> visitChildren(Visitor visitor) {
-        return new IntrinsicTerm<>(effect, visitor.type(type));
+    public Term<A> visitChildren(Visitor visitor) {
+        return this;
     }
 
     @Override
-    public Effect<Term<A>> interpret() {
-        return effect;
-    }
-
-    @Override
-    public final Type<A> type() {
-        return type;
+    public Code<Term<A>> compile() {
+        return code;
     }
 
     @Override
     public String toString() {
-        return effect.toString();
+        return code.toString();
     }
+
 }

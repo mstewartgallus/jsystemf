@@ -1,6 +1,7 @@
 package com.sstewartgallus.plato;
 
-import com.sstewartgallus.interpreter.Effect;
+import com.sstewartgallus.interpreter.Code;
+import com.sstewartgallus.interpreter.PureCode;
 
 /**
  * This is a convenience interface for terms that are always considered normalized
@@ -8,8 +9,7 @@ import com.sstewartgallus.interpreter.Effect;
 public interface ValueTerm<A> extends Term<A> {
 
     @Override
-    default Effect<Term<A>> interpret() {
-        return Effect.pure(this);
+    default Code<Term<A>> compile() {
+        return new PureCode<>(this);
     }
-
 }

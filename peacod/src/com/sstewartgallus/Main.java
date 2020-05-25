@@ -9,12 +9,11 @@ import com.sstewartgallus.frontend.Entity;
 import com.sstewartgallus.frontend.Environment;
 import com.sstewartgallus.frontend.Frontend;
 import com.sstewartgallus.frontend.Node;
+import com.sstewartgallus.interpreter.Code;
+import com.sstewartgallus.interpreter.Interpreter;
 import com.sstewartgallus.optimizers.Capture;
 import com.sstewartgallus.optimizers.Jit;
-import com.sstewartgallus.plato.F;
-import com.sstewartgallus.plato.NominalType;
-import com.sstewartgallus.plato.Term;
-import com.sstewartgallus.plato.Type;
+import com.sstewartgallus.plato.*;
 import com.sstewartgallus.runtime.TermInvoker;
 import com.sstewartgallus.runtime.ValueThrowable;
 import com.sstewartgallus.runtime.ValueThrowables;
@@ -97,7 +96,7 @@ public final class Main {
 
     static {
         // fixme... still need to introduce lazy proper laziness, strictness analysis and tail recursion..
-        var source = "λ (x int) λ (y int) (λ (z int) z) x";
+        var source = "λ (x int) λ (y int)  x";
 
         output("Source", source);
 
@@ -112,6 +111,7 @@ public final class Main {
         output("Environment", DEFAULT_ENV);
 
         var term = (Term<F<J<Integer>, F<J<Integer>, J<Integer>>>>) Frontend.toTerm(ast, DEFAULT_ENV);
+        System.err.println("foo " + term.compile());
 
         outputT("System F", term);
 
@@ -127,6 +127,13 @@ public final class Main {
 
         System.exit(0);
         TO_EXEC = () -> ValueThrowables.clone(TEMPLATE);// API.apply((Value<F<Integer, F<Integer, Integer>>>) main, 3, 3);
+    }
+
+    private static <A, B> Term<B> apply(Code<Term<F<A, B>>> f, Term<A> x) {
+        // fixme... this is really dumb.
+        var c = Term.apply(new IntrinsicTerm<>(f), x).compile();
+        c = new ForceCode<>(c);
+        return Interpreter.execute(c);
     }
 
     @PutEnv("λ")

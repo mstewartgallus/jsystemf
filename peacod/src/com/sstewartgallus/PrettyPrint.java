@@ -1,8 +1,15 @@
 package com.sstewartgallus;
 
-import com.sstewartgallus.ext.pretty.PrettyTag;
-import com.sstewartgallus.ext.pretty.PrettyType;
-import com.sstewartgallus.plato.*;
+import com.sstewartgallus.plato.runtime.Fun;
+import com.sstewartgallus.plato.runtime.U;
+import com.sstewartgallus.plato.runtime.V;
+import com.sstewartgallus.plato.syntax.ext.pretty.PrettyTag;
+import com.sstewartgallus.plato.syntax.ext.pretty.PrettyType;
+import com.sstewartgallus.plato.syntax.term.*;
+import com.sstewartgallus.plato.syntax.type.ForallType;
+import com.sstewartgallus.plato.syntax.type.NominalType;
+import com.sstewartgallus.plato.syntax.type.Type;
+import com.sstewartgallus.plato.syntax.type.TypeApplyType;
 
 public class PrettyPrint {
     static String prettyPrint(Type<?> type) {
@@ -31,17 +38,18 @@ public class PrettyPrint {
     }
 
     static <A> String prettyPrint(Term<A> term) {
-        if (term instanceof LambdaTerm<?, ?> lambda) {
-            return prettyPrintLambda(lambda);
-        }
         if (term instanceof ApplyTerm<?, A> applyThunk) {
             return prettyPrintApply(applyThunk);
         }
-        if (term instanceof TypeLambdaTerm<?, ?> lambda) {
-            return prettyPrintTypeLambda(lambda);
-        }
         if (term instanceof TypeApplyTerm<?, A> applyThunk) {
             return prettyPrintTypeApply(applyThunk);
+        }
+
+        if (term instanceof LambdaTerm<?, ?> lambda) {
+            return prettyPrintLambda(lambda);
+        }
+        if (term instanceof TypeLambdaTerm<?, ?> lambda) {
+            return prettyPrintTypeLambda(lambda);
         }
         return term.toString();
     }
@@ -75,7 +83,7 @@ public class PrettyPrint {
     private static <A, B> String noBrackets(ApplyTerm<A, B> apply) {
         var f = apply.f();
         var x = apply.x();
-        if (f instanceof ApplyTerm<?, F<A, B>> fApply) {
+        if (f instanceof ApplyTerm<?, Fun<U<A>, B>> fApply) {
             return noBrackets(fApply) + " " + prettyPrint(x);
         }
         return prettyPrint(f) + " " + prettyPrint(x);

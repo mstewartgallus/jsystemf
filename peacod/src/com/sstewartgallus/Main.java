@@ -1,22 +1,24 @@
 package com.sstewartgallus;
 
 
-import com.sstewartgallus.ext.java.J;
-import com.sstewartgallus.ext.java.JavaTag;
-import com.sstewartgallus.ext.variables.VarTerm;
-import com.sstewartgallus.ext.variables.VarType;
-import com.sstewartgallus.frontend.Entity;
-import com.sstewartgallus.frontend.Environment;
-import com.sstewartgallus.frontend.Frontend;
-import com.sstewartgallus.frontend.Node;
-import com.sstewartgallus.interpreter.Code;
-import com.sstewartgallus.interpreter.Interpreter;
-import com.sstewartgallus.optimizers.Capture;
-import com.sstewartgallus.optimizers.Jit;
-import com.sstewartgallus.plato.*;
-import com.sstewartgallus.runtime.TermInvoker;
+import com.sstewartgallus.plato.cbpv.Code;
+import com.sstewartgallus.plato.cbpv.InterpreterEnvironment;
+import com.sstewartgallus.plato.frontend.Entity;
+import com.sstewartgallus.plato.frontend.Environment;
+import com.sstewartgallus.plato.frontend.Frontend;
+import com.sstewartgallus.plato.frontend.Node;
+import com.sstewartgallus.plato.runtime.ActionInvoker;
+import com.sstewartgallus.plato.runtime.F;
+import com.sstewartgallus.plato.runtime.Fun;
+import com.sstewartgallus.plato.runtime.U;
+import com.sstewartgallus.plato.syntax.ext.variables.VarType;
+import com.sstewartgallus.plato.syntax.term.Term;
+import com.sstewartgallus.plato.syntax.type.NominalType;
+import com.sstewartgallus.plato.syntax.type.Type;
 import com.sstewartgallus.runtime.ValueThrowable;
 import com.sstewartgallus.runtime.ValueThrowables;
+import org.projog.core.term.Atom;
+import org.projog.core.term.Structure;
 
 import java.io.IOException;
 import java.io.PrintWriter;
@@ -45,10 +47,17 @@ import static java.lang.invoke.MethodHandles.lookup;
 public final class Main {
     static final Supplier<Object> TO_EXEC;
     private static final MyThrowable TEMPLATE = new MyThrowable();
-    private static final ApplyInt API = TermInvoker.newInstance(lookup(), ApplyInt.class);
+    private static final ApplyInt API = ActionInvoker.newInstance(lookup(), ApplyInt.class);
+    private static final ApplyInt API2 = ActionInvoker.newInstance(lookup(), ApplyInt.class);
 
     @PutEnv("int")
-    private static final Type<?> INT_TYPE = NominalType.ofTag(new JavaTag<>(int.class));
+    private static final org.projog.core.term.Term INT_TYPE_TERM = Structure.createStructure("/",
+            new org.projog.core.term.Term[]{new Atom("builtin"), new Atom("int")});
+
+    @PutEnv("+")
+    private static final org.projog.core.term.Term ADD = Structure.createStructure("/",
+            new org.projog.core.term.Term[]{new Atom("builtin"), new Atom("+")});
+
     private static final Environment DEFAULT_ENV =
             Stream.concat(
                     Arrays.
@@ -70,6 +79,8 @@ public final class Main {
                                     entity = new Entity.TermEntity(name, (Term<?>) value);
                                 } else if (value instanceof Type) {
                                     entity = new Entity.TypeEntity(name, (Type<?>) value);
+                                } else if (value instanceof org.projog.core.term.Term) {
+                                    entity = new Entity.PrologTermEntity(name, (org.projog.core.term.Term) value);
                                 } else {
                                     throw new RuntimeException("error " + value);
                                 }
@@ -89,20 +100,20 @@ public final class Main {
                                     throw new RuntimeException(e);
                                 }
 
+                                // fixme... lol..
                                 var f = MethodHandleProxies.asInterfaceInstance(BiFunction.class, methodHandle);
-                                return new Entity.SpecialFormEntity(name, f);
+                                return new Entity.SpecialFormEntity(name, f, f);
                             })
             ).reduce(Environment.empty(), (env, entity) -> env.put(entity.name(), entity), Environment::union);
 
     static {
-        // fixme... still need to introduce lazy proper laziness, strictness analysis and tail recursion..
-        var source = "λ (x int) λ (y int)  x";
+        var source = "+";
 
         output("Source", source);
 
         Node.Array ast;
         try {
-            ast = Frontend.parse(new StringReader(source));
+            ast = Frontend.reader(new StringReader(source));
         } catch (IOException e) {
             throw new RuntimeException(e);
         }
@@ -110,34 +121,55 @@ public final class Main {
 
         output("Environment", DEFAULT_ENV);
 
-        var term = (Term<F<J<Integer>, F<J<Integer>, J<Integer>>>>) Frontend.toTerm(ast, DEFAULT_ENV);
-        System.err.println("foo " + term.compile());
+        var prologterm = Frontend.toPrologTerm(ast, DEFAULT_ENV);
+        output("Prolog Term", prologterm);
+
+        var typedterm = Frontend.typecheck(prologterm);
+        output("Typed Term", typedterm);
+
+        var procbpv = Frontend.cbpv(prologterm);
+        output("CBPV", procbpv);
+
+        var myast = Frontend.oftypeToTerm(typedterm);
+        output("Typed Term", myast);
+
+        var term = (Term<Fun<U<F<Integer>>, Fun<U<F<Integer>>, F<Integer>>>>) Frontend.toTerm(ast, DEFAULT_ENV);
 
         outputT("System F", term);
 
-        var captured = Capture.capture(term);
-        outputT("Partial Application", captured);
+        var constraints = term.findConstraints();
+        output("Constraints", constraints);
+
+        var solution = constraints.solve();
+        output("Solution", solution);
+
+        term = term.resolve(solution);
+        outputT("Resolved", term);
+
+        var cbpv = term.compile(new com.sstewartgallus.plato.syntax.term.Environment());
+
+        output("Call By Push Value Constraints", cbpv.findConstraints());
+
+        outputT("Call By Push Value", cbpv, cbpv.type());
+
+        var interpreted = cbpv.interpret(new InterpreterEnvironment());
+        output("Results", API.apply(interpreted, 4, 3));
 
         var str = new StringWriter();
         var writer = new PrintWriter(str);
-        var pf = Jit.jit(captured, writer);
+        var compiled = Code.compile(cbpv, writer);
         System.err.println(str.toString());
-        outputT("JIT", pf);
+//        output("JIT", compiled);
 
+        output("Results", API2.apply(compiled, 4, 3));
 
         System.exit(0);
         TO_EXEC = () -> ValueThrowables.clone(TEMPLATE);// API.apply((Value<F<Integer, F<Integer, Integer>>>) main, 3, 3);
     }
 
-    private static <A, B> Term<B> apply(Code<Term<F<A, B>>> f, Term<A> x) {
-        // fixme... this is really dumb.
-        var c = Term.apply(new IntrinsicTerm<>(f), x).compile();
-        c = new ForceCode<>(c);
-        return Interpreter.execute(c);
-    }
 
     @PutEnv("λ")
-    private static Term<?> lambda(List<Node> nodes, Environment environment) {
+    private static org.projog.core.term.Term lambdaProlog(List<Node> nodes, Environment environment) {
         var binder = ((Node.Array) nodes.get(1)).nodes();
 
         var binderName = ((Node.Atom) binder.get(0)).value();
@@ -145,18 +177,16 @@ public final class Main {
 
         var rest = new Node.Array(nodes.subList(2, nodes.size()));
 
-        var type = Frontend.toType(binderType, environment);
+        var domain = Frontend.toPrologTerm(binderType, environment);
 
-        var v = new VarTerm<>(type);
-        environment = environment.put(binderName, new Entity.TermEntity(binderName, v));
-
-        var theTerm = Frontend.toTerm(rest, environment);
-
-        return getTerm(v, theTerm);
-    }
-
-    private static <A, B> Term<F<A, B>> getTerm(VarTerm<A> v, Term<B> theTerm) {
-        return v.type().l(x -> v.substituteIn(theTerm, x));
+        var v = new Atom(binderName);
+        var theTerm = Frontend.toPrologTerm(rest, environment.put(binderName, new Entity.PrologTermEntity(binderName,
+                Structure.createStructure("/", new org.projog.core.term.Term[]{new Atom("local"), v}))));
+        return Structure.createStructure("λ", new org.projog.core.term.Term[]{
+                domain,
+                v,
+                theTerm
+        });
     }
 
     //@PutEnv("<")
@@ -179,10 +209,15 @@ public final class Main {
         outputT(stage, results, "-");
     }
 
-    static void outputT(String stage, Term<F<J<Integer>, F<J<Integer>, J<Integer>>>> term) {
+    static void outputT(String stage, Term<Fun<U<F<Integer>>, Fun<U<F<Integer>>, F<Integer>>>> term) {
         outputT(stage, PrettyPrint.prettyPrint(term), PrettyPrint.prettyPrint(term.type()));
-        var output = API.apply(term, 2, 5);
-        outputT(" ⇒", output, "-");
+        //  var output = API.apply(term, 2, 5);
+        //     outputT(" ⇒", output, "-");
+    }
+
+    static <A> void outputT(String stage, Code<A> term) {
+        outputT(stage, PrettyPrintAction.prettyPrint(term), PrettyPrint.prettyPrint(term.type()));
+        outputT(" ⇒", term.interpret(new InterpreterEnvironment()), "-");
     }
 
     static void outputT(String stage, Object term, Object type) {
@@ -199,7 +234,7 @@ public final class Main {
 
     @FunctionalInterface
     public interface ApplyInt {
-        int apply(Term<F<J<Integer>, F<J<Integer>, J<Integer>>>> f, int x, int y);
+        int apply(U<Fun<U<F<Integer>>, Fun<U<F<Integer>>, F<Integer>>>> f, int x, int y);
     }
 
     static class MyThrowable extends ValueThrowable {

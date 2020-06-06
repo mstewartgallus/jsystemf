@@ -14,15 +14,4 @@ public record ApplyCode<A, B>(Code<Function<A, B>>f, Code<A>x) implements Code<B
         return "(" + f + " " + x + ")";
     }
 
-    @Override
-    public <X> Interpreter<?, X> execute(Interpreter<B, X> interpreter) {
-        return interpreter.apply(f, x);
-    }
-
-    @Override
-    public <X> Code<Function<X, B>> pointFree(Id<X> v) {
-        var fC = f.pointFree(v);
-        var xC = x.pointFree(v);
-        return new ApplyCode<>(new ApplyCode<>(new CallCode<>(), fC), xC);
-    }
 }

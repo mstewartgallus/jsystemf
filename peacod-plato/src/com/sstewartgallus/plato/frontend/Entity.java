@@ -1,7 +1,7 @@
 package com.sstewartgallus.plato.frontend;
 
-import com.sstewartgallus.plato.syntax.term.Term;
-import com.sstewartgallus.plato.syntax.type.Type;
+import com.sstewartgallus.plato.ir.systemf.Term;
+import com.sstewartgallus.plato.ir.type.TypeDesc;
 
 import java.util.List;
 import java.util.function.BiFunction;
@@ -11,17 +11,15 @@ import java.util.function.BiFunction;
 public interface Entity {
     String name();
 
-    record TermEntity(String name, Term<?>term) implements Entity {
+    // fixme... add a type...
+    record ReferenceTermEntity(String name, Term<?>term) implements Entity {
     }
 
-    record TypeEntity(String name, Type<?>type) implements Entity {
-    }
-
-    record PrologTermEntity(String name, org.projog.core.term.Term term) implements Entity {
+    // fixme... add a type...
+    record ReferenceTypeEntity(String name, TypeDesc<?>type) implements Entity {
     }
 
     record SpecialFormEntity(String name,
-                             BiFunction<List<Node>, Environment, org.projog.core.term.Term>prolog,
                              BiFunction<List<Node>, Environment, Term<?>>f) implements Entity {
     }
 }

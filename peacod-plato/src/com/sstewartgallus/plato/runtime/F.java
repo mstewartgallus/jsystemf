@@ -1,9 +1,6 @@
 package com.sstewartgallus.plato.runtime;
 
-public interface F<A> extends U<F<A>> {
-    A evaluate();
-
-    default F<A> action() {
-        return this;
+public final class F<A> extends Phantom {
+    private F() {
     }
 }

@@ -1,13 +1,15 @@
 package com.sstewartgallus.plato.runtime.internal;
 
+import com.sstewartgallus.plato.runtime.ActionBootstraps;
 import org.objectweb.asm.ConstantDynamic;
 import org.objectweb.asm.Handle;
+import org.objectweb.asm.Type;
 
 import java.lang.constant.*;
 
 public class AsmUtils {
 
-    public static final ClassDesc CD_TermBootstraps = ClassDesc.of("com.sstewartgallus.runtime", "ActionBootstraps");
+    public static final ClassDesc CD_ActionBootstraps = ClassDesc.of(ActionBootstraps.class.getPackageName(), "ActionBootstraps");
 
     public static Handle toHandle(MethodHandleDesc desc) {
         if (desc instanceof DirectMethodHandleDesc direct) {
@@ -26,7 +28,7 @@ public class AsmUtils {
 
     public static Object toAsm(ConstantDesc desc) {
         if (desc instanceof String) {
-            throw new Error(desc.toString());
+            return desc;
         }
         if (desc instanceof Integer || desc instanceof Float) {
             return desc;
@@ -38,6 +40,9 @@ public class AsmUtils {
         }
         if (desc instanceof DirectMethodHandleDesc direct) {
             return new Handle(direct.refKind(), toAsm(direct.owner()), direct.methodName(), direct.lookupDescriptor(), direct.isOwnerInterface());
+        }
+        if (desc instanceof MethodTypeDesc typeDesc) {
+            return Type.getMethodType(typeDesc.descriptorString());
         }
 
         if (desc instanceof ClassDesc classDesc) {

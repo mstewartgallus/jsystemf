@@ -1,14 +1,15 @@
 package com.sstewartgallus.plato.runtime;
 
 import com.sstewartgallus.plato.runtime.internal.AnonClassLoader;
+import com.sstewartgallus.plato.runtime.internal.AsmUtils;
 import com.sstewartgallus.plato.runtime.internal.SupplierClassValue;
-import jdk.dynalink.StandardOperation;
 import org.objectweb.asm.ClassWriter;
-import org.objectweb.asm.Handle;
 import org.objectweb.asm.Opcodes;
 import org.objectweb.asm.Type;
+import org.objectweb.asm.util.TraceClassVisitor;
 
-import java.lang.invoke.CallSite;
+import java.io.PrintWriter;
+import java.io.StringWriter;
 import java.lang.invoke.MethodHandle;
 import java.lang.invoke.MethodHandles;
 import java.lang.invoke.MethodType;
@@ -20,17 +21,7 @@ import static java.lang.invoke.MethodType.methodType;
  * Unfortunately the standard libary MethodHandleProxies creates boxes arguments it passes through with Object[]...
  */
 public abstract class ActionInvoker<T> {
-    private static final Handle BOOTSTRAP = new Handle(Opcodes.H_INVOKESTATIC, Type.getInternalName(ActionInvoker.class), "bootstrap",
-            methodType(CallSite.class, MethodHandles.Lookup.class, String.class, MethodType.class).descriptorString(),
-            false);
     private static final SupplierClassValue<LookupHolder> LOOKUP_MAP = new SupplierClassValue<>(LookupHolder::new);
-
-    // fixme... use private bootstrap?
-    @SuppressWarnings("unused")
-    protected static CallSite bootstrap(MethodHandles.Lookup lookup, String name, MethodType methodType) {
-        var lookupValue = LOOKUP_MAP.get(lookup.lookupClass()).lookupDelegate;
-        return ActionLinker.link(lookupValue, StandardOperation.CALL, methodType);
-    }
 
     @SuppressWarnings("unused")
     protected static void register(MethodHandles.Lookup lookup) {
@@ -46,10 +37,14 @@ public abstract class ActionInvoker<T> {
 
         // fixme... privatise as much as possible...
         var cw = new ClassWriter(ClassWriter.COMPUTE_FRAMES | ClassWriter.COMPUTE_MAXS);
-        cw.visit(Opcodes.V14, Opcodes.ACC_FINAL | Opcodes.ACC_PRIVATE, newclassname, null, myname, new String[]{Type.getInternalName(iface)});
+
+        var str = new StringWriter();
+        var writer = new PrintWriter(str);
+        var cv = new TraceClassVisitor(cw, writer);
+        cv.visit(Opcodes.V14, Opcodes.ACC_FINAL | Opcodes.ACC_PRIVATE, newclassname, null, myname, new String[]{Type.getInternalName(iface)});
 
         {
-            var mw = cw.visitMethod(Opcodes.ACC_PRIVATE | Opcodes.ACC_STATIC, "<clinit>", methodType(void.class).descriptorString(), null, null);
+            var mw = cv.visitMethod(Opcodes.ACC_PRIVATE | Opcodes.ACC_STATIC, "<clinit>", methodType(void.class).descriptorString(), null, null);
             mw.visitCode();
 
             mw.visitMethodInsn(Opcodes.INVOKESTATIC, Type.getInternalName(MethodHandles.class), "lookup", methodType(MethodHandles.Lookup.class).descriptorString(), false);
@@ -61,7 +56,7 @@ public abstract class ActionInvoker<T> {
         }
 
         {
-            var mw = cw.visitMethod(Opcodes.ACC_PRIVATE, "<init>", methodType(void.class).descriptorString(), null, null);
+            var mw = cv.visitMethod(Opcodes.ACC_PRIVATE, "<init>", methodType(void.class).descriptorString(), null, null);
             mw.visitCode();
             mw.visitVarInsn(Opcodes.ALOAD, 0);
             mw.visitMethodInsn(Opcodes.INVOKESPECIAL, myname, "<init>", methodType(void.class).descriptorString(), false);
@@ -72,11 +67,22 @@ public abstract class ActionInvoker<T> {
         }
 
         {
-            var mw = cw.visitMethod(Opcodes.ACC_PUBLIC, methodName, methodType.descriptorString(), null, null);
+            var mw = cv.visitMethod(Opcodes.ACC_PUBLIC, methodName, methodType.descriptorString(), null, null);
             mw.visitCode();
 
             mw.visitVarInsn(Opcodes.ALOAD, 1);
-            mw.visitInsn(Opcodes.ACONST_NULL);
+
+            var indySig = methodType.dropParameterTypes(0, 1)
+                    .describeConstable().get();
+            {
+                var indy = ActionDesc.getApplyLabel(indySig);
+
+                var boot = AsmUtils.toHandle(indy.bootstrapMethod());
+                mw.visitInvokeDynamicInsn(indy.invocationName(), indy.invocationType().descriptorString(), boot,
+                        Arrays.stream(indy.bootstrapArgs()).map(AsmUtils::toAsm).toArray(Object[]::new));
+            }
+
+            mw.visitVarInsn(Opcodes.ALOAD, 1);
 
             var ii = 2;
             for (var param : methodType.dropParameterTypes(0, 1).parameterList()) {
@@ -107,8 +113,13 @@ public abstract class ActionInvoker<T> {
                 ii += 1;
             }
 
-            var indySig = methodType.insertParameterTypes(1, Void.class);
-            mw.visitInvokeDynamicInsn(methodName, indySig.descriptorString(), BOOTSTRAP);
+            {
+                var indy = ActionDesc.callApplyLabel(indySig);
+
+                var boot = AsmUtils.toHandle(indy.bootstrapMethod());
+                mw.visitInvokeDynamicInsn(indy.invocationName(), indy.invocationType().descriptorString(), boot,
+                        Arrays.stream(indy.bootstrapArgs()).map(AsmUtils::toAsm).toArray(Object[]::new));
+            }
 
             var returnType = methodType.returnType();
             if (returnType.isPrimitive()) {
@@ -128,7 +139,7 @@ public abstract class ActionInvoker<T> {
             mw.visitEnd();
         }
 
-        cw.visitEnd();
+        cv.visitEnd();
         var bytes = cw.toByteArray();
 
         var definedClass = AnonClassLoader.defineClass(ActionInvoker.class.getClassLoader(), bytes);

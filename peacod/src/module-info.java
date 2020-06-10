@@ -1,6 +1,5 @@
 module peacod {
     requires jdk.dynalink;
-    requires projog.core;
 
     requires org.objectweb.asm;
     requires org.objectweb.asm.util;

@@ -1,10 +1,8 @@
 package com.sstewartgallus.plato.runtime;
 
-import com.sstewartgallus.plato.cbpv.Code;
-import com.sstewartgallus.plato.cbpv.CompilerEnvironment;
+import com.sstewartgallus.plato.ir.cps.CompilerEnvironment;
 import com.sstewartgallus.plato.runtime.internal.AnonClassLoader;
 import com.sstewartgallus.plato.runtime.internal.SupplierClassValue;
-import com.sstewartgallus.plato.syntax.term.Term;
 import org.objectweb.asm.ClassWriter;
 import org.objectweb.asm.Opcodes;
 import org.objectweb.asm.util.TraceClassVisitor;
@@ -13,21 +11,18 @@ import java.io.PrintWriter;
 import java.lang.constant.ClassDesc;
 import java.lang.invoke.MethodHandle;
 import java.lang.invoke.MethodHandles;
+import java.util.function.Consumer;
 
 import static java.lang.invoke.MethodType.methodType;
 
 public class Jit {
-    static class Table {
-        MethodHandles.Lookup lookup;
-    }
     // fixme... register the jit inside the runtime....
     static final SupplierClassValue<Table> JIT_CLASSES = new SupplierClassValue<>(Table::new);
 
     protected Jit() {
     }
 
-   public static <A> U<A> jit(Code<A> code, PrintWriter writer) {
-        // fixme... privatise as much as possible...
+    public static <A> A jit(Consumer<CompilerEnvironment> consumer, MethodHandles.Lookup lookup, PrintWriter writer) {
         var cw = new ClassWriter(ClassWriter.COMPUTE_FRAMES | ClassWriter.COMPUTE_MAXS);
 
         var cv = new TraceClassVisitor(cw, writer);
@@ -37,7 +32,7 @@ public class Jit {
 
         var thisClass = ClassDesc.of(newclassname.replace('/', '.'));
 
-        cv.visit(Opcodes.V14, Opcodes.ACC_FINAL | Opcodes.ACC_PUBLIC, newclassname, null, org.objectweb.asm.Type.getInternalName(Object.class), null);
+        cv.visit(Opcodes.V14, Opcodes.ACC_FINAL | Opcodes.ACC_PUBLIC, newclassname, null, org.objectweb.asm.Type.getInternalName(Jit.class), null);
 
         {
             var mw = cv.visitMethod(Opcodes.ACC_STATIC, "<clinit>", methodType(void.class).descriptorString(), null, null);
@@ -52,10 +47,10 @@ public class Jit {
         }
 
         {
-            var mw = cv.visitMethod(Opcodes.ACC_PUBLIC | Opcodes.ACC_STATIC, "get", methodType(Term.class).descriptorString(), null, null);
+            var mw = cv.visitMethod(Opcodes.ACC_PUBLIC | Opcodes.ACC_STATIC, "get", methodType(U.class).descriptorString(), null, null);
             mw.visitCode();
 
-            code.compile(new CompilerEnvironment(thisClass, cv, mw));
+            consumer.accept(new CompilerEnvironment(lookup, thisClass, cv, mw));
 
             mw.visitInsn(Opcodes.ARETURN);
             mw.visitMaxs(0, 0);
@@ -69,22 +64,27 @@ public class Jit {
         var definedClass = AnonClassLoader.defineClass(Jit.class.getClassLoader(), bytes);
         MethodHandle mh;
         try {
-            mh = JIT_CLASSES.get(definedClass).lookup.findStatic(definedClass, "get", methodType(Term.class));
+            mh = JIT_CLASSES.get(definedClass).lookup.findStatic(definedClass, "get", methodType(U.class));
         } catch (NoSuchMethodException | IllegalAccessException e) {
             throw new RuntimeException(e);
         }
 
         try {
-            return (U<A>) mh.invoke();
+            return (A) mh.invoke();
         } catch (Error | RuntimeException e) {
             throw e;
         } catch (Throwable throwable) {
             throw new RuntimeException(throwable);
         }
     }
+
     @SuppressWarnings("unused")
     public static void register(MethodHandles.Lookup lookup) {
         JIT_CLASSES.get(lookup.lookupClass()).lookup = lookup;
+    }
+
+    static class Table {
+        MethodHandles.Lookup lookup;
     }
 
 }

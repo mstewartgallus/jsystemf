@@ -1,24 +1,24 @@
 package com.sstewartgallus;
 
 
-import com.sstewartgallus.plato.cbpv.Code;
-import com.sstewartgallus.plato.cbpv.InterpreterEnvironment;
 import com.sstewartgallus.plato.frontend.Entity;
 import com.sstewartgallus.plato.frontend.Environment;
 import com.sstewartgallus.plato.frontend.Frontend;
 import com.sstewartgallus.plato.frontend.Node;
+import com.sstewartgallus.plato.ir.cbpv.ForceCode;
+import com.sstewartgallus.plato.ir.cps.CpsEnvironment;
+import com.sstewartgallus.plato.ir.systemf.GlobalTerm;
+import com.sstewartgallus.plato.ir.systemf.LambdaTerm;
+import com.sstewartgallus.plato.ir.systemf.LocalTerm;
+import com.sstewartgallus.plato.ir.systemf.Term;
+import com.sstewartgallus.plato.ir.type.TypeDesc;
+import com.sstewartgallus.plato.java.IntF;
+import com.sstewartgallus.plato.java.IntType;
 import com.sstewartgallus.plato.runtime.ActionInvoker;
-import com.sstewartgallus.plato.runtime.F;
-import com.sstewartgallus.plato.runtime.Fun;
+import com.sstewartgallus.plato.runtime.Fn;
 import com.sstewartgallus.plato.runtime.U;
-import com.sstewartgallus.plato.syntax.ext.variables.VarType;
-import com.sstewartgallus.plato.syntax.term.Term;
-import com.sstewartgallus.plato.syntax.type.NominalType;
-import com.sstewartgallus.plato.syntax.type.Type;
 import com.sstewartgallus.runtime.ValueThrowable;
 import com.sstewartgallus.runtime.ValueThrowables;
-import org.projog.core.term.Atom;
-import org.projog.core.term.Structure;
 
 import java.io.IOException;
 import java.io.PrintWriter;
@@ -44,19 +44,24 @@ import static java.lang.invoke.MethodHandles.lookup;
     String value();
 }
 
+record TypeReference(String canonicalPackage, String canonicalName) {
+}
+
 public final class Main {
     static final Supplier<Object> TO_EXEC;
     private static final MyThrowable TEMPLATE = new MyThrowable();
-    private static final ApplyInt API = ActionInvoker.newInstance(lookup(), ApplyInt.class);
     private static final ApplyInt API2 = ActionInvoker.newInstance(lookup(), ApplyInt.class);
 
     @PutEnv("int")
-    private static final org.projog.core.term.Term INT_TYPE_TERM = Structure.createStructure("/",
-            new org.projog.core.term.Term[]{new Atom("builtin"), new Atom("int")});
+    private static final TypeDesc<?> INT_TYPE_TERM = TypeDesc.ofReference("core", "int");
 
     @PutEnv("+")
-    private static final org.projog.core.term.Term ADD = Structure.createStructure("/",
-            new org.projog.core.term.Term[]{new Atom("builtin"), new Atom("+")});
+    private static final Term<?> ADD = new GlobalTerm<>(IntType.INTF_TYPE.thunk().toFn(IntType.INTF_TYPE.thunk().toFn(IntType.INTF_TYPE)),
+            "core", "+");
+
+    @PutEnv("-")
+    private static final Term<?> SUBTRACT = new GlobalTerm<>(IntType.INTF_TYPE.thunk().toFn(IntType.INTF_TYPE.thunk().toFn(IntType.INTF_TYPE)),
+            "core", "-");
 
     private static final Environment DEFAULT_ENV =
             Stream.concat(
@@ -75,12 +80,10 @@ public final class Main {
                                 }
 
                                 Entity entity;
-                                if (value instanceof Term) {
-                                    entity = new Entity.TermEntity(name, (Term<?>) value);
-                                } else if (value instanceof Type) {
-                                    entity = new Entity.TypeEntity(name, (Type<?>) value);
-                                } else if (value instanceof org.projog.core.term.Term) {
-                                    entity = new Entity.PrologTermEntity(name, (org.projog.core.term.Term) value);
+                                if (value instanceof Term<?> term) {
+                                    entity = new Entity.ReferenceTermEntity(name, term);
+                                } else if (value instanceof TypeDesc<?> type) {
+                                    entity = new Entity.ReferenceTypeEntity(name, type);
                                 } else {
                                     throw new RuntimeException("error " + value);
                                 }
@@ -102,12 +105,12 @@ public final class Main {
 
                                 // fixme... lol..
                                 var f = MethodHandleProxies.asInterfaceInstance(BiFunction.class, methodHandle);
-                                return new Entity.SpecialFormEntity(name, f, f);
+                                return new Entity.SpecialFormEntity(name, f);
                             })
             ).reduce(Environment.empty(), (env, entity) -> env.put(entity.name(), entity), Environment::union);
 
     static {
-        var source = "+";
+        var source = "λ (x int) λ (y int) + (+ x x) y";
 
         output("Source", source);
 
@@ -121,55 +124,46 @@ public final class Main {
 
         output("Environment", DEFAULT_ENV);
 
-        var prologterm = Frontend.toPrologTerm(ast, DEFAULT_ENV);
-        output("Prolog Term", prologterm);
+        var systemf = (Term<Fn<U<IntF>, Fn<U<IntF>, IntF>>>) Frontend.toTerm(ast, DEFAULT_ENV);
+        outputT("System F ", systemf, systemf.type());
 
-        var typedterm = Frontend.typecheck(prologterm);
-        output("Typed Term", typedterm);
+        systemf = EtaReduction.etaReduction(systemf);
+        outputT("Eta Reduction", systemf, systemf.type());
 
-        var procbpv = Frontend.cbpv(prologterm);
-        output("CBPV", procbpv);
+        // fixme... do eta reduction on system F...
 
-        var myast = Frontend.oftypeToTerm(typedterm);
-        output("Typed Term", myast);
+        var cbpv = new ForceCode<>(TermToCbpv.toCbpv(systemf));
 
-        var term = (Term<Fun<U<F<Integer>>, Fun<U<F<Integer>>, F<Integer>>>>) Frontend.toTerm(ast, DEFAULT_ENV);
+        outputT("Call By Push Value", "", cbpv.type());
+        System.err.println("\t" + cbpv.toString().replace("\n", "\n\t"));
 
-        outputT("System F", term);
+        outputT("Call By Push Value (intrinsics", "", cbpv.type());
+        System.err.println("\t" + cbpv.toString().replace("\n", "\n\t"));
 
-        var constraints = term.findConstraints();
-        output("Constraints", constraints);
+        var cps = CpsTransform.toCps(cbpv, x -> x);
+        System.err.println("CPS");
+        System.err.println("\t" + cps.toString().replace("\n", "\n\t"));
+        // fixme.. compile call by push value further... before jitting or interpreting..
 
-        var solution = constraints.solve();
-        output("Solution", solution);
-
-        term = term.resolve(solution);
-        outputT("Resolved", term);
-
-        var cbpv = term.compile(new com.sstewartgallus.plato.syntax.term.Environment());
-
-        output("Call By Push Value Constraints", cbpv.findConstraints());
-
-        outputT("Call By Push Value", cbpv, cbpv.type());
-
-        var interpreted = cbpv.interpret(new InterpreterEnvironment());
-        output("Results", API.apply(interpreted, 4, 3));
+        var cpsinterp = cps.interpret(new CpsEnvironment(lookup()));
+        output("Results", API2.apply(cpsinterp, 4, 3));
 
         var str = new StringWriter();
         var writer = new PrintWriter(str);
-        var compiled = Code.compile(cbpv, writer);
-        System.err.println(str.toString());
-//        output("JIT", compiled);
+        // fixme... pass in a lookup ?
+        var compiled = cps.compile(lookup(), writer);
+        System.err.print("Jit Code");
+        System.err.println(("\n" + str).replace("\n", "\n\t"));
+        output("JIT", compiled);
 
-        output("Results", API2.apply(compiled, 4, 3));
+        output("Results", U.apply(U.apply(compiled, IntF.of(4)), IntF.of(3)));
 
         System.exit(0);
         TO_EXEC = () -> ValueThrowables.clone(TEMPLATE);// API.apply((Value<F<Integer, F<Integer, Integer>>>) main, 3, 3);
     }
 
-
     @PutEnv("λ")
-    private static org.projog.core.term.Term lambdaProlog(List<Node> nodes, Environment environment) {
+    private static Term<?> lambda(List<Node> nodes, Environment environment) {
         var binder = ((Node.Array) nodes.get(1)).nodes();
 
         var binderName = ((Node.Atom) binder.get(0)).value();
@@ -177,16 +171,11 @@ public final class Main {
 
         var rest = new Node.Array(nodes.subList(2, nodes.size()));
 
-        var domain = Frontend.toPrologTerm(binderType, environment);
+        var domain = Frontend.toType(binderType, environment);
 
-        var v = new Atom(binderName);
-        var theTerm = Frontend.toPrologTerm(rest, environment.put(binderName, new Entity.PrologTermEntity(binderName,
-                Structure.createStructure("/", new org.projog.core.term.Term[]{new Atom("local"), v}))));
-        return Structure.createStructure("λ", new org.projog.core.term.Term[]{
-                domain,
-                v,
-                theTerm
-        });
+        var v = new LocalTerm<>(domain, binderName);
+        var theTerm = Frontend.toTerm(rest, environment.put(binderName, new Entity.ReferenceTermEntity(binderName, v)));
+        return new LambdaTerm(v, theTerm);
     }
 
     //@PutEnv("<")
@@ -197,27 +186,17 @@ public final class Main {
         var binder = ((Node.Atom) nodes.get(1)).value();
         var rest = new Node.Array(nodes.subList(2, nodes.size()));
 
-        var variable = new VarType<>();
-        var entity = new Entity.TypeEntity(binder, NominalType.ofTag(variable));
+        throw null;
+        // fixme....
+/*        var entity = new Entity.TypeEntity(binder, NominalType.ofTag(variable));
         var newEnv = environment.put(binder, entity);
 
         var theTerm = Frontend.toTerm(rest, newEnv);
-        return Term.v(x -> variable.substituteIn(theTerm, x));
+        return new TypeLambdaTerm<>(x -> variable.substituteIn(theTerm, x)); */
     }
 
     static void output(String stage, Object results) {
         outputT(stage, results, "-");
-    }
-
-    static void outputT(String stage, Term<Fun<U<F<Integer>>, Fun<U<F<Integer>>, F<Integer>>>> term) {
-        outputT(stage, PrettyPrint.prettyPrint(term), PrettyPrint.prettyPrint(term.type()));
-        //  var output = API.apply(term, 2, 5);
-        //     outputT(" ⇒", output, "-");
-    }
-
-    static <A> void outputT(String stage, Code<A> term) {
-        outputT(stage, PrettyPrintAction.prettyPrint(term), PrettyPrint.prettyPrint(term.type()));
-        outputT(" ⇒", term.interpret(new InterpreterEnvironment()), "-");
     }
 
     static void outputT(String stage, Object term, Object type) {
@@ -234,7 +213,7 @@ public final class Main {
 
     @FunctionalInterface
     public interface ApplyInt {
-        int apply(U<Fun<U<F<Integer>>, Fun<U<F<Integer>>, F<Integer>>>> f, int x, int y);
+        int apply(U<Fn<U<IntF>, Fn<U<IntF>, IntF>>> f, int x, int y);
     }
 
     static class MyThrowable extends ValueThrowable {

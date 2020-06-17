@@ -5,17 +5,13 @@ import com.sstewartgallus.plato.frontend.Entity;
 import com.sstewartgallus.plato.frontend.Environment;
 import com.sstewartgallus.plato.frontend.Frontend;
 import com.sstewartgallus.plato.frontend.Node;
-import com.sstewartgallus.plato.ir.cbpv.ForceCode;
-import com.sstewartgallus.plato.ir.cps.CpsEnvironment;
-import com.sstewartgallus.plato.ir.systemf.GlobalTerm;
-import com.sstewartgallus.plato.ir.systemf.LambdaTerm;
-import com.sstewartgallus.plato.ir.systemf.LocalTerm;
-import com.sstewartgallus.plato.ir.systemf.Term;
+import com.sstewartgallus.plato.ir.systemf.*;
 import com.sstewartgallus.plato.ir.type.TypeDesc;
 import com.sstewartgallus.plato.java.IntF;
 import com.sstewartgallus.plato.java.IntType;
-import com.sstewartgallus.plato.runtime.ActionInvoker;
+import com.sstewartgallus.plato.runtime.F;
 import com.sstewartgallus.plato.runtime.Fn;
+import com.sstewartgallus.plato.runtime.FreeStack;
 import com.sstewartgallus.plato.runtime.U;
 import com.sstewartgallus.runtime.ValueThrowable;
 import com.sstewartgallus.runtime.ValueThrowables;
@@ -50,18 +46,18 @@ record TypeReference(String canonicalPackage, String canonicalName) {
 public final class Main {
     static final Supplier<Object> TO_EXEC;
     private static final MyThrowable TEMPLATE = new MyThrowable();
-    private static final ApplyInt API2 = ActionInvoker.newInstance(lookup(), ApplyInt.class);
 
     @PutEnv("int")
     private static final TypeDesc<?> INT_TYPE_TERM = TypeDesc.ofReference("core", "int");
 
+    // fixme.. make globals variables...
     @PutEnv("+")
-    private static final Term<?> ADD = new GlobalTerm<>(IntType.INTF_TYPE.thunk().toFn(IntType.INTF_TYPE.thunk().toFn(IntType.INTF_TYPE)),
-            "core", "+");
+    private static final Term<?> ADD = new GlobalTerm<>(new Global<>(IntType.INTF_TYPE.thunk().toFn(IntType.INTF_TYPE.thunk().toFn(IntType.INTF_TYPE)),
+            "core", "+"));
 
     @PutEnv("-")
-    private static final Term<?> SUBTRACT = new GlobalTerm<>(IntType.INTF_TYPE.thunk().toFn(IntType.INTF_TYPE.thunk().toFn(IntType.INTF_TYPE)),
-            "core", "-");
+    private static final Term<?> SUBTRACT = new GlobalTerm<>(new Global<>(IntType.INTF_TYPE.thunk().toFn(IntType.INTF_TYPE.thunk().toFn(IntType.INTF_TYPE)),
+            "core", "-"));
 
     private static final Environment DEFAULT_ENV =
             Stream.concat(
@@ -80,6 +76,7 @@ public final class Main {
                                 }
 
                                 Entity entity;
+
                                 if (value instanceof Term<?> term) {
                                     entity = new Entity.ReferenceTermEntity(name, term);
                                 } else if (value instanceof TypeDesc<?> type) {
@@ -110,7 +107,7 @@ public final class Main {
             ).reduce(Environment.empty(), (env, entity) -> env.put(entity.name(), entity), Environment::union);
 
     static {
-        var source = "λ (x int) λ (y int) + (+ x x) y";
+        var source = "+ 1 2";
 
         output("Source", source);
 
@@ -124,39 +121,59 @@ public final class Main {
 
         output("Environment", DEFAULT_ENV);
 
-        var systemf = (Term<Fn<U<IntF>, Fn<U<IntF>, IntF>>>) Frontend.toTerm(ast, DEFAULT_ENV);
+        var systemf = (Term<F<Integer>>) Frontend.toTerm(ast, DEFAULT_ENV);
+
         outputT("System F ", systemf, systemf.type());
 
         systemf = EtaReduction.etaReduction(systemf);
         outputT("Eta Reduction", systemf, systemf.type());
+        systemf = InlineTerm.inline(systemf);
+        outputT("Inline", systemf, systemf.type());
 
-        // fixme... do eta reduction on system F...
-
-        var cbpv = new ForceCode<>(TermToCbpv.toCbpv(systemf));
+        var cbpv = TermToCbpv.toCbpv(systemf);
 
         outputT("Call By Push Value", "", cbpv.type());
         System.err.println("\t" + cbpv.toString().replace("\n", "\n\t"));
 
-        outputT("Call By Push Value (intrinsics", "", cbpv.type());
+        cbpv = ExpandIntrinsics.expand(cbpv);
+        outputT("Expand Intrinsics", "", cbpv.type());
         System.err.println("\t" + cbpv.toString().replace("\n", "\n\t"));
 
-        var cps = CpsTransform.toCps(cbpv, x -> x);
-        System.err.println("CPS");
-        System.err.println("\t" + cps.toString().replace("\n", "\n\t"));
-        // fixme.. compile call by push value further... before jitting or interpreting..
+        cbpv = InlineCpbv.inline(cbpv);
+        outputT("Inline Call By Push Value", "", cbpv.type());
+        System.err.println("\t" + cbpv.toString().replace("\n", "\n\t"));
 
-        var cpsinterp = cps.interpret(new CpsEnvironment(lookup()));
-        output("Results", API2.apply(cpsinterp, 4, 3));
+        var cps = CpbvToCps.cps(cbpv);
+
+        outputT("Continuation Passing Style", "", "");
+        System.err.println(cps);
+
+        cps = LiftCps.inline(cps);
+        outputT("Unwrap CPS", "", "");
+        System.err.println(cps);
+
+        cps = InlineCps.inline(cps);
+        outputT("Inline CPS", "", "");
+        System.err.println(cps);
+
+        // fixme... do closure conversion and track the freeVariables round about this step...
+
+        var decps = DeCps.deCps(cps);
+        outputT("De CPS", "", "");
+        System.err.println(decps);
+
+        var action = CodeInterpreter.interpret(decps, lookup());
+
+        var results = action.accept(new FreeStack<>());
+        output("Results", results);
 
         var str = new StringWriter();
         var writer = new PrintWriter(str);
         // fixme... pass in a lookup ?
-        var compiled = cps.compile(lookup(), writer);
+        var compiled = decps.compile(lookup(), writer);
         System.err.print("Jit Code");
         System.err.println(("\n" + str).replace("\n", "\n\t"));
         output("JIT", compiled);
-
-        output("Results", U.apply(U.apply(compiled, IntF.of(4)), IntF.of(3)));
 
         System.exit(0);
         TO_EXEC = () -> ValueThrowables.clone(TEMPLATE);// API.apply((Value<F<Integer, F<Integer, Integer>>>) main, 3, 3);
@@ -173,13 +190,13 @@ public final class Main {
 
         var domain = Frontend.toType(binderType, environment);
 
-        var v = new LocalTerm<>(domain, binderName);
-        var theTerm = Frontend.toTerm(rest, environment.put(binderName, new Entity.ReferenceTermEntity(binderName, v)));
+        var v = new Variable<>(domain.thunk(), binderName);
+        var theTerm = Frontend.toTerm(rest, environment.put(binderName, new Entity.ReferenceTermEntity(binderName, new LocalTerm(v))));
         return new LambdaTerm(v, theTerm);
     }
 
     //@PutEnv("<")
-    //private static final Term<?> LESS_THAN = Type.INT.l(x -> Type.INT.l(y -> Prims.lessThan(x, y)));
+    //private static final Term<?> LESS_THAN = Type.INT.l(binder -> Type.INT.l(y -> Prims.lessThan(binder, y)));
 
     @PutEnv("∀")
     private static Term<?> forall(List<Node> nodes, Environment environment) {
@@ -189,10 +206,10 @@ public final class Main {
         throw null;
         // fixme....
 /*        var entity = new Entity.TypeEntity(binder, NominalType.ofTag(variable));
-        var newEnv = environment.put(binder, entity);
+        var newEnv = binder.put(binder, entity);
 
         var theTerm = Frontend.toTerm(rest, newEnv);
-        return new TypeLambdaTerm<>(x -> variable.substituteIn(theTerm, x)); */
+        return new TypeLambdaTerm<>(binder -> variable.substituteIn(theTerm, binder)); */
     }
 
     static void output(String stage, Object results) {
@@ -213,10 +230,18 @@ public final class Main {
 
     @FunctionalInterface
     public interface ApplyInt {
-        int apply(U<Fn<U<IntF>, Fn<U<IntF>, IntF>>> f, int x, int y);
+        U<IntF> apply(U<Fn<U<IntF>, Fn<U<IntF>, IntF>>> f, int x, int y);
     }
 
     static class MyThrowable extends ValueThrowable {
     }
 
+}
+
+final class GetValue extends RuntimeException {
+    Object value;
+
+    public GetValue(Object value) {
+        this.value = value;
+    }
 }

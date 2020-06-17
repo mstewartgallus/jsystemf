@@ -25,4 +25,5 @@ public record TypeApplyCode<A, B>(Code<V<A, B>>f, Type<A>x) implements Code<B> {
     public TypeDesc<B> type() {
         return null;
     }
+
 }

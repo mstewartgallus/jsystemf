@@ -5,10 +5,10 @@ import com.sstewartgallus.plato.runtime.Fn;
 import com.sstewartgallus.plato.runtime.U;
 
 
-public record LambdaTerm<A, B>(LocalTerm<A>binder, Term<B>body) implements Term<Fn<U<A>, B>> {
+public record LambdaTerm<A, B>(Variable<U<A>>binder, Term<B>body) implements Term<Fn<U<A>, B>> {
     @Override
     public final TypeDesc<Fn<U<A>, B>> type() {
-        return TypeDesc.to(binder.type(), body.type());
+        return (binder.type()).toFn(body.type());
     }
 
     @Override

@@ -7,16 +7,21 @@ import com.sstewartgallus.plato.java.IntF;
 import static java.lang.invoke.MethodHandles.lookup;
 
 public interface U<A> {
-    static <A extends U<A>> U<A> of(A action) {
-        return action;
+    static <A> U<F<A>> of(A value) {
+        return new U<>() {
+            @Override
+            public <C> C accept(Stack<C, F<A>> stack) {
+                return (C) value;
+            }
+        };
     }
 
     static <A> A evaluate(U<F<A>> fVal) {
         return Helper.EVAL.eval(fVal);
     }
 
-    static int evaluateInteger(U<IntF> fVal) {
-        return Helper.EVAL_INT.eval(fVal);
+    static int evaluateInteger(U<IntF> x) {
+        throw null;
     }
 
     static <B, A> U<B> apply(U<Fn<A, B>> fVal, A xVal) {
@@ -25,6 +30,10 @@ public interface U<A> {
 
     static <B, A> U<B> apply(U<V<A, B>> fVal, Type<A> xVal) {
         return Helper.APPLY_V.apply(fVal, xVal);
+    }
+
+    default <C> C accept(Stack<C, A> stack) throws Control {
+        throw null;
     }
 
     // fixme... figure out how to make private

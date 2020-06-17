@@ -14,7 +14,7 @@ public record TypeLambdaTerm<A, B>(Function<TypeDesc<A>, Term<B>>f) implements T
     @Override
     public TypeDesc<V<A, B>> type() {
         throw null;  // fixme...
-        //    return Type.v(x -> f.apply(x).type());
+        //    return Type.v(binder -> f.apply(binder).type());
     }
 
 }

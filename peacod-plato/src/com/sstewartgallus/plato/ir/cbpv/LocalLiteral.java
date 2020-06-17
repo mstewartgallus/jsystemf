@@ -1,23 +1,28 @@
 package com.sstewartgallus.plato.ir.cbpv;
 
-import com.sstewartgallus.plato.ir.cps.LocalValue;
+import com.sstewartgallus.plato.ir.systemf.Variable;
 import com.sstewartgallus.plato.ir.type.TypeDesc;
+import com.sstewartgallus.plato.runtime.Jit;
 
 import java.util.Objects;
 
-public record LocalLiteral<A>(TypeDesc<A>type, String name) implements Literal<A> {
+public record LocalLiteral<A>(Variable<A>variable) implements Literal<A> {
     public LocalLiteral {
-        Objects.requireNonNull(type);
-        Objects.requireNonNull(name);
+        Objects.requireNonNull(variable);
     }
 
     @Override
     public String toString() {
-        return name;
+        return variable.toString();
     }
 
-    public LocalValue<A> toValue() {
-        return new LocalValue<>(type, name);
+    @Override
+    public TypeDesc<A> type() {
+        return variable.type();
     }
 
+    @Override
+    public void compile(Jit.Environment environment) {
+        environment.load(variable);
+    }
 }

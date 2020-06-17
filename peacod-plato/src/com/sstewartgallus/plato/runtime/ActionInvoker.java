@@ -1,7 +1,6 @@
 package com.sstewartgallus.plato.runtime;
 
 import com.sstewartgallus.plato.runtime.internal.AnonClassLoader;
-import com.sstewartgallus.plato.runtime.internal.AsmUtils;
 import com.sstewartgallus.plato.runtime.internal.SupplierClassValue;
 import org.objectweb.asm.ClassWriter;
 import org.objectweb.asm.Opcodes;
@@ -72,15 +71,7 @@ public abstract class ActionInvoker<T> {
 
             mw.visitVarInsn(Opcodes.ALOAD, 1);
 
-            var indySig = methodType.dropParameterTypes(0, 1)
-                    .describeConstable().get();
-            {
-                var indy = ActionDesc.getApplyLabel(indySig);
-
-                var boot = AsmUtils.toHandle(indy.bootstrapMethod());
-                mw.visitInvokeDynamicInsn(indy.invocationName(), indy.invocationType().descriptorString(), boot,
-                        Arrays.stream(indy.bootstrapArgs()).map(AsmUtils::toAsm).toArray(Object[]::new));
-            }
+            if (true) throw null;
 
             mw.visitVarInsn(Opcodes.ALOAD, 1);
 
@@ -114,11 +105,7 @@ public abstract class ActionInvoker<T> {
             }
 
             {
-                var indy = ActionDesc.callApplyLabel(indySig);
-
-                var boot = AsmUtils.toHandle(indy.bootstrapMethod());
-                mw.visitInvokeDynamicInsn(indy.invocationName(), indy.invocationType().descriptorString(), boot,
-                        Arrays.stream(indy.bootstrapArgs()).map(AsmUtils::toAsm).toArray(Object[]::new));
+                if (true) throw null;
             }
 
             var returnType = methodType.returnType();

@@ -1,9 +1,6 @@
 package com.sstewartgallus;
 
-import com.sstewartgallus.plato.ir.systemf.ApplyTerm;
-import com.sstewartgallus.plato.ir.systemf.LambdaTerm;
-import com.sstewartgallus.plato.ir.systemf.LocalTerm;
-import com.sstewartgallus.plato.ir.systemf.Term;
+import com.sstewartgallus.plato.ir.systemf.*;
 import com.sstewartgallus.plato.runtime.Fn;
 import com.sstewartgallus.plato.runtime.U;
 
@@ -28,7 +25,7 @@ public class EtaReduction {
         var binder = term.binder();
         var body = etaReduction(term.body());
         if (body instanceof ApplyTerm<?, B> applyTerm) {
-            if (applyTerm.x() instanceof LocalTerm<?> lit && lit.equals(binder)) {
+            if (applyTerm.x() instanceof LocalTerm<?> lit && lit.variable().equals(binder)) {
                 if (!contains(applyTerm.f(), binder)) {
                     return (Term) applyTerm.f();
                 }
@@ -37,8 +34,8 @@ public class EtaReduction {
         return new LambdaTerm<>(binder, body);
     }
 
-    private static <C> boolean contains(Term<C> term, LocalTerm<?> x) {
-        if (term.equals(x)) {
+    private static <C> boolean contains(Term<C> term, Variable<?> x) {
+        if (term instanceof LocalTerm<?> localTerm && localTerm.variable().equals(x)) {
             return true;
         }
         if (term instanceof LambdaTerm<?, ?> lambdaTerm) {

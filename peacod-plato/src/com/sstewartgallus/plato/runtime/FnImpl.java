@@ -12,7 +12,4 @@ public abstract class FnImpl<A, B> implements U<Fn<A, B>> {
 
     public abstract U<B> apply(A value);
 
-    public final U<B> applyGeneric(Object value) {
-        return apply(domain.cast(value));
-    }
 }

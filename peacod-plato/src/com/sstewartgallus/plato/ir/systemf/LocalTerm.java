@@ -1,11 +1,18 @@
 package com.sstewartgallus.plato.ir.systemf;
 
 import com.sstewartgallus.plato.ir.type.TypeDesc;
+import com.sstewartgallus.plato.runtime.U;
 
-public record LocalTerm<A>(TypeDesc<A>type, String name) implements VariableTerm<A> {
+public record LocalTerm<A>(Variable<U<A>>variable) implements Term<A> {
 
     @Override
     public String toString() {
-        return name;
+        return variable.toString();
+    }
+
+    @Override
+    public TypeDesc<A> type() {
+        var fType = (TypeDesc.TypeApplicationDesc<A, U<A>>) variable.type();
+        return fType.x();
     }
 }

@@ -1,11 +1,11 @@
-package com.sstewartgallus.plato.ir.cbpv;
+package com.sstewartgallus.plato.ir.systemf;
 
 import com.sstewartgallus.plato.ir.type.TypeDesc;
 
 import java.util.Objects;
 
-public record GlobalLiteral<A>(TypeDesc<A>type, String packageName, String name) implements Literal<A> {
-    public GlobalLiteral {
+public record Global<A>(TypeDesc<A>type, String packageName, String name) {
+    public Global {
         Objects.requireNonNull(type);
         Objects.requireNonNull(packageName);
         Objects.requireNonNull(name);
@@ -15,5 +15,4 @@ public record GlobalLiteral<A>(TypeDesc<A>type, String packageName, String name)
     public String toString() {
         return packageName + "/" + name;
     }
-
 }

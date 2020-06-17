@@ -24,8 +24,6 @@ public final class TypeBootstraps {
             switch (name) {
                 case "u":
                     return ThunkType.thunk();
-                case "label":
-                    return LabelType.label();
                 case "fn":
                     return FnType.function();
                 case "int":

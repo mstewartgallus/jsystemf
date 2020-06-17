@@ -95,9 +95,9 @@ public class Frontend {
 
         /*
         if (nodeZero instanceof Node.Atom atom) {
-            var entity = environment.get(atom.value());
+            var entity = binder.get(atom.action());
             if (entity.isPresent() && entity.get() instanceof Entity.SpecialFormEntity special) {
-                return special.f().apply(nodes, environment);
+                return special.f().apply(nodes, binder);
             }
         } */
 

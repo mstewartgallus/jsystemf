@@ -19,4 +19,5 @@ public record ReturnCode<A>(Literal<A>literal) implements Code<F<A>> {
     public TypeDesc<F<A>> type() {
         return literal.type().returns();
     }
+
 }

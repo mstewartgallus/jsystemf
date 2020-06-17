@@ -6,7 +6,7 @@ import com.sstewartgallus.plato.ir.type.TypeDesc;
 import java.util.List;
 import java.util.function.BiFunction;
 
-// fixme... abstract out more data about environment entities
+// fixme... abstract out more data about binder entities
 // fixme... allow types as entities...
 public interface Entity {
     String name();

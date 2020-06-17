@@ -11,6 +11,7 @@ public final class TypeDescs {
     private static final String TYPE_PACKAGE = TypeDescs.class.getPackageName();
     public static final ClassDesc CD_Type = ClassDesc.of(TYPE_PACKAGE, "Type");
     public static final ClassDesc CD_TypeBootstraps = ClassDesc.of(TYPE_PACKAGE, "TypeBootstraps");
+
     private TypeDescs() {
     }
 

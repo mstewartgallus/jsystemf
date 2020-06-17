@@ -17,6 +17,15 @@ public final class ActionBootstraps {
     private static final Type<U<IntF>> INT_BOX;
     private static final Type<Integer> INT;
     private static final MethodHandle CLOSURE_FACT_MH;
+    private static final MethodHandle PLUS_MH;
+
+    static {
+        try {
+            PLUS_MH = lookup().findStatic(ActionBootstraps.class, "add", MethodType.methodType(int.class, int.class, int.class));
+        } catch (ReflectiveOperationException e) {
+            throw new RuntimeException(e);
+        }
+    }
 
     static {
         try {
@@ -42,16 +51,19 @@ public final class ActionBootstraps {
     private ActionBootstraps() {
     }
 
+    private static int add(int left, int right) {
+        return left + right;
+    }
+
     /**
-     * Fixme... separate out getting the label and calling it on the environment/thunk..
+     * Fixme... separate out getting the binder and calling it on the binder/binder..
      */
     @SuppressWarnings("unused")
-    public static CallSite invoke(MethodHandles.Lookup lookup, String name, MethodType methodType, MethodType desc) {
+    public static CallSite invoke(MethodHandles.Lookup lookup, String name, MethodType methodType) {
         var operation = switch (name) {
             case "CALL" -> StandardOperation.CALL;
-            case "APPLY" -> StandardOperation.GET
-                    .withNamespace(StandardNamespace.METHOD)
-                    .named(desc);
+            case "LABEL" -> StandardOperation.GET
+                    .withNamespace(StandardNamespace.METHOD);
             default -> throw new IllegalArgumentException(name);
         };
         return ActionLinker.link(lookup, operation, methodType);
@@ -76,16 +88,19 @@ public final class ActionBootstraps {
         return new JitStatic<>(info, type, insertArguments(lambdaBody, 0, env));
     }
 
-    // fixme... check types...
+
     @SuppressWarnings("unused")
-    public static <A extends U> A ofReference(MethodHandles.Lookup lookup, String name, Class<A> klass, String packageName, Type<A> type) {
-        // fixme.. use lookup...
+    public static <A> CallSite bootstrap(MethodHandles.Lookup lookup, String typeOfCall, MethodType methodType, String packageName, String name) {
+        if (!(typeOfCall.equals("TAILCALL") || typeOfCall.equals("CALL"))) {
+            return null;
+        }
+        // fixme... check if tail call and wrap in evaluator loop..
         return switch (packageName) {
             case "" -> throw new IllegalArgumentException(packageName);
             case "core" -> switch (name) {
-                case "+" -> (A) getPlus();
-                case "-" -> (A) getMinus();
-                case "boxInt" -> (A) getBoxInt();
+                case "+" -> getPlus();
+                case "-" -> throw new Error("impl");
+                case "boxInt" -> throw new Error("impl");
                 default -> throw new Error("real field lookup not implemented! tried looking up " + packageName + "/" + name);
             };
             case "foo" -> throw new Error("foo");
@@ -93,36 +108,19 @@ public final class ActionBootstraps {
         };
     }
 
-    private static FnImpl<U<IntF>, Fn<U<IntF>, IntF>> getPlus() {
-        return new FnImpl<>(INT_BOX) {
-            @Override
-            public U<Fn<U<IntF>, IntF>> apply(U<IntF> x) {
-                return new FnImpl<>(INT_BOX) {
-                    @Override
-                    public U<IntF> apply(U<IntF> y) {
-                        var left = U.evaluateInteger(x);
-                        var right = U.evaluateInteger(y);
-                        return IntF.of(left + right);
-                    }
-                };
-            }
-        };
+    // fixme... check types...
+    @SuppressWarnings("unused")
+    public static <A> A ofReference(MethodHandles.Lookup lookup, String name, Class<A> klass, String packageName, Type<A> type) {
+        throw null;
+    }
+
+    private static CallSite getPlus() {
+        return new ConstantCallSite(PLUS_MH);
     }
 
     private static FnImpl<U<IntF>, Fn<U<IntF>, IntF>> getMinus() {
-        return new FnImpl<>(INT_BOX) {
-            @Override
-            public U<Fn<U<IntF>, IntF>> apply(U<IntF> x) {
-                return new FnImpl<>(INT_BOX) {
-                    @Override
-                    public U<IntF> apply(U<IntF> y) {
-                        var left = U.evaluateInteger(x);
-                        var right = U.evaluateInteger(y);
-                        return IntF.of(left - right);
-                    }
-                };
-            }
-        };
+        throw null;
+
     }
 
     private static FnImpl<Integer, IntF> getBoxInt() {

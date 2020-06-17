@@ -10,6 +10,13 @@ public record ThunkLiteral<A>(Code<A>code) implements Literal<U<A>> {
         Objects.requireNonNull(code);
     }
 
+    public static <A> Literal<U<A>> of(Code<A> code) {
+        if (code instanceof ForceCode<A> forceCode) {
+            return forceCode.thunk();
+        }
+        return new ThunkLiteral<>(code);
+    }
+
     @Override
     public TypeDesc<U<A>> type() {
         return code.type().thunk();

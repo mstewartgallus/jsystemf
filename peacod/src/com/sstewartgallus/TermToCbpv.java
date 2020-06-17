@@ -2,13 +2,15 @@ package com.sstewartgallus;
 
 import com.sstewartgallus.plato.ir.cbpv.*;
 import com.sstewartgallus.plato.ir.systemf.*;
+import com.sstewartgallus.plato.java.IntLiteral;
+import com.sstewartgallus.plato.java.IntTerm;
 import com.sstewartgallus.plato.runtime.Fn;
 import com.sstewartgallus.plato.runtime.U;
 
 public class TermToCbpv {
-    public static <A> Literal<U<A>> toCbpv(Term<A> term) {
+    public static <A> Code<A> toCbpv(Term<A> term) {
         if (term instanceof LambdaTerm<?, ?> lambdaTerm) {
-            return (Literal) lambda(lambdaTerm);
+            return (Code) lambda(lambdaTerm);
         }
         if (term instanceof ApplyTerm<?, A> apply) {
             return apply(apply);
@@ -17,36 +19,34 @@ public class TermToCbpv {
             return global(global);
         }
         if (term instanceof LocalTerm<A> local) {
-            return localLiteral(local);
+            return force(new LocalLiteral<>(local.variable()));
+        }
+        if (term instanceof IntTerm intTerm) {
+            return (Code) new ReturnCode<>(new IntLiteral(intTerm.value()));
         }
         throw new IllegalArgumentException(term.toString());
     }
 
-    private static <A> Literal<U<A>> global(GlobalTerm<A> term) {
-        return new GlobalLiteral<>(term.type().thunk(), term.packageName(), term.name());
+    private static <A> Code<A> global(GlobalTerm<A> term) {
+        return new GlobalCode<>(term.global());
     }
 
-    private static <B, A> Literal<U<A>> apply(ApplyTerm<B, A> term) {
-        var f = force(toCbpv(term.f()));
-        var x = toCbpv(term.x());
+    private static <B, A> Code<A> apply(ApplyTerm<B, A> term) {
+        var f = toCbpv(term.f());
+        var x = thunk(toCbpv(term.x()));
         return apply(f, x);
     }
 
-    private static <B, A> Literal<U<A>> apply(Code<Fn<U<B>, A>> f, Literal<U<B>> x) {
+    private static <B, A> Code<A> apply(Code<Fn<U<B>, A>> f, Literal<U<B>> x) {
         if (f instanceof LambdaCode<U<B>, A> lambdaCode) {
-            return thunk(new LetBeCode<>(lambdaCode.binder(), x, lambdaCode.body()));
+            return new LetBeCode<>(lambdaCode.binder(), x, lambdaCode.body());
         }
-        return thunk(new ApplyCode<>(f, x));
+        return new ApplyCode<>(f, x);
     }
 
-    private static <A, B> Literal<U<Fn<U<A>, B>>> lambda(LambdaTerm<A, B> term) {
-        var binder = localLiteral(term.binder());
-        var body = force(toCbpv(term.body()));
-        return thunk(new LambdaCode<>(binder, body));
-    }
-
-    private static <A> LocalLiteral<U<A>> localLiteral(LocalTerm<A> binder) {
-        return new LocalLiteral<>(binder.type().thunk(), binder.name());
+    private static <A, B> Code<Fn<U<A>, B>> lambda(LambdaTerm<A, B> term) {
+        var body = toCbpv(term.body());
+        return new LambdaCode<>(term.binder(), body);
     }
 
     private static <A> Literal<U<A>> thunk(Code<A> code) {

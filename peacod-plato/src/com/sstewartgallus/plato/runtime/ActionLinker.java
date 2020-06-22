@@ -1,6 +1,7 @@
 package com.sstewartgallus.plato.runtime;
 
 import com.sstewartgallus.plato.java.IntF;
+import com.sstewartgallus.plato.runtime.type.U;
 import jdk.dynalink.CallSiteDescriptor;
 import jdk.dynalink.DynamicLinker;
 import jdk.dynalink.DynamicLinkerFactory;

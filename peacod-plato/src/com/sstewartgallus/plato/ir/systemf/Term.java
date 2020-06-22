@@ -1,5 +1,7 @@
 package com.sstewartgallus.plato.ir.systemf;
 
+import com.sstewartgallus.plato.ir.Variable;
+import com.sstewartgallus.plato.ir.cbpv.Code;
 import com.sstewartgallus.plato.ir.type.TypeDesc;
 
 /**
@@ -15,6 +17,11 @@ import com.sstewartgallus.plato.ir.type.TypeDesc;
  * See http://cs.ioc.ee/efftt/levy-slides.pdf
  */
 public interface Term<A> {
-    TypeDesc<A> type();
+    int contains(Variable<?> x);
 
+    Term<A> visitChildren(TermVisitor visitor);
+
+    Code<A> toCallByPushValue();
+
+    TypeDesc<A> type();
 }

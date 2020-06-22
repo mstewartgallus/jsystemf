@@ -1,6 +1,4 @@
 package com.sstewartgallus.plato.runtime;
 
-public final class F<A> extends Phantom {
-    private F() {
-    }
+public record F<A>(A value) {
 }

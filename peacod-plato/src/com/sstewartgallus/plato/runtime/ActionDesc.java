@@ -1,6 +1,7 @@
 package com.sstewartgallus.plato.runtime;
 
 import com.sstewartgallus.plato.ir.type.TypeDesc;
+import com.sstewartgallus.plato.runtime.type.U;
 
 import java.lang.constant.*;
 
@@ -13,7 +14,7 @@ public final class ActionDesc<A> extends DynamicConstantDesc<U> {
     private static final ClassDesc CD_ActionBootstraps = ClassDesc.of(PACKAGE, "ActionBootstraps");
 
     static {
-        var mt = MethodTypeDesc.of(CD_U,
+        var mt = MethodTypeDesc.of(ConstantDescs.CD_CallSite,
                 ConstantDescs.CD_MethodHandles_Lookup, ConstantDescs.CD_String, ConstantDescs.CD_MethodType,
                 ConstantDescs.CD_String, ConstantDescs.CD_String);
         CALL_BSM = MethodHandleDesc.ofMethod(DirectMethodHandleDesc.Kind.STATIC, CD_ActionBootstraps, "bootstrap", mt);
@@ -26,10 +27,5 @@ public final class ActionDesc<A> extends DynamicConstantDesc<U> {
     // fixme... pass in type ?
     public static DynamicCallSiteDesc callGlobal(String packageName, String name, MethodTypeDesc methodType) {
         return DynamicCallSiteDesc.of(CALL_BSM, "CALL", methodType, packageName, name);
-    }
-
-
-    public static DynamicCallSiteDesc tailCallGlobal(String packageName, String name, MethodTypeDesc methodType) {
-        return DynamicCallSiteDesc.of(CALL_BSM, "TAILCALL", methodType, packageName, name);
     }
 }

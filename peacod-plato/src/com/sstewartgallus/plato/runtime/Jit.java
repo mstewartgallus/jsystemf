@@ -1,12 +1,13 @@
 package com.sstewartgallus.plato.runtime;
 
-import com.sstewartgallus.plato.ir.cbpv.Code;
+import com.sstewartgallus.plato.ir.Label;
+import com.sstewartgallus.plato.ir.Variable;
 import com.sstewartgallus.plato.ir.cbpv.Literal;
-import com.sstewartgallus.plato.ir.cps.Lbl;
-import com.sstewartgallus.plato.ir.systemf.Variable;
+import com.sstewartgallus.plato.ir.cps.Action;
 import com.sstewartgallus.plato.runtime.internal.AnonClassLoader;
 import com.sstewartgallus.plato.runtime.internal.AsmUtils;
 import com.sstewartgallus.plato.runtime.internal.SupplierClassValue;
+import com.sstewartgallus.plato.runtime.type.U;
 import org.objectweb.asm.ClassVisitor;
 import org.objectweb.asm.ClassWriter;
 import org.objectweb.asm.MethodVisitor;
@@ -32,7 +33,7 @@ public class Jit {
     protected Jit() {
     }
 
-    public static <A> U<A> jit(Code<A> instr, MethodHandles.Lookup lookup, PrintWriter writer) {
+    public static <A> U<A> jit(Action<A> instr, MethodHandles.Lookup lookup, PrintWriter writer) {
 
         var str = new StringWriter();
         writer = new PrintWriter(str);
@@ -63,7 +64,7 @@ public class Jit {
         method.visitCode();
         var env = new Environment(lookup, thisClass, cv, new ArrayList<>(), new LocalEnv(List.of(), null, method));
 
-        instr.compile(env);
+        if (true) throw null;
 
         method.visitMaxs(0, 0);
         method.visitEnd();
@@ -111,7 +112,7 @@ public class Jit {
         MethodHandles.Lookup lookup;
     }
 
-    public record LocalEnv(List<Variable<?>>arguments, Lbl<?>label, MethodVisitor methodVisitor) {
+    public record LocalEnv(List<Variable<?>>arguments, Label<?>label, MethodVisitor methodVisitor) {
         public void indy(DynamicCallSiteDesc desc) {
             var args = Arrays.stream(desc.bootstrapArgs()).map(AsmUtils::toAsm).toArray();
             methodVisitor.visitInvokeDynamicInsn(desc.invocationName(), desc.invocationType().descriptorString(),
@@ -127,7 +128,7 @@ public class Jit {
             freeVariables.add(binder);
         }
 
-        public <A> Environment frame(Lbl<A> label) {
+        public <A> Environment frame(Label<A> label) {
             var method = cv.visitMethod(Opcodes.ACC_PUBLIC | Opcodes.ACC_STATIC, label.name(), methodType(void.class).descriptorString(), null, null);
             method.visitCode();
             return new Environment(lookup, thisClass, cv, List.of(), new LocalEnv(freeVariables, label, method));
@@ -141,7 +142,7 @@ public class Jit {
             System.err.println("fixme load local");
         }
 
-        public <A> void jump(Lbl<A> label) {
+        public <A> void jump(Label<A> label) {
             System.err.println("implement jumps");
         }
     }

@@ -2,16 +2,11 @@ package com.sstewartgallus.plato.ir.type;
 
 import com.sstewartgallus.plato.runtime.F;
 import com.sstewartgallus.plato.runtime.Fn;
-import com.sstewartgallus.plato.runtime.U;
 import com.sstewartgallus.plato.runtime.V;
-
-import java.lang.constant.ClassDesc;
+import com.sstewartgallus.plato.runtime.type.Stk;
+import com.sstewartgallus.plato.runtime.type.U;
 
 public final class TypeDescs {
-    private static final String TYPE_PACKAGE = TypeDescs.class.getPackageName();
-    public static final ClassDesc CD_Type = ClassDesc.of(TYPE_PACKAGE, "Type");
-    public static final ClassDesc CD_TypeBootstraps = ClassDesc.of(TYPE_PACKAGE, "TypeBootstraps");
-
     private TypeDescs() {
     }
 
@@ -24,7 +19,8 @@ public final class TypeDescs {
         return TypeDesc.ofReference("core", "fun");
     }
 
-    public static <A> TypeDesc<V<A, U<A>>> thunk() {
+    // fixme...
+    public static <A> TypeDesc<V<A, Stk<F<Stk<A>>>>> thunk() {
         return TypeDesc.ofReference("core", "u");
     }
 

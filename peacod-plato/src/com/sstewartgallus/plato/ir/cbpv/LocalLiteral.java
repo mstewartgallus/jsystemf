@@ -1,8 +1,9 @@
 package com.sstewartgallus.plato.ir.cbpv;
 
-import com.sstewartgallus.plato.ir.systemf.Variable;
+import com.sstewartgallus.plato.ir.Variable;
+import com.sstewartgallus.plato.ir.dethunk.LocalThing;
+import com.sstewartgallus.plato.ir.dethunk.Thing;
 import com.sstewartgallus.plato.ir.type.TypeDesc;
-import com.sstewartgallus.plato.runtime.Jit;
 
 import java.util.Objects;
 
@@ -22,7 +23,18 @@ public record LocalLiteral<A>(Variable<A>variable) implements Literal<A> {
     }
 
     @Override
-    public void compile(Jit.Environment environment) {
-        environment.load(variable);
+    public Literal<A> visitChildren(CodeVisitor codeVisitor, LiteralVisitor literalVisitor) {
+        return this;
     }
+
+    @Override
+    public Thing<A> dethunk() {
+        return new LocalThing<>(variable);
+    }
+
+    @Override
+    public int contains(Variable<?> othervar) {
+        return variable.equals(othervar) ? 1 : 0;
+    }
+
 }

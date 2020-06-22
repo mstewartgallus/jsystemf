@@ -1,9 +1,11 @@
 package com.sstewartgallus.plato.java;
 
-import com.sstewartgallus.plato.runtime.U;
+import com.sstewartgallus.plato.runtime.Continuation;
+import com.sstewartgallus.plato.runtime.type.Stk;
+import com.sstewartgallus.plato.runtime.type.U;
 
 // Fixme... not sure this makes sense...
-public final class IntF extends Number implements U<IntF> {
+public final class IntF extends U<IntF> {
     private final int value;
 
     private IntF(int value) {
@@ -30,22 +32,7 @@ public final class IntF extends Number implements U<IntF> {
     }
 
     @Override
-    public int intValue() {
-        return value;
-    }
-
-    @Override
-    public long longValue() {
-        return value;
-    }
-
-    @Override
-    public float floatValue() {
-        return value;
-    }
-
-    @Override
-    public double doubleValue() {
-        return value;
+    public <C> void enter(Continuation<C> context, Stk<IntF> action) {
+        throw null;
     }
 }

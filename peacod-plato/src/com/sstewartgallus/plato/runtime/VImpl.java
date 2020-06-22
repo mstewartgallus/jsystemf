@@ -1,8 +1,9 @@
 package com.sstewartgallus.plato.runtime;
 
-import com.sstewartgallus.plato.ir.type.Type;
+import com.sstewartgallus.plato.runtime.type.Type;
+import com.sstewartgallus.plato.runtime.type.U;
 
 @SuppressWarnings("unused")
-public interface VImpl<A, B> extends U<V<A, B>> {
-    U<B> applyType(Type<A> type);
+public abstract class VImpl<A, B> extends U<V<A, B>> {
+    public abstract U<B> applyType(Type<A> type);
 }

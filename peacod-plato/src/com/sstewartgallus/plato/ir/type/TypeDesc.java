@@ -2,13 +2,16 @@ package com.sstewartgallus.plato.ir.type;
 
 import com.sstewartgallus.plato.runtime.F;
 import com.sstewartgallus.plato.runtime.Fn;
-import com.sstewartgallus.plato.runtime.U;
 import com.sstewartgallus.plato.runtime.V;
+import com.sstewartgallus.plato.runtime.type.Stk;
+import com.sstewartgallus.plato.runtime.type.Type;
+import com.sstewartgallus.plato.runtime.type.TypeBootstraps;
+import com.sstewartgallus.plato.runtime.type.U;
 
 import java.lang.constant.*;
 
 public abstract class TypeDesc<A> extends DynamicConstantDesc<Type<A>> {
-    private static final String TYPE_PACKAGE = TypeDesc.class.getPackageName();
+    private static final String TYPE_PACKAGE = TypeBootstraps.class.getPackageName();
     public static final ClassDesc CD_Type = ClassDesc.of(TYPE_PACKAGE, "Type");
     public static final ClassDesc CD_TypeBootstraps = ClassDesc.of(TYPE_PACKAGE, "TypeBootstraps");
     private static final DirectMethodHandleDesc APPLY_MH;
@@ -40,7 +43,8 @@ public abstract class TypeDesc<A> extends DynamicConstantDesc<Type<A>> {
         return TypeDesc.ofApply(TypeDesc.ofApply(TypeDescs.fun(), typeDesc), range);
     }
 
-    public TypeDesc<U<A>> thunk() {
+    // fixme...
+    public TypeDesc<Stk<F<Stk<A>>>> thunk() {
         return TypeDesc.ofApply(TypeDescs.thunk(), this);
     }
 

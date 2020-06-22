@@ -10,4 +10,8 @@ module peacod.plato {
     exports com.sstewartgallus.plato.ir.systemf;
     exports com.sstewartgallus.plato.ir.cbpv;
     exports com.sstewartgallus.plato.ir.cps;
+    exports com.sstewartgallus.plato.ir.dethunk;
+    exports com.sstewartgallus.plato.runtime.type;
+    exports com.sstewartgallus.plato.ir;
+    exports com.sstewartgallus.plato.compiler;
 }

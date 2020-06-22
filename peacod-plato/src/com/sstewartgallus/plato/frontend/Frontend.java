@@ -1,9 +1,10 @@
 package com.sstewartgallus.plato.frontend;
 
+import com.sstewartgallus.plato.ir.NumberConstant;
 import com.sstewartgallus.plato.ir.systemf.ApplyTerm;
+import com.sstewartgallus.plato.ir.systemf.ConstantTerm;
 import com.sstewartgallus.plato.ir.systemf.Term;
 import com.sstewartgallus.plato.ir.type.TypeDesc;
-import com.sstewartgallus.plato.java.IntTerm;
 
 import java.io.IOException;
 import java.io.Reader;
@@ -95,7 +96,7 @@ public class Frontend {
 
         /*
         if (nodeZero instanceof Node.Atom atom) {
-            var entity = binder.get(atom.action());
+            var entity = binder.get(atom.stack());
             if (entity.isPresent() && entity.get() instanceof Entity.SpecialFormEntity special) {
                 return special.f().apply(nodes, binder);
             }
@@ -124,7 +125,7 @@ public class Frontend {
                 break isNumber;
             }
 
-            return new IntTerm(number.intValueExact());
+            return new ConstantTerm<>(new NumberConstant(number));
         }
 
         var maybeEntity = environment.get(str);

@@ -1,12 +1,13 @@
 package com.sstewartgallus.plato.runtime;
 
-import com.sstewartgallus.plato.ir.type.Type;
-import com.sstewartgallus.plato.java.IntF;
+import com.sstewartgallus.plato.runtime.type.Stk;
+import com.sstewartgallus.plato.runtime.type.Type;
+import com.sstewartgallus.plato.runtime.type.U;
 
 import java.lang.invoke.MethodHandle;
 import java.lang.invoke.MethodHandleInfo;
 
-public final class JitStatic<A> implements U<A> {
+public final class JitStatic<A> extends U<A> {
     private final MethodHandle methodHandle;
     private final MethodHandleInfo info;
     private final Type<A> type;
@@ -19,17 +20,14 @@ public final class JitStatic<A> implements U<A> {
         this.methodHandle = methodHandle;
     }
 
-    private static U<?> box(Object x) {
-        if (x instanceof U<?> thunk) {
-            return thunk;
-        }
-
-        return IntF.of((int) x);
-    }
 
     @Override
     public String toString() {
         return info.toString();
     }
 
+    @Override
+    public <C> void enter(Continuation<C> context, Stk<A> action) {
+        throw null;
+    }
 }

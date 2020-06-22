@@ -1,6 +1,7 @@
 package com.sstewartgallus.plato.runtime;
 
-public final class Fn<A, B> extends Phantom {
-    private Fn() {
-    }
+import com.sstewartgallus.plato.runtime.type.U;
+
+public interface Fn<A, B> {
+    U<B> apply(A value);
 }

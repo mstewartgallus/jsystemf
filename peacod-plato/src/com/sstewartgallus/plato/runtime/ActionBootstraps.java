@@ -1,59 +1,23 @@
 package com.sstewartgallus.plato.runtime;
 
 
-import com.sstewartgallus.plato.ir.type.Type;
 import com.sstewartgallus.plato.java.IntF;
-import com.sstewartgallus.plato.java.IntType;
+import com.sstewartgallus.plato.runtime.type.Type;
+import com.sstewartgallus.plato.runtime.type.U;
 import jdk.dynalink.StandardNamespace;
 import jdk.dynalink.StandardOperation;
 
-import java.lang.invoke.*;
-
-import static java.lang.invoke.MethodHandles.insertArguments;
-import static java.lang.invoke.MethodHandles.lookup;
+import java.lang.invoke.CallSite;
+import java.lang.invoke.MethodHandle;
+import java.lang.invoke.MethodHandles;
+import java.lang.invoke.MethodType;
 
 @SuppressWarnings("unused")
 public final class ActionBootstraps {
-    private static final Type<U<IntF>> INT_BOX;
-    private static final Type<Integer> INT;
-    private static final MethodHandle CLOSURE_FACT_MH;
-    private static final MethodHandle PLUS_MH;
-
-    static {
-        try {
-            PLUS_MH = lookup().findStatic(ActionBootstraps.class, "add", MethodType.methodType(int.class, int.class, int.class));
-        } catch (ReflectiveOperationException e) {
-            throw new RuntimeException(e);
-        }
-    }
-
-    static {
-        try {
-            INT_BOX = IntType.INTF_TYPE.thunk().resolveConstantDesc(lookup());
-        } catch (ReflectiveOperationException e) {
-            throw new RuntimeException(e);
-        }
-        try {
-            INT = IntType.INT_TYPE.resolveConstantDesc(lookup());
-        } catch (ReflectiveOperationException e) {
-            throw new RuntimeException(e);
-        }
-    }
-
-    static {
-        try {
-            CLOSURE_FACT_MH = lookup().findStatic(ActionBootstraps.class, "uglyVarargs", MethodType.methodType(U.class, MethodHandleInfo.class, Type.class, MethodHandle.class, U[].class));
-        } catch (NoSuchMethodException | IllegalAccessException e) {
-            throw new RuntimeException(e);
-        }
-    }
 
     private ActionBootstraps() {
     }
 
-    private static int add(int left, int right) {
-        return left + right;
-    }
 
     /**
      * Fixme... separate out getting the binder and calling it on the binder/binder..
@@ -76,60 +40,59 @@ public final class ActionBootstraps {
         return klass.cast(new JitStatic<>(info, type, lambdaBody));
     }
 
-    @SuppressWarnings("unused")
-    public static CallSite closureFactory(MethodHandles.Lookup lookup, String name, MethodType methodType, Type<?> type, MethodHandle lambdaBody) {
-        var reveal = lookup.revealDirect(lambdaBody);
-        return new ConstantCallSite(insertArguments(CLOSURE_FACT_MH, 0, reveal, type, lambdaBody).asCollector(U[].class, methodType.parameterCount()));
+    private static U<Fn<Integer, Fn<Integer, F<Integer>>>> getNil() {
+        throw null;
     }
 
-    private static U<?> uglyVarargs(MethodHandleInfo info, Type<?> type, MethodHandle lambdaBody, U<?>... env) {
-        System.err.println("fixme... closures are awful");
-        // fixme... awfull...
-        return new JitStatic<>(info, type, insertArguments(lambdaBody, 0, env));
+    private static U<Fn<Integer, Fn<Integer, F<Integer>>>> getPlusUnboxed() {
+        return new FnImpl<>(null) {
+            @Override
+            public U<Fn<Integer, F<Integer>>> apply(Integer x) {
+                return new FnImpl<>(null) {
+                    @Override
+                    public U<F<Integer>> apply(Integer y) {
+                        return U.box(x + y);
+                    }
+
+                    @Override
+                    public String toString() {
+                        return "(+ " + x + ")";
+                    }
+                };
+            }
+
+            @Override
+            public String toString() {
+                return "+";
+            }
+        };
     }
 
-
-    @SuppressWarnings("unused")
-    public static <A> CallSite bootstrap(MethodHandles.Lookup lookup, String typeOfCall, MethodType methodType, String packageName, String name) {
-        if (!(typeOfCall.equals("TAILCALL") || typeOfCall.equals("CALL"))) {
-            return null;
-        }
-        // fixme... check if tail call and wrap in evaluator loop..
-        return switch (packageName) {
+    public static <A> A ofReference(MethodHandles.Lookup lookup, String name, Class<A> klass, String packageName, Type<?> type) {
+// fixme... check if tail call and wrap in evaluator loop..
+        var result = switch (packageName) {
             case "" -> throw new IllegalArgumentException(packageName);
             case "core" -> switch (name) {
+                case "+!" -> getPlusUnboxed();
                 case "+" -> getPlus();
+                case "nil" -> getNil();
+
+
                 case "-" -> throw new Error("impl");
-                case "boxInt" -> throw new Error("impl");
                 default -> throw new Error("real field lookup not implemented! tried looking up " + packageName + "/" + name);
             };
             case "foo" -> throw new Error("foo");
             default -> throw new Error("real field lookup not implemented! tried looking up " + packageName + "/" + name);
         };
-    }
-
-    // fixme... check types...
-    @SuppressWarnings("unused")
-    public static <A> A ofReference(MethodHandles.Lookup lookup, String name, Class<A> klass, String packageName, Type<A> type) {
-        throw null;
+        return klass.cast(result);
     }
 
     private static CallSite getPlus() {
-        return new ConstantCallSite(PLUS_MH);
+        throw null;
     }
 
     private static FnImpl<U<IntF>, Fn<U<IntF>, IntF>> getMinus() {
         throw null;
 
     }
-
-    private static FnImpl<Integer, IntF> getBoxInt() {
-        return new FnImpl<>(INT) {
-            @Override
-            public U<IntF> apply(Integer value) {
-                return IntF.of(value);
-            }
-        };
-    }
-
 }

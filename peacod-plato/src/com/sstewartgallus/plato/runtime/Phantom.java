@@ -9,4 +9,5 @@ abstract class Phantom {
     protected Phantom() {
         throw new Error("never instance me");
     }
+
 }
